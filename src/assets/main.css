@@ -398,8 +398,6 @@ h3 { font-size: 1.68rem; }
 
 .navLnk span { display: flex; align-items: center; gap: 8px; }
 
-.notify .alert { box-shadow: 0 0 3px 3px #FFFFFF66 !important; margin: 20px; text-shadow: 0 0 10px #1A1A1A; }
-
 .nav-glow { position: relative; }
 
 .nav-glow::after { content: ""; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px; background: linear-gradient(to right, color-mix(in srgb, var(--nav-bs) 70%, transparent), color-mix(in srgb, var(--nav-acc) 80%, transparent), color-mix(in srgb, var(--nav-bs) 70%, transparent)); }
@@ -483,6 +481,11 @@ h3 { font-size: 1.68rem; }
 
 @keyframes fadeIn { from { opacity: 0; }
   to { opacity: 1; } }
+
+@keyframes nfyFadeIn { from { opacity: 0;
+    transform: translateY(-20px); }
+  to { opacity: 1;
+    transform: translateY(0); } }
 
 .pager-info { display: inline-flex; padding: 2px 10px 4px 10px; margin: 0 0 0 10px; font-size: 0.8rem; border-radius: 6px; background: #1F5C92; border: rgba(195, 195, 195, 0.3) 1px solid; box-shadow: 0 0 2px rgba(195, 195, 195, 0.5); }
 
@@ -634,6 +637,57 @@ h3 { font-size: 1.68rem; }
 .txt-sm { font-size: 0.75rem !important; }
 
 .txt-smx { font-size: 0.6rem !important; }
+
+/*======================== DivTip ========================*/
+.divtip { position: relative; }
+
+.divtip::after { content: attr(data-tooltip); position: absolute; background-color: rgba(0, 0, 0, 0.9); color: white; padding: 8px 12px; border-radius: 6px; font-size: 14px; white-space: pre-line; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; pointer-events: none; min-width: 200px; max-width: 400px; text-align: left; line-height: 1.4; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+
+.divtip::before { content: ''; position: absolute; border: 6px solid transparent; z-index: 1001; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
+
+.divtip::after { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+.divtip::before { display: none; }
+
+.divtip.T::after { bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 8px; }
+
+.divtip.T::before { display: block; bottom: 100%; left: 50%; transform: translateX(-50%); border-top-color: rgba(0, 0, 0, 0.9); border-bottom-color: transparent; border-left-color: transparent; border-right-color: transparent; margin-bottom: 2px; }
+
+.divtip.B::after { top: 100%; left: 50%; transform: translateX(-50%); margin-top: 8px; }
+
+.divtip.B::before { display: block; top: 100%; left: 50%; transform: translateX(-50%); border-bottom-color: rgba(0, 0, 0, 0.9); border-top-color: transparent; border-left-color: transparent; border-right-color: transparent; margin-top: 2px; }
+
+.divtip.L::after { right: 100%; top: 50%; transform: translateY(-50%); margin-right: 8px; }
+
+.divtip.L::before { display: block; right: 100%; top: 50%; transform: translateY(-50%); border-left-color: rgba(0, 0, 0, 0.9); border-top-color: transparent; border-bottom-color: transparent; border-right-color: transparent; margin-right: 2px; }
+
+.divtip.R::after { left: 100%; top: 50%; transform: translateY(-50%); margin-left: 8px; }
+
+.divtip.R::before { display: block; left: 100%; top: 50%; transform: translateY(-50%); border-right-color: rgba(0, 0, 0, 0.9); border-top-color: transparent; border-bottom-color: transparent; border-left-color: transparent; margin-left: 2px; }
+
+.divtip:hover::after, .divtip:hover::before { opacity: 1; visibility: visible; }
+
+.notify { position: fixed; top: 58px; left: 38px; max-width: 50vw; z-index: 199; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+
+.notify .box { border-radius: 6px; opacity: 0; transform: translateY(-20px); transition: opacity 0.3s ease-out, transform 0.3s ease-out; width: fit-content; max-width: 80vw; animation: nfyFadeIn 0.3s ease-out forwards; pointer-events: auto; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; font-weight: 500; }
+
+.notify .box.info { background-color: #E8F5E8; border: 1px solid #4CAF50; color: #1B5E20; box-shadow: 0 2px 4px rgba(56, 142, 60, 0.1); }
+
+.notify .box.error { background-color: #FFEBEE; border: 1px solid #F44336; color: #B71C1C; box-shadow: 0 2px 4px rgba(211, 47, 47, 0.1); }
+
+.notify .box.warn { background-color: #FFF3E0; border: 1px solid #FF9800; color: #E65100; box-shadow: 0 2px 4px rgba(245, 124, 0, 0.1); }
+
+.notify .box.success { background-color: #E8F5E8; border: 1px solid #4CAF50; color: #1B5E20; box-shadow: 0 2px 4px rgba(56, 142, 60, 0.1); }
+
+.notify .box.fade-out { opacity: 0; transform: translateY(20px); }
+
+.notify .box.slide-out { opacity: 0; transform: translateX(-100%); transition: opacity 0.4s ease-out, transform 0.4s ease-out; }
+
+.notify .box .nfy-close { background: none; border: none; color: inherit; font-size: 18px; font-weight: bold; cursor: pointer; padding: 0; margin-left: 12px; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; opacity: 0.7; transition: opacity 0.2s ease; }
+
+.notify .box .nfy-close:hover { opacity: 1; background: rgba(0, 0, 0, 0.1); }
+
+.notify .alert { box-shadow: 0 0 3px 3px #FFFFFF66 !important; margin: 20px; text-shadow: 0 0 10px #1A1A1A; }
 
 .js-notify { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 10px; z-index: 9999; align-items: center; width: auto; height: auto; }
 

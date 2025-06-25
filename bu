@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -e
 
 IMAGE_NAME="razgrizhsu/immich-mediakit"
@@ -20,13 +22,14 @@ if [ -f "$SCRIPT_DIR/src/conf.py" ]; then
   echo "Checking Python syntax and version reading..."
   cd "$SCRIPT_DIR"
   python3 -c "
-import sys
+import sys, os
 sys.path.insert(0, './src')
+expected_version = os.environ.get('EXPECTED_VERSION', '${VERSION}')
 try:
     from conf import envs
-    print(f'✓ conf.py syntax check passed')
+    print('✓ conf.py syntax check passed')
     print(f'✓ Version read from conf.py: {envs.version}')
-    if envs.version == '${VERSION}':
+    if envs.version == expected_version:
         print('✓ Version update successful')
     else:
         print('✗ Version mismatch in conf.py')
@@ -34,7 +37,7 @@ try:
 except Exception as e:
     print(f'✗ Error checking conf.py: {str(e)}')
     sys.exit(1)
-"
+" EXPECTED_VERSION="${VERSION}"
 
   if [ $? -ne 0 ]; then
     echo "Error: Python syntax check or version read failed, restoring backup"
@@ -100,7 +103,6 @@ PLATFORMS="linux/amd64,linux/arm64/v8"
 
 BUILD_ARGS=(
   "--build-arg" "MKIT_PORT=8086"
-  "--build-arg" "MKIT_PORTWS=8087"
   "."
 )
 
@@ -120,7 +122,7 @@ else
   echo "Building Docker image for current host platform and loading to local Docker daemon (not pushing)."
   echo "To build and push multi-platform images, run with --upload option."
 
-  CURRENT_PLATFORM=$(uname -m | sed 's/aarch64/arm64/' | sed 's/x86_64/amd64/')
+  CURRENT_PLATFORM="linux/$(uname -m | sed 's/aarch64/arm64/' | sed 's/x86_64/amd64/')"
 
   docker buildx build \
     --platform "${CURRENT_PLATFORM}" \

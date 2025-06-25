@@ -7,7 +7,6 @@ services:
     restart: unless-stopped
     ports:
       - ${MKIT_PORT:-8086}:8086
-      - ${MKIT_PORTWS:-8087}:8087
     volumes:
       - ${MKIT_DATA}:/app/data                  # mediakit data
       - ${MKIT_DATA}/cache:/root/.cache/torch/  # model cache

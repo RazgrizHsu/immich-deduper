@@ -1,6 +1,7 @@
 from typing import Any, Callable, Optional, Tuple
 from dataclasses import dataclass, field
 from util import log
+from flask_socketio import SocketIO
 
 from mod.mgr.tskMgr import BseTsk, TskMgr
 from mod.models import Tsk, ITaskStore, IFnProg
@@ -8,6 +9,7 @@ from mod.models import Tsk, ITaskStore, IFnProg
 lg = log.get(__name__)
 
 mgr: Optional[TskMgr] = None
+socketio_instance: Optional[SocketIO] = None
 
 @dataclass
 class DashTask(BseTsk):
@@ -55,20 +57,17 @@ class DashTask(BseTsk):
             lg.error(f"[Task] name[{self.name}] call fn failed: {str(e)}")
             raise
 
-def init(port: Optional[int] = None, forceInit=False):
-    global mgr
+def setup(socketio: SocketIO):
+    global mgr, socketio_instance
     if not mgr:
         try:
-            if port is None:
-                from conf import envs
-                port = int(envs.mkitPortWs)
-            mgr = TskMgr(port=port)
-            mgr.start()
-            lg.info(f"[tskSvc] Started on port {port}")
+            socketio_instance = socketio
+            mgr = TskMgr()
+            mgr.setup_socketio(socketio)
+            lg.info(f"[tskSvc] Setup completed with SocketIO")
         except Exception as e:
-            lg.error(f"[tskSvc] Init Failed: {str(e)}")
-            raise RuntimeError(f"[tskSvc] Start failed, port[{port}]: {str(e)}")
-    return mgr
+            lg.error(f"[tskSvc] Setup Failed: {str(e)}")
+            raise RuntimeError(f"[tskSvc] Setup failed: {str(e)}")
 
 def stop():
     global mgr

@@ -229,7 +229,7 @@ def pathFromRoot(path):
 # envs
 #------------------------------------------------------------------------
 class envs:
-    version='0.1.3'
+    version='0.1.4'
     isDev = False if isDock else bool(os.getenv('IsDev', False))
     isDock = False if not isDock else True
     immichPath:str = '/immich' if isDock else os.getenv('IMMICH_PATH', '')
@@ -240,7 +240,6 @@ class envs:
     psqlUser:str = os.getenv('PSQL_USER','')
     psqlPass:str = os.getenv('PSQL_PASS','')
     mkitPort:str = os.getenv('MKIT_PORT', '8086')
-    mkitPortWs:str = os.getenv('MKIT_PORTWS', '8087')
 
     if os.getcwd().startswith(os.path.join(pathRoot, 'tests')):
         mkitData = os.path.join(pathRoot, 'data/')
@@ -262,7 +261,7 @@ def getHostName():
         return None
 
 def getEnvs():
-    return { 'port':envs.mkitPort, 'portWs':envs.mkitPortWs }
+    return { 'port':envs.mkitPort }
 
 #------------------------------------------------------------------------
 # const

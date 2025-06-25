@@ -9,6 +9,7 @@ from conf import ks
 from mod import notify, mdlImg, session, mdl
 from mod.mgr import tskSvc
 import conf, db
+from flask_socketio import SocketIO
 
 lg = log.get(__name__)
 
@@ -23,6 +24,9 @@ app = dash.Dash(
     __name__,
     title=conf.ks.title,
     external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.themes.DARKLY, dbc.icons.BOOTSTRAP],
+    external_scripts=[
+        'https://cdn.socket.io/4.8.1/socket.io.min.js'
+    ],
     meta_tags=[
         {"name": "viewport", "content": "width=device-width, initial-scale=1"},
         {"rel": "icon", "type": "image/x-icon", "href": "/assets/favicon.ico"}
@@ -37,6 +41,11 @@ err.injectCallbacks(app)
 
 import serve
 serve.regBy(app)
+
+socketio = SocketIO(app.server, cors_allowed_origins="*", logger=False, engineio_logger=False)
+
+# Setup task manager with SocketIO
+tskSvc.setup(socketio)
 
 
 
@@ -71,40 +80,34 @@ if __name__ == "__main__":
     try:
         from conf import envs
         lg.info("========================================================================")
-        lg.info(f"[MediaKit] Start ... ver[{ envs.version }] {'-DEBUG-' if conf.envs.isDev else ''}")
+        lg.info(f"[MediaKit] Start ... ver[{ envs.version }] {'------DEBUG Mode------' if conf.envs.isDev else ''}")
         lg.info("========================================================================")
 
         if log.EnableLogFile: lg.info(f"Log recording: {log.log_file}")
 
         if conf.envs.isDev:
 
-            hotReload = bool(os.getenv( 'HotReload', False ))
-
-            if not hotReload: tskSvc.init()
-            else:
-                if os.getenv('WERKZEUG_RUN_MAIN') == 'true': tskSvc.init()
-
             import dsh
             dsh.registerScss()
-            app.run(
+
+            socketio.run(
+                app.server,
                 debug=True,
+                use_reloader=True,
+                log_output=False,
                 host='0.0.0.0',
                 port=int(conf.envs.mkitPort),
-                dev_tools_ui=False,
-                dev_tools_hot_reload=hotReload,
-                dev_tools_props_check=False,
-                dev_tools_silence_routes_logging=True,
-                dev_tools_serve_dev_bundles=True,
+                allow_unsafe_werkzeug=True
             )
 
         else:
 
-            tskSvc.init()
-            app.run(
+            socketio.run(
+                app.server,
                 debug=False,
+                log_output=False,
                 host='0.0.0.0',
-                port=int(conf.envs.mkitPort),
-                dev_tools_silence_routes_logging=True,
+                port=int(conf.envs.mkitPort)
             )
 
     finally:

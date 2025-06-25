@@ -1,7 +1,8 @@
-from dsh import dash, htm, dbc, out, inp, ste, cbk, ALL
+from dsh import dash, htm, dbc, dcc, out, inp, ste, cbk, ccbk, cbkFn, ALL
 from util import log
 from mod import models
 from conf import ks
+import json
 
 lg = log.get(__name__)
 
@@ -12,81 +13,102 @@ class k:
     info = 'info'
 
     divId = 'div-notify'
+    addTrigger = 'hidden-add-trigger'
+    autoRemoveTrigger = 'hidden-auto-remove-trigger'
 
 
 def render():
     return htm.Div([
-        htm.Div(
-            id=k.divId,
-            style={
-                'position': 'fixed',
-                'top': '58px',
-                'left': '38px',
-                'maxWidth': '500px',
-                'zIndex': '1000'
-            },
-            className="notify"
-        )
+        htm.Div( id=k.divId, className="notify"),
+        dcc.Store(id=k.addTrigger, storage_type='memory'),
+        dcc.Store(id=k.autoRemoveTrigger, storage_type='memory'),
+        htm.Div(id='dummy-output', style={'display': 'none'})
     ])
+
 
 @cbk(
     out(k.divId, 'children'),
     inp(ks.sto.nfy, 'data')
 )
-def update_notifications(dta_nfy):
-    if not dta_nfy: return []
+def nfy_onRender(nfyData):
+    if not nfyData or not nfyData.get('msgs') or not isinstance(nfyData['msgs'], list):
+        return []
 
-    nfy = models.Nfy.fromDic(dta_nfy)
+    elements = []
+    msgs = nfyData['msgs']
 
-    divs = []
+    for idx, msgData in enumerate(msgs):
+        msgId = msgData.get('id', idx)
+        msgType = msgData.get('type', 'info')
+        msgText = msgData.get('message', '')
+        msgTimeout = msgData.get('timeout', 0)
 
-    msgs = list(nfy.msgs.items())
-    msgs.reverse()
+        # 類型對應
+        typeClass = msgType
+        if typeClass == 'danger': typeClass = 'error'
+        if typeClass == 'warning': typeClass = 'warn'
 
-    for nid, data in msgs:
-        msg = data['message']
+        # 處理換行符號
+        textParts = []
+        for part in str(msgText).split('\n'):
+            if textParts: textParts.append(htm.Br())
+            textParts.append(part)
 
-        # lg.info(f"[notify] Update notification: {data['message']}")
-        divs.append(
-            dbc.Alert(
-                msg,
-                id={'type': 'notify-alert', 'index': nid},
-                color=data['type'],
-                dismissable=True,
-                duration=data['timeout'],
-                is_open=True,
-                fade=True,
-                className="mb-2 mt-2 glow-light"
+        # 建立通知元件
+        notifyEl = htm.Div([
+            htm.Span(textParts),
+            htm.Button('×',
+                id={'type': 'nfy-rm', 'index': msgId},
+                className='nfy-close'
             )
+        ],
+        className=f'box {typeClass}',
+        style={'animationDelay': f'{idx * 100}ms'},
+        key=f'nfy-{msgId}',
+        **{'data-msg-id': msgId, 'data-msg-type': msgType, 'data-msg-timeout': msgTimeout}
         )
 
-    # lg.info( f"[notify] Update notifications, total[{len(divs)}]" )
-    return divs
+        elements.append(notifyEl)
 
-@cbk(
+    return elements
+
+ccbk(
+    "window.dash_clientside.notify.add",
     out(ks.sto.nfy, 'data', allow_duplicate=True),
-    inp({'type': 'notify-alert', 'index': ALL}, 'is_open'),
-    ste({'type': 'notify-alert', 'index': ALL}, 'id'),
+    inp(k.addTrigger, 'data'),
     ste(ks.sto.nfy, 'data'),
     prevent_initial_call=True
 )
-def remove_notification(itemOpened, itemIds, dta_nfy):
-    if not dta_nfy: return dash.no_update
-    if not any(itemIds) or all(itemOpened): return dash.no_update
 
-    nfy = models.Nfy.fromDic(dta_nfy)
+@cbk(
+    out(ks.sto.nfy, 'data', allow_duplicate=True),
+    inp({'type': 'nfy-rm', 'index': ALL}, 'n_clicks'),
+    ste(ks.sto.nfy, 'data'),
+    prevent_initial_call=True
+)
+def nfy_onRemove(clks, nfyData):
+    if not nfyData or not nfyData.get('msgs'): return dash.no_update
+    
+    ctx = dash.callback_context
+    if not ctx.triggered: return dash.no_update
+    
+    triggered = ctx.triggered[0]
+    if not triggered['value']: return dash.no_update
+    
+    try:
+        triggeredId = json.loads(triggered['prop_id'].split('.')[0])
+        msgId = triggeredId['index']
+        
+        newMsgs = [msg for msg in nfyData['msgs'] if msg.get('id') != msgId]
+        return {'msgs': newMsgs}
+    except:
+        return dash.no_update
 
-    # Find the IDs of closed
-    cIds = []
-    for i, is_open in enumerate(itemOpened):
-        if not is_open and i < len(itemIds):
-            cIds.append(itemIds[i]['index'])
+ccbk(
+    "window.dash_clientside.notify.autoRemove",
+    out(ks.sto.nfy, 'data', allow_duplicate=True),
+    inp(k.autoRemoveTrigger, 'data'),
+    ste(ks.sto.nfy, 'data'),
+    prevent_initial_call=True
+)
 
-    if not cIds: return dash.no_update
-
-    # remove closed
-    newMsgs = {k: v for k, v in nfy.msgs.items() if k not in cIds}
-
-    nfy.msgs = newMsgs
-
-    return nfy.toDict()

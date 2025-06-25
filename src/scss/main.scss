@@ -685,14 +685,6 @@ $spac:($pad * 2) + ($gx*2) + $sideW + 10px;
 	}
 }
 
-.notify {
-	.alert {
-		box-shadow:0 0 3px 3px #FFFFFF66 !important;
-		margin:20px;
-
-		text-shadow:0 0 10px #1A1A1A
-	}
-}
 
 .nav-glow {
 	position:relative;
@@ -979,6 +971,17 @@ $spac:($pad * 2) + ($gx*2) + $sideW + 10px;
 @keyframes fadeIn {
 	from { opacity:0; }
 	to { opacity:1; }
+}
+
+@keyframes nfyFadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(-20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 
@@ -1516,6 +1519,150 @@ $spac:($pad * 2) + ($gx*2) + $sideW + 10px;
 	&-smx { font-size:0.6rem !important }
 }
 
+/*======================== DivTip ========================*/
+.divtip {
+	position: relative;
+
+	// 基本樣式
+	&::after {
+		content: attr(data-tooltip);
+		position: absolute;
+		background-color: rgba(0, 0, 0, 0.9);
+		color: white;
+		padding: 8px 12px;
+		border-radius: 6px;
+		font-size: 14px;
+		white-space: pre-line;
+		z-index: 1000;
+		opacity: 0;
+		visibility: hidden;
+		transition: opacity 0.3s ease, visibility 0.3s ease;
+		pointer-events: none;
+		min-width: 200px;
+		max-width: 400px;
+		text-align: left;
+		line-height: 1.4;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+	}
+
+	&::before {
+		content: '';
+		position: absolute;
+		border: 6px solid transparent;
+		z-index: 1001;
+		opacity: 0;
+		visibility: hidden;
+		transition: opacity 0.3s ease, visibility 0.3s ease;
+	}
+
+	// 預設位置：正中間
+	&::after {
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+	}
+
+	&::before {
+		display: none; // 預設不顯示三角形
+	}
+
+	// .T - 上方
+	&.T {
+		&::after {
+			bottom: 100%;
+			left: 50%;
+			transform: translateX(-50%);
+			margin-bottom: 8px;
+		}
+
+		&::before {
+			display: block; // 重新顯示三角形
+			bottom: 100%;
+			left: 50%;
+			transform: translateX(-50%);
+			border-top-color: rgba(0, 0, 0, 0.9);
+			border-bottom-color: transparent;
+			border-left-color: transparent;
+			border-right-color: transparent;
+			margin-bottom: 2px;
+		}
+	}
+
+	// .B - 下方
+	&.B {
+		&::after {
+			top: 100%;
+			left: 50%;
+			transform: translateX(-50%);
+			margin-top: 8px;
+		}
+
+		&::before {
+			display: block; // 重新顯示三角形
+			top: 100%;
+			left: 50%;
+			transform: translateX(-50%);
+			border-bottom-color: rgba(0, 0, 0, 0.9);
+			border-top-color: transparent;
+			border-left-color: transparent;
+			border-right-color: transparent;
+			margin-top: 2px;
+		}
+	}
+
+	// .L - 左方
+	&.L {
+		&::after {
+			right: 100%;
+			top: 50%;
+			transform: translateY(-50%);
+			margin-right: 8px;
+		}
+
+		&::before {
+			display: block; // 重新顯示三角形
+			right: 100%;
+			top: 50%;
+			transform: translateY(-50%);
+			border-left-color: rgba(0, 0, 0, 0.9);
+			border-top-color: transparent;
+			border-bottom-color: transparent;
+			border-right-color: transparent;
+			margin-right: 2px;
+		}
+	}
+
+	// .R - 右方
+	&.R {
+		&::after {
+			left: 100%;
+			top: 50%;
+			transform: translateY(-50%);
+			margin-left: 8px;
+		}
+
+		&::before {
+			display: block; // 重新顯示三角形
+			left: 100%;
+			top: 50%;
+			transform: translateY(-50%);
+			border-right-color: rgba(0, 0, 0, 0.9);
+			border-top-color: transparent;
+			border-bottom-color: transparent;
+			border-left-color: transparent;
+			margin-left: 2px;
+		}
+	}
+
+	&:hover {
+		&::after,
+		&::before {
+			opacity: 1;
+			visibility: visible;
+		}
+	}
+}
+
 
 
 
@@ -1562,6 +1709,81 @@ $notify-colors: (
         color: #616161;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
+}
+
+.notify {
+	position: fixed;
+	top: 58px;
+	left: 38px;
+	max-width: 50vw;
+	z-index: 199;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	pointer-events: none;
+
+	.box {
+		border-radius: 6px;
+		opacity: 0;
+		transform: translateY(-20px);
+		transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+		width: fit-content;
+		max-width: 80vw;
+		animation: nfyFadeIn 0.3s ease-out forwards;
+		pointer-events: auto;
+
+		padding: 12px 16px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		font-weight: 500;
+
+		&.info { @include bgNfy("info"); }
+		&.error { @include bgNfy("error"); }
+		&.warn { @include bgNfy("warn"); }
+		&.success { @include bgNfy("info"); }
+
+		&.fade-out {
+			opacity: 0;
+			transform: translateY(20px);
+		}
+
+		&.slide-out {
+			opacity: 0;
+			transform: translateX(-100%);
+			transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+		}
+
+		.nfy-close {
+			background: none;
+			border: none;
+			color: inherit;
+			font-size: 18px;
+			font-weight: bold;
+			cursor: pointer;
+			padding: 0;
+			margin-left: 12px;
+			width: 20px;
+			height: 20px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border-radius: 50%;
+			opacity: 0.7;
+			transition: opacity 0.2s ease;
+
+			&:hover {
+				opacity: 1;
+				background: rgba(0, 0, 0, 0.1);
+			}
+		}
+	}
+
+	.alert {
+		box-shadow:0 0 3px 3px #FFFFFF66 !important;
+		margin:20px;
+		text-shadow:0 0 10px #1A1A1A
+	}
 }
 
 .js-notify {

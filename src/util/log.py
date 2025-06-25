@@ -53,8 +53,8 @@ def setup(level=LogLevel, enableFile=EnableLogFile):
 
     for handler in rlg.handlers: handler.addFilter(filterLv())
 
-    logging.getLogger('werkzeug').setLevel(logging.INFO)
-    logging.getLogger('flask').setLevel(logging.INFO)
+    logging.getLogger('werkzeug').setLevel(logging.WARNING)
+    logging.getLogger('flask').setLevel(logging.WARNING)
     logging.getLogger('httpx').setLevel(logging.WARNING)
 
     return rlg

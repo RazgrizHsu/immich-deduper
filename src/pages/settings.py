@@ -40,16 +40,6 @@ def layout():
                                 htm.Div(envs.mkitData or htm.Span("(Not configured)", className="text-warning"), className="fw-semibold text-break"),
                             ], className="row mb-3"),
 
-                            htm.Div([
-                                htm.Div([
-                                    htm.I(),
-                                    htm.Small("Immich Root Path", className="text-muted")
-                                ], className="d-flex align-items-center"),
-                                htm.Div([
-                                    htm.Span(envs.immichPath or "(Not configured)", className="fw-semibold text-break me-2"),
-                                    htm.Span(className="small")
-                                ], className="fw-semibold")
-                            ], className=f"row mb-3 p-2 rounded chk-path"),
 
                             htm.Div([
                                 htm.Div([
@@ -65,6 +55,17 @@ def layout():
                             htm.Div([
                                 htm.Div([
                                     htm.I(),
+                                    htm.Small("Qdrant URL", className="text-muted")
+                                ], className="d-flex align-items-center"),
+                                htm.Div([
+                                    htm.Span(envs.qdrantUrl or "(Not configured)", className="fw-semibold text-break me-2"),
+                                    htm.Span(className="small")
+                                ], className="fw-semibold")
+                            ], className=f"row mb-3 p-2 rounded chk-vec"),
+
+                            htm.Div([
+                                htm.Div([
+                                    htm.I(),
                                     htm.Small("PostgreSQL Connection", className="text-muted")
                                 ], className="d-flex align-items-center"),
                                 htm.Div([
@@ -76,14 +77,13 @@ def layout():
                             htm.Div([
                                 htm.Div([
                                     htm.I(),
-                                    htm.Small("Qdrant URL", className="text-muted")
+                                    htm.Small("Immich Root Path", className="text-muted")
                                 ], className="d-flex align-items-center"),
                                 htm.Div([
-                                    htm.Span(envs.qdrantUrl or "(Not configured)", className="fw-semibold text-break me-2"),
+                                    htm.Span(envs.immichPath or "(Not configured)", className="fw-semibold text-break me-2"),
                                     htm.Span(className="small")
                                 ], className="fw-semibold")
-                            ], className=f"row mb-3 p-2 rounded chk-vec"),
-
+                            ], className=f"row mb-3 p-2 rounded chk-path"),
 
                         ], className="card-system-cfgs")
                     ])

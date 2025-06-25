@@ -23,12 +23,9 @@ IFnCall = Callable[[IFnProg, 'ITaskStore'], IFnRst]
 #------------------------------------------------------------------------
 @dataclass
 class Nfy(BaseDictModel):
-    msgs: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    msgs: List[Dict[str, Any]] = field(default_factory=list)
 
     def _init__(self, msgs): self.msgs = msgs
-
-    def remove(self, nid):
-        if nid in self.msgs: del self.msgs[nid]
 
     def info(self, msg: Union[str, List[str]], to=5000):
         lg.info(f"[notify] {msg}")
@@ -50,25 +47,26 @@ class Nfy(BaseDictModel):
         if isinstance(msg, str):
             if '\n' in msg:
                 parts = msg.split('\n')
-                result = []
+                rst = []
                 for i, part in enumerate(parts):
-                    if i > 0:
-                        result.append(htm.Br())
-                    result.append(part)
-                return result
+                    if i > 0: rst.append(htm.Br())
+                    rst.append(part)
+                return rst
             return msg
         elif isinstance(msg, list):
-            result = []
+            rst = []
             for i, item in enumerate(msg):
-                if i > 0:
-                    result.append(htm.Br())
-                result.append(item)
-            return result
+                if i > 0: rst.append(htm.Br())
+                rst.append(item)
+            return rst
         return msg
 
     def _add(self, msg, typ, to):
-        nid = str(uuid.uuid4())
-        self.msgs[nid] = {'message': msg, 'type': typ, 'timeout': to}
+        nid = time.time()
+        self.msgs.append({'id': nid, 'message': msg, 'type': typ, 'timeout': to})
+
+    def remove(self, nid):
+        self.msgs = [msg for msg in self.msgs if msg.get('id') != nid]
 
 
 @dataclass
@@ -294,6 +292,8 @@ class Album(BaseDictModel):
 
 @dataclass
 class Cnt(BaseDictModel):
+    ste: int = 0
+
     ass: int = 0  # 總資產數
     vec: int = 0  # 已向量化數
     simOk: int = 0

@@ -1,5 +1,3 @@
-import asyncio as aio
-import json
 import threading
 import time
 from datetime import datetime
@@ -8,8 +6,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional, Set
 
-import websockets as wss
-from websockets.asyncio.server import ServerConnection
+from flask_socketio import SocketIO, emit
+from flask import request
 
 from util import log
 
@@ -52,22 +50,15 @@ class BseTsk(ABC):
 # Task Manager
 #========================================================================
 class TskMgr:
-    def __init__(self, host: str = '0.0.0.0', port: int = 8087):
-        self.host = host
-        self.port = port
+    def __init__(self):
+        self.socketio: Optional[SocketIO] = None
         self.infos: Dict[str, TskInfo] = {}
         self.threads: Dict[str, threading.Thread] = {}
         self.tsks: Dict[str, BseTsk] = {}
-        self.conns: Set[ServerConnection] = set()
-        self.wsSvc = None
-        self.thWsRecv = None
+        self.connected_clients: Set[str] = set()
         self.running = False
-        self.wsLoop = None
 
-    #------------------------------------------------
-    # thread: svc
-    #------------------------------------------------
-    async def _sendCurrentTaskStatus(self, conn: ServerConnection):
+    def _sendCurrentTaskStatus(self, client_id: str):
         try:
             tsks = [(tsn, ti) for tsn, ti in self.infos.items() if ti.status in [TskStatus.RUNNING, TskStatus.PENDING]]
 
@@ -76,95 +67,73 @@ class TskMgr:
             for tsn, ti in tsks:
                 lg.info(f"[tskMgr] Sending current task status to new client: {ti.name} - {ti.status.value}")
 
+                if self.socketio:
+                    self.socketio.emit('task_message', ti.gws('start').toDict(), room=client_id)
 
-                await conn.send(ti.gws('start').jstr())
-
-                if ti.status == TskStatus.RUNNING:
-                    msg = ti.gws('prog')
-                    await conn.send(msg.jstr())
+                    if ti.status == TskStatus.RUNNING:
+                        msg = ti.gws('prog')
+                        self.socketio.emit('task_message', msg.toDict(), room=client_id)
 
                 break  # Only one task should be running at a time
         except Exception as e:
             lg.error(f"[tskMgr] Error sending current task status: {e}")
 
-    #------------------------------------------------
-    async def _handler(self, conn: ServerConnection) -> None:
-        self.conns.add(conn)
+    def setup_socketio(self, socketio: SocketIO):
+        self.socketio = socketio
+        self._register_handlers()
+        lg.info(f"[tskMgr] SocketIO setup completed")
 
-        cnt = len(self.conns)
-        lg.info(f"[tskMgr] connected.. Total[{cnt}] conn[{id(conn)}]")
+    def _register_handlers(self):
+        if not self.socketio: return
+        
+        self.socketio.on_event('connect', self._handle_connect)
+        self.socketio.on_event('disconnect', self._handle_disconnect) 
+        self.socketio.on_event('message', self._handle_message)
 
-        try:
-            await conn.send(Gws.jsonStr('connected'))
+    def _handle_connect(self):
+        client_id = request.sid
+        self.connected_clients.add(client_id)
+        
+        cnt = len(self.connected_clients)
+        lg.info(f"[tskMgr] connected.. Total[{cnt}] client[{client_id}]")
+        
+        # Send connected message
+        emit('task_message', Gws.mk('connected', '', '', '', '', 0).toDict())
+        
+        # Send current running task status to newly connected client
+        self._sendCurrentTaskStatus(client_id)
 
-            # Send current running task status to newly connected client
-            await self._sendCurrentTaskStatus(conn)
+    def _handle_disconnect(self):
+        client_id = request.sid
+        if client_id in self.connected_clients:
+            self.connected_clients.remove(client_id)
+            lg.info(f"[tskMgr] disconnected.. Total[{len(self.connected_clients)}] client[{client_id}]")
 
-            async for message in conn:
-                if DEBUG: lg.info(f"[tskMgr] Received message from client: {message}")
-                pass
+    def _handle_message(self, data):
+        client_id = request.sid
+        if DEBUG: lg.info(f"[tskMgr] Received message from client {client_id}: {data}")
 
-        except wss.exceptions.ConnectionClosed as e:
-            lg.info(f"[tskMgr] Connection closed: {e}")
-        except Exception as e:
-            lg.error(f"[tskMgr] HandleError: {e}")
-        finally:
-            if conn in self.conns:
-                self.conns.remove(conn)
-                lg.info(f"[tskMgr] disconnected.. Total[{len(self.conns)}] conn[{id(conn)}]")
+    def broadcast(self, gws: Gws):
+        if not self.socketio:
+            lg.warning(f"[tskMgr] SocketIO not initialized, cannot broadcast {gws.typ}")
+            return
 
-    #------------------------------------------------
-    # thread: ws
-    #------------------------------------------------
-    def _runSvcLoop(self):
-        async def start_server():
+        if self.connected_clients:
             try:
-                self.wsSvc = await wss.serve(self._handler, self.host, self.port)
-                lg.info(f"[tskMgr] WebSocket server started on {self.host}:{self.port}")
-            except OSError as e:
-                lg.error(f"[tskMgr] WebSocket server error: {e}")
-                raise
-
-        self.wsLoop = aio.new_event_loop()
-        aio.set_event_loop(self.wsLoop)
-
-        self.wsLoop.run_until_complete(start_server())
-
-        try:
-            lg.info(f"[tskMgr] WebSocket event loop running")
-            self.wsLoop.run_forever()
-        except Exception as e:
-            lg.error(f"[tskMgr] WebSocket event loop error: {e}")
-
-    #================================================
-    # open fn
-    #================================================
-    async def broadcast(self, gws: Gws):
-
-        if self.conns:
-            msgStr = gws.jstr()
-
-            disd = set()
-            sentOk = 0
-            for idx, c in enumerate(self.conns):
-                try:
-                    if DEBUG: lg.info(f"[tskMgr:broadcast] Sending to conn[{idx + 1}/{len(self.conns)}]...")
-                    await c.send(msgStr)
-                    sentOk += 1
-
-                    if gws.typ == 'progress':
-                        if DEBUG: lg.info(f"[tskMgr] Progress sent: {gws.prg}%")
-                    elif gws.typ == 'complete':
-                        lg.info(f"[tskMgr] Complete sent: status[{gws.ste}]")
-                    elif gws.typ == 'start':
-                        lg.info(f"[tskMgr] Start sent: name[{gws.nam}]")
-
-                except Exception as e:
-                    lg.error(f"[tskMgr] Broadcast error for conn[{idx + 1}]: {e}")
-                    disd.add(c)
-
-            if DEBUG: lg.info(f"[tskMgr:broadcast] DONE sent[{sentOk}/{len(self.conns)}] disconnected[{len(disd)}]")
-            self.conns -= disd
+                # 廣播給所有連接的客戶端
+                self.socketio.emit('task_message', gws.toDict())
+                
+                if gws.typ == 'progress':
+                    if DEBUG: lg.info(f"[tskMgr] Progress sent: {gws.prg}%")
+                elif gws.typ == 'complete':
+                    lg.info(f"[tskMgr] Complete sent: status[{gws.ste}]")
+                elif gws.typ == 'start':
+                    lg.info(f"[tskMgr] Start sent: name[{gws.nam}]")
+                    
+                if DEBUG: lg.info(f"[tskMgr:broadcast] Sent to {len(self.connected_clients)} clients")
+                
+            except Exception as e:
+                lg.error(f"[tskMgr] Broadcast error: {e}")
 
         elif gws.typ in ['start', 'progress', 'complete']:
             lg.warning(f"[tskMgr] No clients for [{gws.typ}] message")
@@ -172,17 +141,7 @@ class TskMgr:
     def start(self):
         if not self.running:
             self.running = True
-            self.thWsRecv = threading.Thread(target=self._runSvcLoop, daemon=True)
-            self.thWsRecv.start()
-
-            tmMax = 5
-            tmUse = 0
-            while not self.wsLoop and tmUse < tmMax:
-                time.sleep(0.1)
-                tmUse += 0.1
-            if self.wsLoop: return
-
-            raise RuntimeError(f"[tskMgr] WebSocket event loop not ready after {tmMax}s")
+            lg.info(f"[tskMgr] Task manager started")
 
     def stop(self):
         self.running = False
@@ -209,14 +168,8 @@ class TskMgr:
         lg.info(f"[tskMgr] Task {tsn} cancelled, sending complete message")
 
         # Send cancel complete message to update UI
-        import asyncio
-        if self.wsLoop:
-            def sendCancelMessage():
-                asyncio.run_coroutine_threadsafe(
-                    self.broadcast(ti.gws('complete')),
-                    self.wsLoop #type:ignore
-                )
-            sendCancelMessage()
+        if self.socketio:
+            self.broadcast(ti.gws('complete'))
 
         return True
 
@@ -240,12 +193,7 @@ class TskMgr:
         # sending
         #------------------------------------
         def doSend(gws:Gws):
-            # lg.info(f"[tskMgr] send: {msg}")
-            future = aio.run_coroutine_threadsafe(
-                self.broadcast(gws),
-                self.wsLoop #type:ignore
-            )
-            pass
+            self.broadcast(gws)
 
         #------------------------------------
         dtu = 0
