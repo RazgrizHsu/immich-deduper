@@ -57,12 +57,12 @@ const dsh = {
 function onFetchedChk( loading, data ){
 	console.info( `[load] check data: ${ JSON.stringify(data) }` )
 
-	let errK = true
+	let errK = false
 
 	let sc = document.querySelector('.card-system-cfgs')
 	if( sc ) {
 
-		let keys = ['logic', 'path', 'psql', 'vec']
+		let keys = ['logic', 'path', 'data', 'psql', 'vec']
 
 		for( let idx in keys ) {
 			let k = keys[idx]
@@ -132,6 +132,7 @@ function onFetchedChk( loading, data ){
 			if ( !errK ){
 				loading.close()
 
+				dsh.syncStore('store-sys', { ok: true })
 				Nfy.info( `system check ok!` )
 				return
 			}
@@ -159,7 +160,6 @@ document.addEventListener( 'DOMContentLoaded', function(){
 	.catch( error => {
 		notify( `[wst] Failed to get System Check Status, ${error}`, 'warn')
 	} )
-
 
 } )
 

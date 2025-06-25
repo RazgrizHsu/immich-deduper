@@ -36,9 +36,15 @@ def layout():
                         htm.Div([
 
                             htm.Div([
-                                htm.Div(htm.Small("MediaKit Data Path", className="text-muted"), className="d-flex align-items-center"),
-                                htm.Div(envs.mkitData or htm.Span("(Not configured)", className="text-warning"), className="fw-semibold text-break"),
-                            ], className="row mb-3"),
+                                htm.Div([
+                                    htm.I(),
+                                    htm.Small("MediaKit Data Path", className="text-muted")
+                                ], className="d-flex align-items-center"),
+                                htm.Div([
+                                    htm.Span(envs.mkitData or "(Not configured)", className="fw-semibold text-break me-2"),
+                                    htm.Span(className="small")
+                                ], className="fw-semibold")
+                            ], className=f"row mb-3 p-2 rounded chk-data"),
 
 
                             htm.Div([
@@ -47,7 +53,7 @@ def layout():
                                     htm.Small("Immich Logic Check", className="text-muted")
                                 ], className="d-flex align-items-center"),
                                 htm.Div([
-                                    htm.Span("GitHub Repository", className="fw-semibold me-2"),
+                                    htm.Span("Immich GitHub Repository", className="fw-semibold me-2"),
                                     htm.Span(className="small")
                                 ], className="fw-semibold")
                             ], className=f"row mb-3 p-2 rounded chk-logic"),

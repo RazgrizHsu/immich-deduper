@@ -92,22 +92,22 @@ def renderBody(top, bottom):
     out(k.vec, 'disabled'),
     out(k.sim, 'disabled'),
     out(k.view, 'disabled'),
-    inp(ks.sto.cnt, 'data')
+    inp(ks.sto.cnt, 'data'),
+    inp(ks.sto.sys, 'data')
 )
-def ui_updNav(dta_cnt):
-    if not dta_cnt: return True, True, True
-
-    # lg.info("Registered pages:")
-    # for page, config in dash.page_registry.items(): lg.info(f"- {page}: {config['path']}")
+def ui_updNav(dta_cnt, dta_sys):
+    if not dta_cnt or not dta_sys: return True, True, True, True
 
     cnt = models.Cnt.fromDic(dta_cnt)
+    sys = models.Sys.fromDic(dta_sys)
 
-    disFth = cnt.ste is not None
+    if not sys.ok: return True, True, True, True
+
+    disFth = not sys.ok
     disVec = disFth or cnt.ass <= 0
     disSim = disFth or cnt.vec <= 0
     disView = disVec
-    lg.info(f'[nav] disables: {disVec}, {disSim}, {disView}')
+    lg.info(f'[nav] sys:{sys}, disables: fth:{disFth}, vec:{disVec}, sim:{disSim}, view:{disView} cnt:{cnt}')
 
     return disFth, disVec, disSim, disView
 
-#------------------------------------------------------------------------

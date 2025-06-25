@@ -1,4 +1,6 @@
 import os
+import time
+import random
 from typing import Dict, Callable, Optional
 
 import dotenv
@@ -36,6 +38,21 @@ class co:
         def dict(cls):
             return {key: value for key, value in vars(cls).items() if not key.startswith('_') and not callable(value)}
 
+
+    @staticmethod
+    def timeId():
+        timestamp_ms = int(time.time() * 1000)
+        alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
+        base36_timestamp = ""
+        num = timestamp_ms
+        while num > 0:
+            base36_timestamp = alphabet[num % 36] + base36_timestamp
+            num //= 36
+        if not base36_timestamp: base36_timestamp = "0"
+
+        random_part = ''.join(random.choices(alphabet, k=5))
+
+        return base36_timestamp + random_part
 
     class tit(str):
         name: str = ''
@@ -171,6 +188,7 @@ class ks:
 
         cnt = 'store-count'
         ste = 'store-state'
+        sys = 'store-sys'
 
     class defs:
         exif = {

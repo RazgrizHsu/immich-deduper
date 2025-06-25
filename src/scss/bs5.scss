@@ -86,43 +86,7 @@ select {
 	}
 }
 
-.btn {
-	position:relative;
-	border-radius:6px;
-	font-size: min(2vw, 1.3vw); font-weight:400; white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
 
-	transition:all 0.3s ease, background-image 0.8s ease, background-color 0.8s ease;
-	border:var(--btn-borderW) solid 1px;
-	z-index:1;
-	box-shadow:var(--btn-shadow);
-	//text-shadow:-1px -1px 0 rgba(0, 0, 0, .1);
-
-	&:hover {
-		box-shadow:var(--btn-shadowHov);
-		filter:brightness(115%);
-		transition:all 0.2s ease-out, background-image 0.5s ease-in-out, background-color 0.5s ease-in-out;
-	}
-
-	&:active, &:focus {
-		box-shadow:inset 0 3px 5px rgba(0, 0, 0, 0.125) !important;
-	}
-
-	&-sm {
-		padding:0.25rem 0.5rem;
-		font-size:0.875rem;
-	}
-
-	&-lg {
-		padding:0.5rem 1rem;
-		font-size:1.25rem;
-	}
-}
-
-.btn-link {
-	text-decoration: none;
-}
 
 .table {
 	color:#FFFFFF !important;
@@ -148,7 +112,7 @@ select {
 	color:#A0A0A0 !important;
 }
 
-// Text classes
+
 .text {
 	&-primary {
 		color:var(--main-bs) !important;
@@ -192,7 +156,7 @@ select {
 	}
 }
 
-// Background classes
+
 .bg {
 	&-primary {
 		background-color:var(--main-bs) !important;
@@ -231,46 +195,126 @@ select {
 	}
 }
 
-.btn-primary {
-	@include btn-colors(var(--main-lig), var(--main-bs), var(--main-dk), var(--main-dkr));
+.btn-link {
+	text-decoration: none;
 }
 
-.btn-secondary {
-	@include btn-colors(var(--sec-lig), var(--sec-bs), var(--sec-dk), var(--sec-dkr));
+
+
+@mixin btn-colors($lig, $bs, $dk, $dkr) {
+    background-color: $bs;
+    border-color: $dk;
+
+    &:hover,
+    &:focus {
+        background-color: $dk;
+        border-color: $dkr;
+    }
+
+    &:active {
+        background-color: $dkr;
+        border-color: $dkr;
+    }
 }
 
-.btn-success {
-	@include btn-colors(var(--succ-lig), var(--succ-bs), var(--succ-dk), var(--succ-dkr));
+
+
+
+.btn {
+    position: relative;
+    border-radius: 6px;
+    font-size: min(2vw, 1.3vw);
+    font-weight: 400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    transition: all 0.3s ease, background-image 0.8s ease, background-color 0.8s ease;
+    border: var(--btn-borderW) solid 1px;
+    z-index: 1;
+    box-shadow: var(--btn-shadow);
+
+
+    color: var(--btn-text-color);
+
+    &:hover {
+        box-shadow: var(--btn-shadowHov);
+        filter: brightness(115%);
+        transition: all 0.2s ease-out, background-image 0.5s ease-in-out, background-color 0.5s ease-in-out;
+    }
+
+    &:active,
+    &:focus {
+        box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125) !important;
+    }
+
+
+    &-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    &-lg {
+        padding: 0.5rem 1rem;
+        font-size: 1.25rem;
+    }
+
+
+    &-primary {
+        @include btn-colors(var(--main-lig), var(--main-bs), var(--main-dk), var(--main-dkr));
+        color: var(--btn-dark-text-color);
+    }
+
+    &-secondary {
+        @include btn-colors(var(--sec-lig), var(--sec-bs), var(--sec-dk), var(--sec-dkr));
+        color: var(--btn-text-color);
+    }
+
+    &-success {
+        @include btn-colors(var(--succ-lig), var(--succ-bs), var(--succ-dk), var(--succ-dkr));
+        color: var(--btn-dark-text-color);
+    }
+
+    &-info {
+        @include btn-colors(var(--info-lig), var(--info-bs), var(--info-dk), var(--info-dkr));
+        color: var(--btn-dark-text-color);
+    }
+
+    &-warning {
+        @include btn-colors(var(--warn-lig), var(--warn-bs), var(--warn-dk), var(--warn-dkr));
+        color: var(--btn-light-text-color);
+    }
+
+    &-danger {
+        @include btn-colors(var(--dang-lig), var(--dang-bs), var(--dang-dk), var(--dang-dkr));
+        color: var(--btn-dark-text-color);
+    }
+
+    &-light {
+        @include btn-colors(var(--light-lig), var(--light-bs), var(--light-dk), var(--light-dkr));
+        color: var(--btn-light-text-color);
+    }
+
+    &-dark {
+        @include btn-colors(var(--dark-lig), var(--dark-bs), var(--dark-dk), var(--dark-dkr));
+        color: var(--btn-dark-text-color);
+    }
+
+
+    &-blue {
+        @include btn-colors(var(--info-lig), var(--info-bs), var(--info-dk), var(--info-dkr));
+        color: white;
+
+        &:hover,
+        &:focus {
+            color: white;
+        }
+    }
 }
 
-.btn-info {
-	@include btn-colors(var(--info-lig), var(--info-bs), var(--info-dk), var(--info-dkr));
-}
 
-.btn-warning {
-	@include btn-colors(var(--warn-lig), var(--warn-bs), var(--warn-dk), var(--warn-dkr));
-}
 
-.btn-danger {
-	@include btn-colors(var(--dang-lig), var(--dang-bs), var(--dang-dk), var(--dang-dkr));
-}
 
-.btn-light {
-	@include btn-colors(var(--light-lig), var(--light-bs), var(--light-dk), var(--light-dkr));
-}
-
-.btn-dark {
-	@include btn-colors(var(--dark-lig), var(--dark-bs), var(--dark-dk), var(--dark-dkr));
-}
-
-.btn-blue {
-	@include btn-colors(var(--info-lig), var(--info-bs), var(--info-dk), var(--info-dkr));
-	color:white;
-
-	&:hover, &:focus {
-		color:white;
-	}
-}
 
 .btn-outline {
 	&-primary,
@@ -371,7 +415,7 @@ select {
 	}
 }
 
-// Border utilities
+
 .border {
 	border:var(--bs-border-width) var(--bs-border-style) var(--bs-border-color) !important;
 
@@ -408,7 +452,7 @@ select {
 	}
 }
 
-// Badge styles
+
 .badge {
 	display:inline-block;
 	padding:0.25em 0.4em;
@@ -454,7 +498,7 @@ select {
 	}
 }
 
-// Alert styles
+
 .alert {
 	position:relative;
 	padding:0.75rem 1.25rem;
@@ -496,7 +540,7 @@ select {
 	}
 }
 
-// List group items
+
 .list-group-item {
 	position:relative;
 	display:block;

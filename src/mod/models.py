@@ -62,7 +62,7 @@ class Nfy(BaseDictModel):
         return msg
 
     def _add(self, msg, typ, to):
-        nid = time.time()
+        nid = co.timeId()
         self.msgs.append({'id': nid, 'message': msg, 'type': typ, 'timeout': to})
 
     def remove(self, nid):
@@ -289,8 +289,6 @@ class Album(BaseDictModel):
 
 @dataclass
 class Cnt(BaseDictModel):
-    ste: int = 0
-
     ass: int = 0  # 總資產數
     vec: int = 0  # 已向量化數
     simOk: int = 0
@@ -319,6 +317,7 @@ class Cnt(BaseDictModel):
 class Ste(BaseDictModel):
     cntTotal: int = 0
     selectedIds: List[int] = field(default_factory=list)
+    sysOk: bool = False
 
     def clear(self):
         self.selectedIds.clear()
@@ -327,6 +326,10 @@ class Ste(BaseDictModel):
     def getSelected(self, allAssets: List[Asset]) -> List[Asset]:
         return [a for a in allAssets if a.autoId in self.selectedIds]
 
+
+@dataclass
+class Sys(BaseDictModel):
+    ok: bool = False
 
 
 

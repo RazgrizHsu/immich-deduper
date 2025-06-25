@@ -5,7 +5,7 @@ import time
 import immich
 import db
 from conf import ks, co
-from dsh import dash, htm, dcc, dbc, inp, out, ste, getTrgId, noUpd, ctx, ALL, Patch
+from dsh import dash, htm, dcc, dbc, inp, out, ste, getTrgId, noUpd, ctx, ALL
 from dsh import cbk, ccbk, cbkFn
 from util import log
 from mod import mapFns, models, tskSvc
@@ -361,7 +361,7 @@ def sim_SyncUrlAssetToNow(dta_ass, dta_now):
     [
         ste(ks.sto.cnt, "data"),
     ],
-    prevent_initial_call=True
+    prevent_initial_call="initial_duplicate"
 )
 def sim_Load(dta_now, dta_cnt):
     now = Now.fromDic(dta_now)
