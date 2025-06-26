@@ -12,21 +12,13 @@ lg = log.get(__name__)
 class TestBase(unittest.TestCase):
 
     def test(self):
+        from conf import envs
+        p = 'upload/encoded-video/f9e23a5d-ea0f-4cb4-ad46-eab391483bed/64/2b/642b913b-28a7-479b-9f9a-a1f527da05d0.mp4'
+        r = envs.pth.base(p)
 
-        v = 1
-        b = v + 50
-
-        lg.info(f"test b[ {b} ]")
-
-
+        lg.info(f'p[{p}] -> {r}')
 
         pass
-
-
-
-
-        #if not simIds:
-        #    self.fail(f"no similar pairs")
 
 
 if __name__ == "__main__":

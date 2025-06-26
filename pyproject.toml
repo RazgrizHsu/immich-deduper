@@ -1,6 +1,6 @@
 [project]
 name = "immich-mediakit"
-version = "0.1.4"
+version = "0.1.5"
 
 [tool.pyright]
 include = ["src"]

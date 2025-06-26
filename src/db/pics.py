@@ -9,7 +9,7 @@ from mod import models
 from mod.bse.baseModel import BaseDictModel
 from util import log
 from util.err import mkErr, tracebk
-
+from db import psql
 
 lg = log.get(__name__)
 
@@ -470,7 +470,7 @@ def deleteBy(assets: List[models.Asset]):
             c = conn.cursor()
 
             # Get mainGIDs from assets to be deleted
-            mainGIDs = [a.autoId for a in assets if a.view.isMain]
+            mainGIDs = [a.autoId for a in assets if a.vw.isMain]
 
             # 1. Delete incoming assets first
             assIds = [ass.id for ass in assets]
@@ -701,7 +701,7 @@ def getSimAssets(autoId: int, incGroup=False) -> List[models.Asset]:
                 raise RuntimeError(f"[pics] SimGroup Root asset #{autoId} not found")
 
             root = models.Asset.fromDB(c, row)
-            root.view.isMain = bool(row['isMain'])
+            root.vw.isMain = bool(row['isMain'])
             rst = [root]
 
             if not incGroup:
@@ -732,8 +732,8 @@ def getSimAssets(autoId: int, incGroup=False) -> List[models.Asset]:
                 assets = []
                 for row in rows:
                     ass = models.Asset.fromDB(c, row)
-                    ass.view.isMain = bool(row['isMain'])
-                    ass.view.score = next((info.score for info in root.simInfos if info.aid == ass.autoId), 0)
+                    ass.vw.isMain = bool(row['isMain'])
+                    ass.vw.score = next((info.score for info in root.simInfos if info.aid == ass.autoId), 0)
                     assets.append(ass)
 
                 assetMap = {asset.autoId: asset for asset in assets}
@@ -781,7 +781,7 @@ def getSimAssets(autoId: int, incGroup=False) -> List[models.Asset]:
                 assets = []
                 for row in rows:
                     ass = models.Asset.fromDB(c, row)
-                    ass.view.isMain = bool(row['isMain'])
+                    ass.vw.isMain = bool(row['isMain'])
                     assets.append(ass)
 
                 try:
@@ -805,8 +805,8 @@ def getSimAssets(autoId: int, incGroup=False) -> List[models.Asset]:
                         score = np.dot(rootVecNp, assVecNp)
 
                         # Only set isRelats for assets NOT in root's simInfos
-                        ass.view.isRelats = ass.autoId not in rootSimAids
-                        ass.view.score = score
+                        ass.vw.isRelats = ass.autoId not in rootSimAids
+                        ass.vw.score = score
 
                         assScores.append((ass, score))
 
@@ -817,7 +817,11 @@ def getSimAssets(autoId: int, incGroup=False) -> List[models.Asset]:
                     lg.error(f"[pics] Error processing vectors: {str(e)}")
                     rst.extend(assets)
 
+
+
+
             # lg.info( f"[getSimAssets] fetched[ {len(rst)} ] inclGroup[ {incGroup} ]" )
+            psql.exInfoFill(rst)
             return rst
     except Exception as e:
         raise mkErr(f"Failed to get similar group for root #{autoId}", e)
@@ -883,7 +887,7 @@ def getPagedPending(page=1, size=20) -> list[models.Asset]:
             leaders = []
             for row in cursor.fetchall():
                 asset = models.Asset.fromDB(cursor, row)
-                asset.view.cntRelats = row['cntRelats']
+                asset.vw.cntRelats = row['cntRelats']
                 leaders.append(asset)
 
             return leaders

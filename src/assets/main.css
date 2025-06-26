@@ -608,6 +608,8 @@ h3 { font-size: 1.68rem; }
 
 .card.sim .img img:hover, .card.sim .img video:hover { opacity: 1; transform: scale(1.02); transition: all 0.3s ease; cursor: pointer; box-shadow: 0 0 10px white; }
 
+.card.sim .img i { margin-right: 4px; }
+
 .card.sim .img > div.LT { position: absolute; top: 5px; left: 5px; display: flex; justify-content: start; }
 
 .card.sim .img > div.RT { position: absolute; top: 5px; right: 5px; display: flex; flex-direction: column; align-items: flex-end; }
@@ -621,6 +623,10 @@ h3 { font-size: 1.68rem; }
 .card.sim .grid > *:nth-child(2n-1) { justify-self: center; white-space: nowrap; font-size: 12px; overflow: visible; padding: 0px; }
 
 .card.sim .grid > *:nth-child(2n) { justify-self: start; }
+
+.card.sim .tagbox { padding: 3px 10px 12px 10px; }
+
+.card.sim .tagbox i { margin-right: 4px; }
 
 .card.sim .exif { width: 90%; margin: 0 auto 0 auto; }
 

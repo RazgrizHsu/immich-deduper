@@ -235,6 +235,45 @@ class AssetViewOnly(BaseDictModel):
     muodId: int = 0
 
 @dataclass
+class Album(BaseDictModel):
+    id: str = ""
+    ownerId: str = ""
+    albumName: str = ""
+    description: str = ""
+    updatedAt: Optional[str] = None
+    albumThumbnailAssetId: Optional[str] = None
+    isActivityEnabled: bool = True
+    order: str = "desc"
+
+@dataclass
+class AssetFace(BaseDictModel):
+    id: str = "" #asset_faces.id
+    personId: str = ""
+    name: str = "" # person.name
+    ownerId: str = "" #person.ownerId
+    imageWidth: int = 0
+    imageHeight: int = 0
+    boundingBoxX1: int = 0
+    boundingBoxY1: int = 0
+    boundingBoxX2: int = 0
+    boundingBoxY2: int = 0
+    sourceType: str = ""
+    deletedAt: str = ""
+
+@dataclass
+class Tags(BaseDictModel):
+    id: str = ""
+    value: str = ""
+    userId: str = ""
+
+@dataclass
+class AssetExInfo(BaseDictModel):
+    albs: List[Album] = field(default_factory=list)
+    facs: List[AssetFace] = field(default_factory=list)
+    tags: List[Tags] = field(default_factory=list)
+
+
+@dataclass
 class Asset(BaseDictModel):
     autoId: int = 0
     id: str = ""
@@ -258,26 +297,16 @@ class Asset(BaseDictModel):
     simInfos: List[SimInfo] = field(default_factory=list)
     simGIDs: List[int] = field(default_factory=list)
 
-    # view only
-    view: AssetViewOnly = field(default_factory=AssetViewOnly)
+
+    # dynamic fill
+    ex: Optional[AssetExInfo] = None
+    vw: AssetViewOnly = field(default_factory=AssetViewOnly)
 
     def getImagePath(self, photoQ=None):
         path = envs.pth.forImg(self.pathThumbnail, self.pathPreview, photoQ)
         if not path: raise RuntimeError(f"the thumbnail path is empty, assetId[{self.id}]")
         return path
 
-
-@dataclass
-class Album(BaseDictModel):
-    id: str = ""
-    ownerId: str = ""
-    albumName: str = ""
-    description: str = ""
-    createdAt: Optional[str] = None
-    updatedAt: Optional[str] = None
-    albumThumbnailAssetId: Optional[str] = None
-    isActivityEnabled: bool = True
-    order: str = "asc"
 
 
 @dataclass

@@ -8,10 +8,7 @@ const k = {
 
 const TskWS = {
 	socket: null,
-	recnnMs: 1000,
-	recnnMax: 10,
-	recnnMaxMs: 30000,
-	recnnCnt: 0,
+	wsConfig: null,
 	isConnecting: false,
 	isConnected: false,
 	timeout: 2000,
@@ -34,7 +31,6 @@ const TskWS = {
 		window.addEventListener( 'beforeunload', () => this.disconnect() )
 		this.connect()
 	},
-
 	connect()
 	{
 		if ( this.isConnecting || this.isConnected ) return
@@ -54,11 +50,15 @@ const TskWS = {
 
 		try
 		{
-			this.socket = io('/', {
-				transports: ['websocket', 'polling'],
-				upgrade: true,
-				reconnection: false
-			});
+			let wsUrl = '/'
+			if (this.wsConfig && this.wsConfig.isDevUI) {
+				const currentPort = parseInt(window.location.port) || 8086
+				const wsPort = currentPort + 1
+				wsUrl = `:${wsPort}`
+			}
+			console.log(`[wst] Connecting...`)
+
+			this.socket = io(wsUrl, { transports: ['websocket', 'polling'], upgrade: true, reconnection: true })
 
 			this.socket.on('connect', this.onConn.bind(this));
 			this.socket.on('task_message', this.onMsg.bind(this));
@@ -74,21 +74,10 @@ const TskWS = {
 
 	schedule()
 	{
-		if ( this.recnnCnt >= this.recnnMax )
-		{
-			console.error( '[wst] Max reconnect attempts reached' )
-			notify( '❌ WebSocket connection lost. Please refresh the page.', 'error', 999999 )
-			return
-		}
-
-		this.recnnCnt++
-		const delay = Math.min( this.recnnMs * Math.pow( 1.5, this.recnnCnt - 1 ), this.recnnMaxMs )
-
-		console.log( `[wst] Reconnecting in ${ delay }ms (attempt ${ this.recnnCnt }/${ this.recnnMax })` )
-
 		setTimeout( () => {
+			console.info(`[wst] reconnecting..`)
 			this.connect()
-		}, delay )
+		}, 5000 )
 	},
 
 	clearCnnTimeout()
@@ -105,8 +94,6 @@ const TskWS = {
 		this.clearCnnTimeout()
 		this.isConnecting = false
 		this.isConnected = true
-		this.recnnCnt = 0
-		this.recnnMs = 1000
 
 		this.fnConned()
 	},
@@ -121,6 +108,7 @@ const TskWS = {
 		this.updStoreWs( { err: typeof error === 'string' ? error : 'Connection error' } )
 		//notify('❌ WebSocket connection failed. Task functionality is unavailable.', 'error')
 		this.fnErroed()
+		this.schedule()
 	},
 
 	onClose( reason )
@@ -132,7 +120,7 @@ const TskWS = {
 
 		this.updStoreWs( { err: reason || 'Connection closed' } )
 
-		if ( reason !== 'io client disconnect' ) this.schedule()
+		this.schedule()
 	},
 
 	onMsg( data )

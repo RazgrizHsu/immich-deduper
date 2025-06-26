@@ -98,15 +98,11 @@ function onFetchedChk( loading, data ){
 	}
 
 	// update env card
-	let sp = document.querySelector( "#span-sys-chk" )
-	if( !sp ) {
-
-		Nfy.error(`[chk] span-sys-chk not exist?`)
-		return
-	}
 
 	TskWS.init(
 		()=>{
+			let sp = document.querySelector( "#span-sys-chk" )
+			if( !sp ) { Nfy.error(`[chk] span-sys-chk not exist?`); return }
 			if( !errK ) {
 				sp.innerText = `ok`
 				sp.classList.add('info')
@@ -143,6 +139,8 @@ function onFetchedChk( loading, data ){
 
 		},
 		( msg )=>{
+			let sp = document.querySelector( "#span-sys-chk" )
+			if( !sp ) { Nfy.error(`[chk] span-sys-chk not exist?`); return }
 			sp.innerText = `Failed`
 			sp.classList.add('red')
 			loading.closeNo( `system check failed, ${msg}` )

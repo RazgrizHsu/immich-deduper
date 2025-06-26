@@ -107,7 +107,7 @@ def layout(autoId=None):
 
                 dbc.Row([
                     dbc.Col([
-                        dbc.Button(f"Find Similar", id=k.btnFind, color="primary", className="w-100", disabled=True),
+                        dbc.Button(f"Find Similar x", id=k.btnFind, color="primary", className="w-100", disabled=True),
                         htm.Br(),
                         htm.Small("No similar found → auto-mark resolved", className="ms-2 me-2")
                     ], width=6),
@@ -826,7 +826,7 @@ def sim_RunModal(
 from mod.models import IFnProg
 
 
-def queueNext(sto: tskSvc.ITaskStore):
+def queueAutoNext(sto: tskSvc.ITaskStore):
     nfy, tsk = sto.nfy, sto.tsk
 
     ass = db.pics.getAnyNonSim()
@@ -1022,7 +1022,7 @@ def sim_SelectedDelete(doReport: IFnProg, sto: tskSvc.ITaskStore):
         if not db.dto.autoNext:
             now.sim.activeTab = k.tabPnd
         else:
-            queueNext(sto)
+            queueAutoNext(sto)
 
         nfy.success(msg)
 
@@ -1061,7 +1061,7 @@ def sim_SelectedReslove(doReport: IFnProg, sto: tskSvc.ITaskStore):
         if not db.dto.autoNext:
             now.sim.activeTab = k.tabPnd
         else:
-            queueNext(sto)
+            queueAutoNext(sto)
 
         return sto, msg
     except Exception as e:
@@ -1090,7 +1090,7 @@ def sim_AllReslove(doReport: IFnProg, sto: tskSvc.ITaskStore):
         if not db.dto.autoNext:
             now.sim.activeTab = k.tabPnd
         else:
-            queueNext(sto)
+            queueAutoNext(sto)
 
         return sto, msg
     except Exception as e:
@@ -1121,7 +1121,7 @@ def sim_AllDelete(doReport: IFnProg, sto: tskSvc.ITaskStore):
         if not db.dto.autoNext:
             now.sim.activeTab = k.tabPnd
         else:
-            queueNext(sto)
+            queueAutoNext(sto)
 
         return sto, msg
     except Exception as e:

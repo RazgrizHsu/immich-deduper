@@ -1388,6 +1388,8 @@ $spac:($pad * 2) + ($gx*2) + $sideW + 10px;
 			}
 		}
 
+		i { margin-right:4px }
+
 		//floating on img
 		> div.LT {
 			position:absolute;
@@ -1445,6 +1447,12 @@ $spac:($pad * 2) + ($gx*2) + $sideW + 10px;
 		}
 	}
 
+	.tagbox {
+		// border: red 1px solid;
+		padding: 3px 10px 12px 10px;
+
+		i { margin-right:4px;}
+	}
 
 
 	.exif {

@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Optional, List
+from typing import Optional, List, Dict
 from contextlib import contextmanager
 
 import psycopg
@@ -657,5 +657,100 @@ def updArchiveBy(assetIds: List[str], isArchived: bool) -> int:
                 return updatedCnt
     except Exception as e:
         raise mkErr(f"Failed to update archive status for assets", e)
+
+
+#------------------------------------------------------
+# Extended Info Operations
+#------------------------------------------------------
+def fetchExInfo(assetId: str) -> Optional[models.AssetExInfo]:
+    rst = fetchExInfos([assetId])
+    return rst.get(assetId)
+
+
+def fetchExInfos(assetIds: List[str]) -> Dict[str, models.AssetExInfo]:
+    if not assetIds: return {}
+
+    try:
+        with mkConn() as conn:
+            with conn.cursor(row_factory=dict_row) as cursor:
+                rst = {}
+                szChunk = 100
+
+                for assetId in assetIds: rst[str(assetId).strip()] = models.AssetExInfo()
+
+                # Fetch albums in chunks
+                for i in range(0, len(assetIds), szChunk):
+                    chunk = assetIds[i:i + szChunk]
+                    albSql = """
+                    Select aaa."assetsId", a.id, a."ownerId", a."albumName", a.description,
+                           a."createdAt", a."updatedAt", a."albumThumbnailAssetId", a."isActivityEnabled", a."order"
+                    From albums a
+                    Join albums_assets_assets aaa On a.id = aaa."albumsId"
+                    Where aaa."assetsId" = ANY(%s) And a."deletedAt" Is Null
+                    Order By a."createdAt" Desc
+                    """
+                    cursor.execute(albSql, (chunk,))
+                    albRows = cursor.fetchall()
+                    lg.info(f"Album query returned {len(albRows)} rows for chunk {chunk}")
+
+                    for row in albRows:
+                        assetId = str(row['assetsId']).strip()
+                        if assetId in rst:
+                            albData = {k: v for k, v in row.items() if k != 'assetsId'}
+                            rst[assetId].albs.append(models.Album.fromDic(albData))
+
+                # Fetch faces in chunks
+                for i in range(0, len(assetIds), szChunk):
+                    chunk = assetIds[i:i + szChunk]
+                    facSql = """
+                    Select af."assetId", af.id, af."personId", p.name, p."ownerId",
+                           af."imageWidth", af."imageHeight", af."boundingBoxX1", af."boundingBoxY1",
+                           af."boundingBoxX2", af."boundingBoxY2", af."sourceType"
+                    From asset_faces af
+                    Join person p On af."personId" = p.id
+                    Where af."assetId" = ANY(%s) And af."deletedAt" Is Null
+                    """
+                    cursor.execute(facSql, (chunk,))
+                    facRows = cursor.fetchall()
+
+                    for row in facRows:
+                        assetId = str(row['assetId']).strip()
+                        if assetId in rst:
+                            facData = {k: v for k, v in row.items() if k != 'assetId'}
+                            rst[assetId].facs.append(models.AssetFace.fromDic(facData))
+
+                # Fetch tags in chunks
+                for i in range(0, len(assetIds), szChunk):
+                    chunk = assetIds[i:i + szChunk]
+                    tagSql = """
+                    Select ta."assetsId", t.id, t.value, t."userId"
+                    From tags t
+                    Join tag_asset ta On t.id = ta."tagsId"
+                    Where ta."assetsId" = ANY(%s)
+                    """
+                    cursor.execute(tagSql, (chunk,))
+                    tagRows = cursor.fetchall()
+
+                    for row in tagRows:
+                        assetId = str(row['assetsId']).strip()
+                        if assetId in rst:
+                            tagData = {k: v for k, v in row.items() if k != 'assetsId'}
+                            rst[assetId].tags.append(models.Tags.fromDic(tagData))
+
+                return rst
+
+    except Exception as e:
+        raise mkErr(f"Failed to fetch extended info for assetIds[{len(assetIds)}]", e)
+
+
+def exInfoFill(rst: List[models.Asset]):
+    if not rst: return
+
+    assetIds = [str(asset.id) for asset in rst]
+    exInfos = fetchExInfos(assetIds)
+
+    for asset in rst:
+        assetId = str(asset.id)
+        asset.ex = exInfos.get(assetId)
 
 

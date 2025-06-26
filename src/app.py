@@ -39,9 +39,8 @@ err.injectCallbacks(app)
 import serve
 serve.regBy(app)
 
-socketio = SocketIO(app.server, cors_allowed_origins="*", logger=False, engineio_logger=False)
 
-# Setup task manager with SocketIO
+socketio = SocketIO(app.server, cors_allowed_origins="*", logger=False, engineio_logger=False, async_mode="threading")
 tskSvc.setup(socketio)
 
 
@@ -77,7 +76,7 @@ if __name__ == "__main__":
     try:
         from conf import envs
         lg.info("========================================================================")
-        lg.info(f"[MediaKit] Start ... ver[{ envs.version }] {'------DEBUG Mode------' if conf.envs.isDev else ''}")
+        lg.info(f"[MediaKit] Start ... ver[{ envs.version }] {'DEBUG Mode' if conf.envs.isDev else ''}")
         lg.info("========================================================================")
 
         if log.EnableLogFile: lg.info(f"Log recording: {log.log_file}")
@@ -87,15 +86,25 @@ if __name__ == "__main__":
             import dsh
             dsh.registerScss()
 
-            socketio.run(
-                app.server,
+            app.run(
                 debug=True,
-                use_reloader=True,
-                log_output=False,
+                dev_tools_ui=False,
+                dev_tools_hot_reload=True,
+                dev_tools_props_check=False,
+                dev_tools_silence_routes_logging=True,
+                dev_tools_serve_dev_bundles=True,
                 host='0.0.0.0',
-                port=int(conf.envs.mkitPort),
-                allow_unsafe_werkzeug=True
+                port=int(conf.envs.mkitPort)
             )
+            # socketio.run(
+            #     app.server,
+            #     debug=True,
+            #     use_reloader=True,
+            #     log_output=False,
+            #     host='0.0.0.0',
+            #     port=int(conf.envs.mkitPort),
+            #     allow_unsafe_werkzeug=True
+            # )
 
         else:
 

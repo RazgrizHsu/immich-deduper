@@ -8,8 +8,42 @@ const LivePhoto = window.LivePhoto = {
 
 	init()
 	{
+		this.setupVideoErrorHandling()
 		this.setupHover()
 		this.setupModalControls()
+	},
+
+	setupVideoErrorHandling()
+	{
+		const handleVideo = (video) => {
+			video.addEventListener('error', () => {
+				console.warn('[LivePhoto] load failed, hidden:', video.src)
+				const overlay = video.closest('.livephoto-overlay')
+				if (overlay) overlay.style.display = 'none'
+			})
+
+			video.addEventListener('loadstart', () => {
+				video.addEventListener('canplay', () => {
+				}, { once: true })
+			})
+		}
+
+		document.querySelectorAll('.livephoto-video').forEach(handleVideo)
+
+		const observer = new MutationObserver((mutations) => {
+			mutations.forEach(mutation => {
+				mutation.addedNodes.forEach(node => {
+					if (node.nodeType === 1) {
+						if (node.classList?.contains('livephoto-video')) handleVideo(node)
+						if (node.querySelectorAll) {
+							node.querySelectorAll('.livephoto-video').forEach(handleVideo)
+						}
+					}
+				})
+			})
+		})
+
+		observer.observe(document.body, { childList: true, subtree: true })
 	},
 
 	setupHover()

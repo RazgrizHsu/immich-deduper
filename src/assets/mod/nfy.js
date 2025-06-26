@@ -49,7 +49,6 @@ const Nfy = {
 window.dash_clientside.notify = {
 	add(msgsToAdd, nfyData) {
 
-		console.info('add...')
 		if (!msgsToAdd || !Array.isArray(msgsToAdd) || msgsToAdd.length === 0) return dsh.noUpd
 
 		const currentData = nfyData || { msgs: [] }
@@ -57,13 +56,13 @@ window.dash_clientside.notify = {
 
 		currentData.msgs.push(...msgsToAdd)
 
-		console.info(`[nfy:add] len(${msgsToAdd.length}), total: ${currentData.msgs.length}`)
+		// console.info(`[nfy:add] len(${msgsToAdd.length}), total: ${currentData.msgs.length}`)
 		return currentData
 	},
 
 
 	autoRemove(msgId, nfyData) {
-		console.info(`[nfy:arm] msgId: ${msgId}`)
+		// console.info(`[nfy:arm] msgId: ${msgId}`)
 
 		if (!msgId || !nfyData || !nfyData.msgs) {
 			console.error(`[nfy:arm] invalid params`)
@@ -72,7 +71,7 @@ window.dash_clientside.notify = {
 
 		const newMsgs = nfyData.msgs.filter(msg => msg.id !== msgId)
 		const newData = { ...nfyData, msgs: newMsgs }
-		console.info(`[nfy:arm] id[${msgId}] rst: ${newMsgs.length}`)
+		// console.info(`[nfy:arm] id[${msgId}] rst: ${newMsgs.length}`)
 
 		return newData
 	},
@@ -83,7 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
 	const processedNotifications = new Set()
 
 	const setAuRm = () => {
-		console.log('[aurm] called')
 		const container = document.getElementById('div-notify')
 		if (!container) {
 			console.log('[aurm] no container found')
@@ -91,20 +89,19 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 
 		const boxes = container.querySelectorAll('.box')
-		console.log(`[aurm] found ${boxes.length} boxes`)
+		// console.log(`[aurm] found ${boxes.length} boxes`)
 
 		boxes.forEach(box => {
 			const timeout = parseInt(box.dataset.msgTimeout)
 			const msgId = box.dataset.msgId
 			const isProcessed = processedNotifications.has(msgId)
 
-			console.log(`[aurm] box: msgId=${msgId}, timeout=${timeout}, isProcessed=${isProcessed}`)
+			// console.log(`[aurm] box: msgId=${msgId}, timeout=${timeout}, isProcessed=${isProcessed}`)
 
 			if (timeout && timeout > 0 && !isProcessed) {
 				processedNotifications.add(msgId)
-				console.log(`[aurm] setting timeout for msgId=${msgId}, timeout=${timeout}ms`)
+				// console.log(`[aurm] setting timeout for msgId=${msgId}, timeout=${timeout}ms`)
 				setTimeout(() => {
-					console.log(`[aurm] triggering auto-remove for msgId=${msgId}`)
 					dsh.syncStore('hidden-auto-remove-trigger', msgId)
 					processedNotifications.delete(msgId)
 				}, timeout)

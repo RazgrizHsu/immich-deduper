@@ -56,6 +56,7 @@ def layout():
         dbc.Row([
             dbc.Col([
                 dbc.Button(
+                    "loading..",
                     id=k.btnFetch,
                     color="primary",
                     size="lg",
@@ -67,7 +68,7 @@ def layout():
 
             dbc.Col([
                 dbc.Button(
-                    "---",
+                    "loading..",
                     id=k.btnClean,
                     color="danger",
                     size="lg",

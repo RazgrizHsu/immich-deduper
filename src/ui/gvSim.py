@@ -41,12 +41,12 @@ def mkGrid(assets: list[models.Asset], minW=230, maxW=300, onEmpty=None):
     rows = []
     firstRels = False
 
-    cntRelats = sum(1 for a in assets if a.view.isRelats)
+    cntRelats = sum(1 for a in assets if a.vw.isRelats)
 
     for idx, a in enumerate(assets):
         card = mkCard(a)
 
-        if a.view.isRelats and not firstRels:
+        if a.vw.isRelats and not firstRels:
             firstRels = True
             rows.append(htm.Div( htm.Label(f"relates ({cntRelats}) :"), className="hr"))
 
@@ -86,7 +86,7 @@ def mkGroupGrid(assets: List[models.Asset], minW=250, maxW=300, onEmpty=None):
 
     groups = {}
     for asset in assets:
-        grpId = asset.view.muodId or 0
+        grpId = asset.vw.muodId or 0
         if grpId not in groups: groups[grpId] = []
         groups[grpId].append(asset)
 
@@ -123,17 +123,18 @@ def mkCard(ass: models.Asset):
     cssIds = "checked" if checked else ""
 
     exi = ass.jsonExif
+    ex = ass.ex
 
     imgW = exi.exifImageWidth
     imgH = exi.exifImageHeight
 
-    isMain = ass.view.isMain
-    isRels = ass.view.isRelats
+    isMain = ass.vw.isMain
+    isRels = ass.vw.isRelats
     isLvPh = ass.vdoId
 
-    cssClass = f"h-100 sim {cssIds}"
-    if isMain: cssClass += " main"
-    if isRels: cssClass += " rels"
+    css = f"h-100 sim {cssIds}"
+    if isMain: css += " main"
+    if isRels: css += " rels"
 
     return dbc.Card([
         dbc.CardHeader(
@@ -149,12 +150,12 @@ def mkCard(ass: models.Asset):
                         if isMain else
                         [
                             htm.Span("score:", className="tag sm info no-border"),
-                            htm.Span(f"{ass.view.score:.5f}", className="tag lg ms-1")
+                            htm.Span(f"{ass.vw.score:.5f}", className="tag lg ms-1")
                         ]
                         if isRels else
                         [
                             htm.Span("score: ", className="tag sm second no-border"),
-                            htm.Span(f"{ass.view.score:.5f}", className="tag lg ms-1")
+                            htm.Span(f"{ass.vw.score:.5f}", className="tag lg ms-1")
                         ]
                     )
                 ])
@@ -177,13 +178,25 @@ def mkCard(ass: models.Asset):
             )
 
             if imgSrc else
-            htm.Img(src="assets/noimg.png", className="card-img")
-            ,
+            htm.Img(src="assets/noimg.png", className="card-img"),
 
             htm.Div([
                 htm.Span(f"LivePhoto", className="tag blue") if isLvPh else None,
                 htm.Span(f"SimOK!", className="tag blue") if ass.simOk else None,
-                # htm.Span(f"GrpId: {ass.view.muodId}", className="tag Lg info")
+                htm.Span([
+                    htm.I(className='bi bi-images'),
+                    f'{len(ex.albs)}'
+                ], className='tag') if ex else None,
+
+                htm.Span([
+                    htm.I(className='bi bi-bookmark-check-fill'),
+                    f'{len(ex.tags)}'
+                ], className='tag') if ex else None,
+
+                htm.Span([
+                    htm.I(className='bi bi-person-bounding-box'),
+                    f'{len(ex.tags)}'
+                ], className='tag') if ex else None,
             ], className="RT"),
 
             htm.Div([
@@ -209,6 +222,30 @@ def mkCard(ass: models.Asset):
 
             ], class_name="grid"
             ) if db.dto.showGridInfo else None,
+            htm.Div([
+
+                # htm.Span("exif", className='tag info'),
+                #
+                # htm.Span([
+                #     htm.I(className='bi bi-images'),
+                #     f'{len(ex.albs)}'
+                # ], className='tag') if ex else None,
+                #
+                # htm.Span([
+                #     htm.I(className='bi bi-bookmark-check-fill'),
+                #     f'{len(ex.tags)}'
+                # ], className='tag') if ex else None,
+                #
+                # htm.Span([
+                #     htm.I(className='bi bi-person-bounding-box'),
+                #     f'{len(ex.tags)}'
+                # ], className='tag') if ex else None,
+
+
+                # htm.Span(f'', className=''),
+
+
+            ], className=f'tagbox'),
 
             dbc.Row([
                 htm.Table( htm.Tbody(gvExif.mkExifRows(ass)) , className="exif"),
@@ -216,7 +253,7 @@ def mkCard(ass: models.Asset):
 
 
         ], className="p-0"),
-    ], className=cssClass)
+    ], className=css)
 
 
 
@@ -273,14 +310,14 @@ def mkCardPnd(ass: models.Asset, showRelated=True):
     htmSimInfos = []
 
     htmRelated = None
-    if ass.view.cntRelats and showRelated:
+    if ass.vw.cntRelats and showRelated:
         rids = []
 
         htmRelated = [
             htm.Hr(className="my-2"),
             htm.Div([
                 htm.Span("Related groups: ", className="text-muted"),
-                htm.Span(f"{ass.view.cntRelats}", className="badge bg-warning")
+                htm.Span(f"{ass.vw.cntRelats}", className="badge bg-warning")
             ]),
             htm.Div(rids)
         ]

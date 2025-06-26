@@ -249,6 +249,7 @@ def pathFromRoot(path):
 class envs:
     version='0.1.4'
     isDev = False if isDock else bool(os.getenv('IsDev', False))
+    isDevUI = False if isDock else bool(os.getenv('IsDevUI', False))
     isDock = False if not isDock else True
     immichPath:str = '/immich' if isDock else os.getenv('IMMICH_PATH', '')
     qdrantUrl:str = 'http://immich-mediakit-qdrant:6333' if isDock else os.getenv('QDRANT_URL','')
@@ -270,25 +271,20 @@ class envs:
         def base(path: Optional[str]) -> str:
             if not path: return ""
 
-            thumbs_pattern = r'^(.*/)?thumbs/(.+)$'
-            match = re.match(thumbs_pattern, path)
-            if match: return match.group(2)
+            mth = re.match(r'^(?:.*/)?(?:thumbs|encoded-video)/(.+)$', path)
+            if mth: return mth.group(1)
             return ""
-
-        @staticmethod
-        def valid(path: Optional[str]) -> bool:
-            if not path: return False
-
-            thumbs_pattern = r'^(.*/)?thumbs/[0-9a-fA-F-]+/[0-9a-fA-F]{2}/[0-9a-fA-F]{2}/[0-9a-fA-F-]+-(thumbnail|preview)\.(webp|jpg|jpeg|png)$'
-            return bool(re.match(thumbs_pattern, path))
 
         @staticmethod
         def normalize(path: Optional[str]) -> str:
             if not path: return ""
 
-            thumbsPath = envs.pth.base(path)
-            if thumbsPath:
-                return f"thumbs/{thumbsPath}"
+            basePath = envs.pth.base(path)
+            if basePath:
+                if '/thumbs/' in path or path.startswith('thumbs/'):
+                    return f"thumbs/{basePath}"
+                elif '/encoded-video/' in path or path.startswith('encoded-video/'):
+                    return f"encoded-video/{basePath}"
 
             return path
 
@@ -296,14 +292,14 @@ class envs:
         def full(path: Optional[str]) -> str:
             if not path: return ""
 
-            normalizedPath = envs.pth.normalize(path)
-            if not normalizedPath: return ""
+            nor = envs.pth.normalize(path)
+            if not nor: return ""
 
-            if os.path.isabs(normalizedPath): return normalizedPath
+            if os.path.isabs(nor): return nor
 
-            if normalizedPath.startswith(envs.immichPath): return normalizedPath
+            if nor.startswith(envs.immichPath): return nor
 
-            fullPath = os.path.join(envs.immichPath, normalizedPath)
+            fullPath = os.path.join(envs.immichPath, nor)
             return os.path.normpath(fullPath)
 
         @staticmethod
@@ -331,6 +327,11 @@ def getHostName():
 
 def getEnvs():
     return { 'port':envs.mkitPort }
+
+def getWsConfig():
+    return {
+        'isDevUI': envs.isDevUI
+    }
 
 #------------------------------------------------------------------------
 # const

@@ -222,8 +222,8 @@ def findGroupBy( asset: models.Asset, doReport: IFnProg, grpId: int, fromUrl = F
         #not fromUrl and enable muod
         assets = db.pics.getSimAssets(asset.autoId, False) # muod group ignore rtree
         for i, ass in enumerate(assets):
-            ass.view.muodId = grpId
-            ass.view.isMain = (i == 0)
+            ass.vw.muodId = grpId
+            ass.vw.isMain = (i == 0)
 
         lg.info(f"[sim:fnd] Found group {grpId} with {len(assets)} assets")
         result.assets = assets
@@ -336,7 +336,7 @@ def _shouldSkipGroupBy(src: List[models.Asset], grpId: int) -> bool:
     ats = []
 
     for ass in src:
-        scr = ass.view.score
+        scr = ass.vw.score
         if scr != 0 and scr <= 0.96:
             hasLow = True
             ats.append(f"#{ass.autoId}({scr})")
@@ -355,7 +355,7 @@ def _groupAssetsByCondGroup(src: List[models.Asset]) -> dict:
     rst = {}
 
     for at in src:
-        grpId = at.view.muodId
+        grpId = at.vw.muodId
         if grpId is None:
             grpId = at.autoId
             lg.debug(f"[ausl] Asset {at.autoId}: No muodId, using autoId as groupId")

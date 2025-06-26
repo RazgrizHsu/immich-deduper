@@ -30,6 +30,41 @@ def clear_cache():
         lg.error(f"Error clearing cache: {str(e)}")
         return False
 
+def getCache(ck, fnQ, mime='image/jpeg'):
+    if not enableCache or not cache:
+        path = fnQ()
+        if not path:
+            lg.warn(f"[serve] the db query failed with cache_key[ {ck} ]")
+        else:
+            pathFull = envs.pth.full(path)
+            if not os.path.exists(pathFull):
+                lg.warn(f"[serve] not exists path[ {pathFull} ]({path}) immichPath[ {envs.immichPath} ]")
+            else:
+                rep = make_response(send_file(pathFull, mimetype=mime))
+                # rep.headers['Cache-Control'] = f'public, max-age={CacheBrowserSecs}'
+                return rep
+        return None
+
+    data = cache.get(ck)
+
+    if data is None:
+        path = fnQ()
+        if path:
+            pathFull = envs.pth.full(path)
+            if os.path.exists(pathFull):
+                with open(pathFull, 'rb') as f: data = f.read()
+                cache.set(ck, data)
+
+    if data:
+        from io import BytesIO
+        rep = make_response(send_file(BytesIO(data), mimetype=mime))
+        # rep.headers['Cache-Control'] = f'public, max-age={CacheBrowserSecs}'
+        return rep
+
+    return None
+
+
+
 def regBy(app):
     import db
     global cache
@@ -43,38 +78,6 @@ def regBy(app):
         'CACHE_THRESHOLD': 300,
     })
 
-    def get_file_with_cache(cache_key, db_query_func, mimetype='image/jpeg'):
-        if not enableCache or not cache:
-            path = db_query_func()
-            if not path:
-                lg.warn(f"[serve] the db query failed with cache_key[ {cache_key} ]")
-            else:
-                pathFull = envs.pth.full(path)
-                if not os.path.exists(pathFull):
-                    lg.warn(f"[serve] not exists path[ {pathFull} ] immichPath[ {envs.immichPath} ]")
-                else:
-                    rep = make_response(send_file(pathFull, mimetype=mimetype))
-                    # rep.headers['Cache-Control'] = f'public, max-age={CacheBrowserSecs}'
-                    return rep
-            return None
-
-        data = cache.get(cache_key)
-
-        if data is None:
-            path = db_query_func()
-            if path:
-                pathFull = envs.pth.full(path)
-                if os.path.exists(pathFull):
-                    with open(pathFull, 'rb') as f: data = f.read()
-                    cache.set(cache_key, data)
-
-        if data:
-            from io import BytesIO
-            rep = make_response(send_file(BytesIO(data), mimetype=mimetype))
-            # rep.headers['Cache-Control'] = f'public, max-age={CacheBrowserSecs}'
-            return rep
-
-        return None
 
     #----------------------------------------------------------------
     # serve for Image
@@ -96,7 +99,7 @@ def regBy(app):
                         return row[0]
                     return None
 
-            result = get_file_with_cache(cache_key, query_image, 'image/jpeg')
+            result = getCache(cache_key, query_image, 'image/jpeg')
             if result: return result
 
             return send_file(pathNoImg, mimetype='image/png')
@@ -124,7 +127,7 @@ def regBy(app):
 
                     return row[0] if row and row[0] else None
 
-            result = get_file_with_cache(cache_key, query_livephoto, 'video/quicktime')
+            result = getCache(cache_key, query_livephoto, 'video/quicktime')
             if result: return result
 
             return "", 404
@@ -146,9 +149,21 @@ def regBy(app):
             lg.error(f"[api] getConf Failed: {str(e)}")
             return jsonify({"error": f"Failed to get Conf, {str(e)}"}), 500
 
+    #----------------------------------------------------------------
+    # WebSocket Config endpoint
+    #----------------------------------------------------------------
+    @app.server.route('/api/ws-config')
+    def getWsConfig():
+        try:
+            import conf
+            wsConfig = conf.getWsConfig()
+            return jsonify(wsConfig)
+        except Exception as e:
+            lg.error(f"[api] getWsConfig Failed: {str(e)}")
+            return jsonify({"error": f"Failed to get WsConfig, {str(e)}"}), 500
 
     #----------------------------------------------------------------
-    # WebSocket URL endpoint
+    # System Check endpoint
     #----------------------------------------------------------------
     @app.server.route('/api/chk')
     def getChkResults():
