@@ -83,8 +83,8 @@ const Ste = window.Ste = {
 		const btnAllSelect = document.getElementById( 'sim-btn-AllSelect' )
 		const btnAllCancel = document.getElementById( 'sim-btn-AllCancel' )
 
-		if ( btnRm ) btnRm.textContent = `❌ Delete( ${ cntSel } ) and ✅ Keep others( ${ cntDiff } )`
-		if ( btnRS ) btnRS.textContent = `✅ Keep( ${ cntSel } ) and ❌ delete others( ${ cntDiff } )`
+		if ( btnRm ) btnRm.textContent = `❌ Delete selected ( ${ cntSel } ) and ✅ Keep others( ${ cntDiff } )`
+		if ( btnRS ) btnRS.textContent = `✅ Keep selected ( ${ cntSel } ) and ❌ delete others( ${ cntDiff } )`
 
 		if ( btnAllSelect ) btnAllSelect.disabled = ( cntSel >= cntAll || cntAll == 0 )
 		if ( btnAllCancel ) btnAllCancel.disabled = ( cntSel == 0 )
