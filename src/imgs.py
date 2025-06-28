@@ -46,37 +46,42 @@ model = FeatureExtractor(base_model)
 model = model.to(conf.device)
 model.eval()
 
-def getOptimalBatchSize():
+def getOptimalBatchSize() -> int:
+    import db
     device_type = conf.device.type
 
-    if device_type == 'cpu':
-        return 1
-    elif device_type == 'cuda': # NVIDIA GPU (Linux/Windows)
-        try:
-            gpu_memory = torch.cuda.get_device_properties(0).total_memory
-            if gpu_memory > 12 * 1024**3: return 16    # 12GB+ (RTX 3090, 4090)
-            elif gpu_memory > 8 * 1024**3: return 12   # 8-12GB (RTX 3080, 4070)
-            elif gpu_memory > 6 * 1024**3: return 8    # 6-8GB (RTX 3060 Ti)
-            elif gpu_memory > 4 * 1024**3: return 6    # 4-6GB (RTX 3060)
-            elif gpu_memory > 2 * 1024**3: return 4    # 2-4GB
-            else: return 2  # <2GB
-        except:
-            return 8
-    elif device_type == 'mps': # Apple Silicon GPU (macOS)
-        try:
-            import platform
-            if 'arm64' in platform.machine().lower():
-                import psutil
-                total_memory = psutil.virtual_memory().total
-                if total_memory > 32 * 1024**3: return 64    # 32GB+ (M2 Ultra)
-                elif total_memory > 16 * 1024**3: return 32   # 16-32GB (M2 Pro/Max)
-                elif total_memory > 8 * 1024**3: return 16    # 8-16GB (M2)
-                else: return 8  # 8GB (M1)
-            return 8
-        except:
-            return 8
-    else:
-        return 8
+    if device_type == 'cpu': return 1
+    elif device_type in ['cuda', 'mps']:
+        # Check if user wants manual mode
+        if not db.dto.gpuAutoMode and db.dto.gpuBatchSize:
+            return db.dto.gpuBatchSize
+
+        # Auto mode - use existing logic
+        if device_type == 'cuda': # NVIDIA GPU (Linux/Windows)
+            try:
+                gpu_memory = torch.cuda.get_device_properties(0).total_memory
+                if gpu_memory > 12 * 1024**3: return 16    # 12GB+ (RTX 3090, 4090)
+                elif gpu_memory > 8 * 1024**3: return 12   # 8-12GB (RTX 3080, 4070)
+                elif gpu_memory > 6 * 1024**3: return 8    # 6-8GB (RTX 3060 Ti)
+                elif gpu_memory > 4 * 1024**3: return 6    # 4-6GB (RTX 3060)
+                elif gpu_memory > 2 * 1024**3: return 4    # 2-4GB
+                return 2  # <2GB
+            except:
+                return 8
+        elif device_type == 'mps': # Apple Silicon GPU (macOS)
+            try:
+                import platform
+                if 'arm64' in platform.machine().lower():
+                    import psutil
+                    total_memory = psutil.virtual_memory().total
+                    if total_memory > 32 * 1024**3: return 64    # 32GB+ (M2 Ultra)
+                    elif total_memory > 16 * 1024**3: return 32   # 16-32GB (M2 Pro/Max)
+                    elif total_memory > 8 * 1024**3: return 16    # 8-16GB (M2)
+                    else: return 8  # 8GB (M1)
+                return 8
+            except:
+                return 8
+    return 8
 
 def convert_image_to_rgb(image):
     if image.mode == 'RGBA': return image.convert('RGB')
@@ -254,7 +259,7 @@ def saveVectorBy(asset: models.Asset, photoQ) -> Tuple[models.Asset, Optional[st
         else:
             return asset, f"feature extraction failed: {asset.id} - {errMsg}"
 
-def loadImagesParallel(assets: List[models.Asset], photoQ, maxWorkers: int = 10) -> Tuple[List[Image.Image], List[models.Asset], List[Tuple[models.Asset, Optional[str]]]]:
+def loadImagesParallel(assets: List[models.Asset], photoQ, maxWorkers = 10) -> Tuple[List[Image.Image], List[models.Asset], List[Tuple[models.Asset, Optional[str]]]]:
     imgs = []
     rstOKs = []
     rstNos = []
@@ -356,7 +361,16 @@ def processVectors(assets: List[models.Asset], photoQ, onUpdate: models.IFnProg,
     if device_type in ['cuda', 'mps']:
         numWorkers = 1
     else:
-        numWorkers = min(multiprocessing.cpu_count() // 2, 4)
+        # Check if user wants manual mode
+        if not db.dto.cpuAutoMode:
+            cpuCnt = multiprocessing.cpu_count()
+            if cpuCnt is None: cpuCnt = multiprocessing.cpu_count()
+            numWorkers = min(db.dto.cpuWorkers, cpuCnt)
+        else:
+            # Auto mode - use existing logic
+            cpuCnt = multiprocessing.cpu_count()
+            if cpuCnt is None: cpuCnt = multiprocessing.cpu_count()
+            numWorkers = min(cpuCnt // 2, cpuCnt)
 
     lock = threading.Lock()
     cntDone = 0

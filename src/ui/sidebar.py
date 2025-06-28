@@ -1,7 +1,6 @@
 from dsh import htm, dcc, dbc, inp, out, ste, cbk
 from mod import models
 from conf import ks, envs
-import torch
 import conf
 
 class k:
@@ -52,6 +51,7 @@ def onUpdateSideBar(_trigger, dta_count, dta_nfy):
 
     dvcType = conf.device.type
     if dvcType == 'cuda':
+        import torch
         try:
             gpuNam = torch.cuda.get_device_name(0)
             gpuMem = torch.cuda.get_device_properties(0).total_memory / (1024**3)

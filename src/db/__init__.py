@@ -122,6 +122,12 @@ class DtoSets:
     excl:bool = AutoDbField('excl', bool, True ) #type:ignore
     excl_FndLes:int = AutoDbField('excl_FndLes', int, 0) #type:ignore
 
+    gpuAutoMode:bool = AutoDbField('gpuAutoMode', bool, True) #type:ignore
+    gpuBatchSize:int = AutoDbField('gpuBatchSize', int, 8) #type:ignore
+
+    cpuAutoMode:bool = AutoDbField('cpuAutoMode', bool, True) #type:ignore
+    cpuWorkers:int = AutoDbField('cpuWorkers', int, 4) #type:ignore
+
 
     @classmethod
     def get(cls, key, default=None):

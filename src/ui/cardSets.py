@@ -46,6 +46,11 @@ class k:
     auSelTypeJpg = "autoSelTypeJpg"
     auSelTypePng = "autoSelTypePng"
 
+    gpuAutoMode = "gpuAutoMode"
+    gpuBatchSize = "gpuBatchSize"
+
+    cpuAutoMode = "cpuAutoMode"
+    cpuWorkers = "cpuWorkers"
 
 
     @staticmethod
@@ -71,6 +76,15 @@ optExclLess = [
     {"label": "--", "value": 0},
 ]
 for i in range(1,6): optExclLess.append({"label": f" < {i}", "value": i})
+
+optGpuBatch = {}
+for i in [1, 2, 4, 8, 12, 16, 24, 32, 48, 64]: optGpuBatch[str(i)] = i
+
+optCpuWorkers = {}
+import multiprocessing
+cpuCnt = multiprocessing.cpu_count()
+if cpuCnt is None: cpuCnt = multiprocessing.cpu_count()
+for i in range(1, min(cpuCnt + 1, 17)): optCpuWorkers[str(i)] = i
 
 def renderThreshold():
     return dbc.Card([
@@ -393,4 +407,110 @@ def excludeSettings_OnUpd(enable, fndLess):
     lg.info(f"[exclSets:OnUpd] Enable[{enable}] FndLess[{fndLess}]")
 
     dis = not enable
+    return [dis]
+
+
+def renderGpuSettings():
+    return dbc.Card([
+        dbc.CardHeader("GPU Performance"),
+        dbc.CardBody([
+            htm.Div([
+                htm.Label("GPU Batch Processing", className="txt-sm"),
+                htm.Div([
+
+                    dbc.Checkbox(id=k.id(k.gpuAutoMode), label="Auto Batch Size", value=db.dto.gpuAutoMode),
+
+                    htm.Div([
+                        htm.Label("Batch Size: "),
+                        dcc.Slider(
+                            id=k.id(k.gpuBatchSize),
+                            min=1, max=64, step=1,
+                            value=db.dto.gpuBatchSize,
+                            marks=optGpuBatch,
+                            disabled=db.dto.gpuAutoMode,
+                            tooltip={"placement": "top", "always_visible": True}
+                        )
+                    ], className="mt-2"),
+
+                ]),
+                htm.Ul([
+                    htm.Li([htm.B("Auto Mode: "), "Automatically selects optimal batch size based on GPU memory"]),
+                    htm.Li([htm.B("Manual Mode: "), "Manually adjust batch size. Larger values use more GPU memory but may be faster"]),
+                    htm.Li([htm.B("Suggested: "), "8GB GPU use 8-12, 16GB+ GPU can use 16-32"])
+                ])
+            ], className="irow"),
+        ])
+    ], className="mb-2")
+
+
+def renderCpuSettings():
+    import multiprocessing
+    cpuCnt = multiprocessing.cpu_count()
+    if cpuCnt is None: cpuCnt = multiprocessing.cpu_count()
+    return dbc.Card([
+        dbc.CardHeader("CPU Performance"),
+        dbc.CardBody([
+            htm.Div([
+                htm.Label("CPU Multi-Threading", className="txt-sm"),
+                htm.Div([
+                    dbc.Checkbox(id=k.id(k.cpuAutoMode), label="Auto Workers", value=db.dto.cpuAutoMode),
+
+                    htm.Div([
+                        htm.Label("Worker Threads: "),
+                        dcc.Slider(
+                            id=k.id(k.cpuWorkers),
+                            min=1, max=min(cpuCnt, 16), step=1,
+                            value=db.dto.cpuWorkers,
+                            marks=optCpuWorkers,
+                            disabled=db.dto.cpuAutoMode,
+                            tooltip={"placement": "top", "always_visible": True}
+                        )
+                    ], className="mt-2"),
+
+                ]),
+                htm.Ul([
+                    htm.Li([htm.B("Auto Mode: "), f"Uses {min(cpuCnt // 2, 4)} threads (CPU cores: {cpuCnt})"]),
+                    htm.Li([htm.B("Manual Mode: "), "Manually adjust thread count. More threads may be faster but consume more resources"]),
+                    htm.Li([htm.B("Suggested: "), f"For {cpuCnt}-core CPU, recommend {min(cpuCnt // 2, 8)} threads"])
+                ])
+            ], className="irow"),
+        ])
+    ], className="mb-2")
+
+
+
+
+@cbk(
+    [
+        out(k.id(k.gpuBatchSize), "disabled"),
+    ],
+    inp(k.id(k.gpuAutoMode), "value"),
+    inp(k.id(k.gpuBatchSize), "value"),
+    prevent_initial_call=True
+)
+def gpuSettings_OnUpd(autoMode, batchSize):
+    db.dto.gpuAutoMode = autoMode
+    db.dto.gpuBatchSize = batchSize
+
+    lg.info(f"[gpuSets:OnUpd] AutoMode[{autoMode}] BatchSize[{batchSize}]")
+
+    dis = autoMode
+    return [dis]
+
+
+@cbk(
+    [
+        out(k.id(k.cpuWorkers), "disabled"),
+    ],
+    inp(k.id(k.cpuAutoMode), "value"),
+    inp(k.id(k.cpuWorkers), "value"),
+    prevent_initial_call=True
+)
+def cpuSettings_OnUpd(autoMode, workers):
+    db.dto.cpuAutoMode = autoMode
+    db.dto.cpuWorkers = workers
+
+    lg.info(f"[cpuSets:OnUpd] AutoMode[{autoMode}] Workers[{workers}]")
+
+    dis = autoMode
     return [dis]

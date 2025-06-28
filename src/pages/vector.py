@@ -1,8 +1,10 @@
 import db
 from conf import ks
+import conf
 from dsh import dash, htm, cbk, dbc, inp, out, ste, getTrgId, noUpd
 from util import log
 from mod import models, mapFns, tskSvc
+from ui import cardSets
 
 lg = log.get(__name__)
 
@@ -56,11 +58,19 @@ def layout():
                                 ]),
                             ], width=12, className=""),
                         ], className="mb-0"),
+
                     ])
                 ], className="mb-4")
             ], width=12),
         ]),
+        dbc.Row([
 
+            htm.Div([
+                cardSets.renderGpuSettings()
+                if conf.device.type in ['cuda', 'mps'] else
+                cardSets.renderCpuSettings()
+            ]),
+        ]),
         dbc.Row([
             dbc.Col([
                 dbc.Button(
@@ -90,6 +100,7 @@ def layout():
 
         #====== bottom end ======================================================
     ])
+
 
 
 #========================================================================

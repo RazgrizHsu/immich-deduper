@@ -18,6 +18,9 @@ lg = log.get(__name__)
 
 
 def getDevice():
+    useDevice = os.getenv('ForceCpu')
+    if useDevice: return torch.device('cpu')
+
     if torch.cuda.is_available():
         return torch.device('cuda')
     elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
@@ -251,7 +254,7 @@ def pathFromRoot(path):
 # envs
 #------------------------------------------------------------------------
 class envs:
-    version='0.1.5'
+    version='0.1.7'
     isDev = False if isDock else bool(os.getenv('IsDev', False))
     isDevUI = False if isDock else bool(os.getenv('IsDevUI', False))
     isDock = False if not isDock else True

@@ -19,7 +19,7 @@ class k:
     selUsrId = "inp-grid-user-selector"
     selFilter = "inp-grid-filter"
     schKeyword = "inp-grid-search"
-    cbxFav = "inp-grid-favorites-only"
+    cbxFav = "inp-favorites"
     cbxArc = "inp-archived"
 
     grid = "div-photo-grid"
@@ -75,8 +75,8 @@ def layout():
                     ], width=4),
 
                     dbc.Col([
-                        dbc.Checkbox(id=k.cbxFav, label="Favorites Only", value=False, className="mt-2"),
-                        dbc.Checkbox(id=k.cbxArc, label="Favorites Only", value=False, className="mt-2"),
+                        dbc.Checkbox(id=k.cbxFav, label="Favorites", value=False, className="mt-2"),
+                        dbc.Checkbox(id=k.cbxArc, label="Archived", value=False, className="mt-2"),
                     ], width=8),
                 ]),
 
