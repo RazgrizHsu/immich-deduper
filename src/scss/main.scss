@@ -1242,69 +1242,12 @@ $spac:($pad * 2) + ($gx*2) + $sideW + 10px;
 		width:50px;
 		text-align:center;
 	}
-}
+	input {
+		padding: 0 3px 0 3px;
 
-// 這是在gv頁面中的, 待整合
-.img-card {
-
-	img {
-		border-radius:10px;
-
-		&:hover {
-			opacity:1;
-			transform:scale(1.02);
-			transition:all 0.3s ease;
-			cursor:pointer;
-			box-shadow:0 0 10px rgba(255, 255, 255, 1);
-		}
+		width: 130px;
+		display:inline-block;
 	}
-
-	.head {
-
-		position:relative;
-
-		.LT {
-			position:absolute;
-			top:5px;
-			left:5px;
-			display:flex;
-			justify-content:start;
-		}
-		.RT {
-			position:absolute;
-			top:5px;
-			right:5px;
-			display:flex;
-			justify-content:end;
-			width:100%;
-		}
-		.LB {
-			position:absolute;
-			bottom:5px;
-			left:5px;
-			display:flex;
-			justify-content:start;
-		}
-		.RB {
-			position:absolute;
-			bottom:5px;
-			right:5px;
-			display:flex;
-			justify-content:end;
-			width:100%;
-		}
-	}
-
-
-	transition:transform 0.2s;
-	margin-bottom:10px;
-	border-radius:10px;
-	background-color:#3A3A3A;
-
-	//&:hover {
-	//	transform:scale(1.03);
-	//	box-shadow:0 4px 8px rgba(0, 0, 0, 0.3);
-	//}
 }
 
 .gv {

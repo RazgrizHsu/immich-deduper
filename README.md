@@ -65,15 +65,25 @@ enabling advanced management capabilities through AI-powered similarity detectio
 
 ### Search Configuration
 
+- `Exclude Settings`
+  - **Similar Less**: Auto-resolve groups with fewer than N similar photos and continue search
+    - Example: Setting "< 2" means skip groups with 1 or 0 similar photos (requires at least 3 total photos)
+    - Useful for focusing only on groups with enough duplicates to warrant attention
+  - **NameFilter**: Exclude specific files from similarity search by filename patterns or extensions
+    - **Extension format**: `.png,.gif,.dng` - Files with these extensions won't be selected as main image or appear in similar results
+    - **Filename pattern**: `IMG_,DSC,screenshot` - Files containing these patterns will be excluded
+    - **Mixed format**: `.png,IMG_,screenshot` - Combine extensions and patterns
+    - **Use case**: Perfect for drone photography where you shoot both RAW (.dng) and JPEG simultaneously but want to keep both formats without them being flagged as duplicates
+
 - Make the most of `Auto Selection`
   - When you enable auto selection, it'll automatically choose which photos to keep or delete after you run `Find Similar`. Just scroll through to review, then hit one of the four action buttons at the top
 
-- `Multi Mode (Muod)` search feature
+- `Multi Mode` search feature
   - By default (when `Multi Mode` is off), it only searches for one group of photos at a time
   - Turn this on and set the `Max Group` number when you've got tons of photos to filter through - super handy for big cleanups
   - **Note: Multi Mode and Related Tree are mutually exclusive**
 
-- Related Tree (rtree)
+- `Related Tree`
   - **Only available in single group mode (when Multi Mode is off)**
   - When `Related Tree` is off, `Find Similar` only shows photos directly related to the main photo
   - Turn it on and it'll also search for photos related to those related photos, creating a comprehensive similarity tree

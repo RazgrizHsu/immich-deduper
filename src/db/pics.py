@@ -402,10 +402,14 @@ def getAnyNonSim(exclAids=[]) -> Optional[models.Asset]:
                 params.extend(exclAids)
 
             c.execute(sql, params)
-            row = c.fetchone()
-            if row is None: return None
-            asset = models.Asset.fromDB(c, row)
-            return asset
+            while True:
+                row = c.fetchone()
+                if row is None: return None
+                asset = models.Asset.fromDB(c, row)
+
+                import db
+                if not db.dto.checkIsExclude(asset): return asset
+
     except Exception as e:
         raise mkErr("Failed to get non-sim asset", e)
 

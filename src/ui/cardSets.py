@@ -1,3 +1,4 @@
+from logging import PlaceHolder
 from dsh import htm, dcc, dbc, inp, out, ste, cbk, noUpd
 
 from util import log
@@ -19,6 +20,7 @@ class k:
 
     exclEnable = "exclEnable"
     exclFndLess = "exclFndLess"
+    exclFilName = "exclFilName"
 
     muodEnable = "muodEnable"
     muodEqDate = "muodEqDate"
@@ -255,13 +257,34 @@ def renderCard():
                         dbc.Select(id=k.id(k.exclFndLess), options=optExclLess, value=db.dto.excl_FndLes, className="", disabled=not db.dto.excl) #type:ignore
                     ]),
 
+                    htm.Div([
+                        htm.Label("NameFilter"),
+                        dbc.Input( id=k.id(k.exclFilName), maxlength=100, placeholder='separate by ","', value=db.dto.excl_FilNam, disabled=not db.dto.excl )
+                        # dbc.Select(id=k.id(k.exclFndLess), options=optExclLess, value=db.dto.excl_FndLes, className="", disabled=not db.dto.excl) #type:ignore
+                    ]),
+
                     # htm.Br(),
                     # dbc.Checkbox(id=k.id(k.cndGrpSameDate), label="Same Date", value=db.dto.simCondSameDate, disabled=db.dto.simCondGrpMode),
 
                 ], className="icbxs"),
                 htm.Ul([
-                    htm.Li([htm.B("Similar Less: "), "Auto-Resolve groups with fewer than N similar photos (exclud main) and continue search"]),
-                    htm.Li("Example: '< 2' means skip groups with 1 or 0 similar photos (requires at least 3 total photos)"),
+                    htm.Li([
+                        htm.B("Similar Less: "),
+                        "Skip groups with fewer than N similar photos (excluding the main one)",
+                        htm.Ul([
+                            htm.Li("Example: '< 2' skips groups with only 0 or 1 similar photo (needs at least 3 total)")
+                        ])
+                    ]),
+
+                    htm.Li([
+                        htm.B("NameFilter: "),
+                        "Exclude files by filename keywords or extensions",
+                        htm.Ul([
+                            htm.Li("Extension format: .png,.gif,.dng (won’t be main or in results)"),
+                            htm.Li("Filename keywords: IMG_,DSC,screenshot (skip if name contains any of these)"),
+                            htm.Li("Mixed: .png,IMG_,screenshot (combine both types)")
+                        ])
+                    ])
                 ])
             ], className="irow"),
         ])
@@ -395,16 +418,19 @@ def autoSelect_OnUpd(enable, skipLo, onlyLive, earl, late, exRich, exPoor, szBig
 @cbk(
     [
         out(k.id(k.exclFndLess), "disabled"),
+        out(k.id(k.exclFilName), "disabled"),
     ],
     inp(k.id(k.exclEnable), "value"),
     inp(k.id(k.exclFndLess), "value"),
+    inp(k.id(k.exclFilName), "value"),
     prevent_initial_call=True
 )
-def excludeSettings_OnUpd(enable, fndLess):
+def excludeSettings_OnUpd(enable, fndLess, filName):
     db.dto.excl = enable
     db.dto.excl_FndLes = fndLess
+    db.dto.excl_FilNam = filName
 
-    lg.info(f"[exclSets:OnUpd] Enable[{enable}] FndLess[{fndLess}]")
+    lg.info(f"[exclSets:OnUpd] Enable[{enable}] FndLess[{fndLess}] FilName[{filName}]")
 
     dis = not enable
     return [dis]

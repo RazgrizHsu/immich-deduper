@@ -192,6 +192,15 @@ def findGroupBy( asset: models.Asset, doReport: IFnProg, grpId: int, fromUrl = F
         return result
 
     simAids = [i.aid for i in bseInfos if not i.isSelf]
+
+    if db.dto.excl and db.dto.excl_FilNam:
+        filteredAids = []
+        for aid in simAids:
+            simAsset = db.pics.getByAutoId(aid)
+            if simAsset and not db.dto.checkIsExclude(simAsset): filteredAids.append(aid)
+        simAids = filteredAids
+        lg.info(f"[sim:ss] After extension filter: {len(simAids)} similar images remain")
+
     result.simAids = simAids
 
     if not simAids:

@@ -121,6 +121,7 @@ class DtoSets:
 
     excl:bool = AutoDbField('excl', bool, True ) #type:ignore
     excl_FndLes:int = AutoDbField('excl_FndLes', int, 0) #type:ignore
+    excl_FilNam:str = AutoDbField('excl_FilNam', str, '') #type:ignore
 
     gpuAutoMode:bool = AutoDbField('gpuAutoMode', bool, True) #type:ignore
     gpuBatchSize:int = AutoDbField('gpuBatchSize', int, 8) #type:ignore
@@ -128,6 +129,26 @@ class DtoSets:
     cpuAutoMode:bool = AutoDbField('cpuAutoMode', bool, True) #type:ignore
     cpuWorkers:int = AutoDbField('cpuWorkers', int, 4) #type:ignore
 
+    def checkIsExclude(self, asset) -> bool:
+        if not self.excl or not self.excl_FilNam:
+            return False
+
+        if not asset or not asset.originalFileName:
+            return False
+
+        filters = [f.strip() for f in self.excl_FilNam.split(',') if f.strip()]
+        if not filters:
+            return False
+
+        fileName = asset.originalFileName.lower()
+
+        for flt in filters:
+            flt = flt.lower()
+            if flt.startswith('.'):
+                if fileName.endswith(flt): return True
+            elif flt in fileName: return True
+
+        return False
 
     @classmethod
     def get(cls, key, default=None):

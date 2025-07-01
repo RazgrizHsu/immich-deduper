@@ -566,21 +566,7 @@ h3 { font-size: 1.68rem; }
 
 .icbxs select { padding: 0; display: inline-block; width: 50px; text-align: center; }
 
-.img-card { transition: transform 0.2s; margin-bottom: 10px; border-radius: 10px; background-color: #3A3A3A; }
-
-.img-card img { border-radius: 10px; }
-
-.img-card img:hover { opacity: 1; transform: scale(1.02); transition: all 0.3s ease; cursor: pointer; box-shadow: 0 0 10px white; }
-
-.img-card .head { position: relative; }
-
-.img-card .head .LT { position: absolute; top: 5px; left: 5px; display: flex; justify-content: start; }
-
-.img-card .head .RT { position: absolute; top: 5px; right: 5px; display: flex; justify-content: end; width: 100%; }
-
-.img-card .head .LB { position: absolute; bottom: 5px; left: 5px; display: flex; justify-content: start; }
-
-.img-card .head .RB { position: absolute; bottom: 5px; right: 5px; display: flex; justify-content: end; width: 100%; }
+.icbxs input { padding: 0 3px 0 3px; width: 130px; display: inline-block; }
 
 .gv .hr { grid-column: 1 / -1; width: 100%; padding: 0.5rem 0; border-bottom: #999999 1px dashed; }
 
