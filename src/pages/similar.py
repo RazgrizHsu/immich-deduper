@@ -107,7 +107,7 @@ def layout(autoId=None):
 
                 dbc.Row([
                     dbc.Col([
-                        dbc.Button(f"Find Similar x", id=k.btnFind, color="primary", className="w-100", disabled=True),
+                        dbc.Button(f"Find Similar", id=k.btnFind, color="primary", className="w-100", disabled=True),
                         htm.Br(),
                         htm.Small("No similar found → auto-mark resolved", className="ms-2 me-2")
                     ], width=6),

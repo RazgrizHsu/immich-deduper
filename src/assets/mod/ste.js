@@ -76,8 +76,7 @@ const Ste = window.Ste = {
 	{
 		const cntSel = this.selectedIds.size
 		const cntAll = this.cntTotal
-		const cntDiff = cntAll - cntSel
-		if ( cntDiff <= 0 ) cntDiff = 0
+		const cntDiff = Math.max(0, cntAll - cntSel)
 
 		const btnRm = document.getElementById( 'sim-btn-RmSel' )
 		const btnRS = document.getElementById( 'sim-btn-OkSel' )
@@ -165,7 +164,14 @@ const Ste = window.Ste = {
 					if ( match )
 					{
 						let gid = parseInt( match[ 1 ] )
-						collecting = ( gid == groupId )
+						if ( collecting && gid != groupId )
+						{
+							collecting = false
+						}
+						else if ( gid == groupId )
+						{
+							collecting = true
+						}
 					}
 				}
 			}
@@ -175,10 +181,6 @@ const Ste = window.Ste = {
 				if ( cardSelect )
 				{
 					cards.push( cardSelect )
-				}
-				else
-				{
-					collecting = false
 				}
 			}
 		} )
