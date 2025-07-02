@@ -48,6 +48,7 @@ def layout():
                 htm.Ul([
                     htm.Li("Assets that already exist locally will be skipped"),
                     htm.Li("Assets without generated thumbnails in Immich will also be skipped"),
+                    htm.Li("Updates may sync: paths, EXIF data, favorite/archive status. Re-fetch if these change in remote"),
                 ]),
             ])
         ], className="mb-4"),
@@ -334,7 +335,9 @@ def onFetchAssets(doReport: IFnProg, sto: models.ITaskStore):
         doReport(50, f"Retrieved {len(assets)} photos, starting to save to local database")
 
         cntFetch = len(assets)
-        cntSaved = 0
+        cntNew = 0
+        cntUpd = 0
+        cntSkip = 0
 
         # updateIds = []
         # def onUpdAss( ass:models.Asset ):
@@ -348,8 +351,10 @@ def onFetchAssets(doReport: IFnProg, sto: models.ITaskStore):
                     prog = 50 + int((idx / len(assets)) * 40)
                     doReport(prog, f"Saving photo {idx}/{len(assets)}")
 
-                added = db.pics.saveBy(asset, c)
-                if added: cntSaved += 1
+                rst = db.pics.saveBy(asset, c)
+                if rst == 1: cntNew += 1
+                elif rst == 2: cntUpd += 1
+                else: cntSkip += 1
 
             conn.commit()
 
@@ -359,9 +364,10 @@ def onFetchAssets(doReport: IFnProg, sto: models.ITaskStore):
 
         cnt.ass = db.pics.count()
 
-        doReport(100, f"Saved {cntSaved} photos")
+        doReport(100, f"Completed: {cntNew} new, {cntUpd} updated, {cntSkip} unchanged")
 
-        msg = f"success, user[ {usr.name} ] fetched[ {cntFetch} ] and saved[ {cntSaved} ]"
+        cntSkipped = cntAll - cntFetch
+        msg = f"success, user[ {usr.name} ] total[ {cntAll} ] fetched[ {cntFetch} ] skipped[ {cntSkipped} ] - new[ {cntNew} ] updated[ {cntUpd} ] unchanged[ {cntSkip} ]"
         nfy.info(msg)
 
         return sto, msg

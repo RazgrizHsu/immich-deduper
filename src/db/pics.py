@@ -47,12 +47,12 @@ def init():
                     deviceId         TEXT,
                     type             TEXT,
                     originalFileName TEXT,
+                    originalPath     TEXT,
                     fileCreatedAt    TEXT,
                     fileModifiedAt   TEXT,
-                    isFavorite       INTEGER,
-                    isVisible        INTEGER,
-                    isArchived       INTEGER,
                     localDateTime    TEXT,
+                    isFavorite       INTEGER Default 0,
+                    isArchived       INTEGER Default 0,
 
                     vdoId            TEXT,
                     pathThumbnail    TEXT,
@@ -307,10 +307,9 @@ def getFiltered( usrId="", opts="all", search="", onlyFav=False, onlyArc=False, 
             assets = []
             for row in cursor.fetchall():
                 ass = models.Asset.fromDB(cursor, row)
-
-                ass.ex = psql.fetchExInfo(ass.id)
-
                 assets.append(ass)
+
+            psql.exInfoFill(assets)
             return assets
     except Exception as e:
         lg.error(f"Error fetching assets: {str(e)}")
@@ -336,10 +335,10 @@ def setVectoredBy(asset: models.Asset, done=1, cur: Optional[Cursor] = None):
         raise mkErr(f"Failed to update vector status for asset[{asset.id}]", e)
 
 
-def saveBy(asset: dict, c: Cursor):  #, onExist:Callable[[models.Asset],None]):
+def saveBy(asset: dict, c: Cursor) -> int:  #, onExist:Callable[[models.Asset],None]):
     try:
         assId = asset.get('id', None)
-        if not assId: return False
+        if not assId: return 0
 
         exifInfo = asset.get('exifInfo', {})
         jsonExif = None
@@ -350,13 +349,13 @@ def saveBy(asset: dict, c: Cursor):  #, onExist:Callable[[models.Asset],None]):
             except Exception as e:
                 raise mkErr("[pics.save] Error converting EXIF to JSON", e)
 
-        c.execute("Select autoId, id From assets Where id = ?", (str(assId),))
+        c.execute("Select originalPath, pathThumbnail, pathPreview, pathVdo, jsonExif, isFavorite, isArchived From assets Where id = ?", (str(assId),))
         row = c.fetchone()
 
         if row is None:
             c.execute('''
-                Insert Into assets (id, ownerId, deviceId, vdoId, type, originalFileName,
-                fileCreatedAt, fileModifiedAt, isFavorite, isVisible, isArchived,
+                Insert Into assets (id, ownerId, deviceId, vdoId, type, originalFileName, originalPath,
+                fileCreatedAt, fileModifiedAt, isFavorite, isArchived,
                 localDateTime, pathThumbnail, pathPreview, pathVdo, jsonExif)
                 Values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
@@ -366,11 +365,12 @@ def saveBy(asset: dict, c: Cursor):  #, onExist:Callable[[models.Asset],None]):
                 str(asset.get('video_id')) if asset.get('video_id') else None,
                 asset.get('type'),
                 asset.get('originalFileName'),
+                asset.get('originalPath'),
                 asset.get('fileCreatedAt'),
                 asset.get('fileModifiedAt'),
-                1 if asset.get('isFavorite') else 0,
-                1 if asset.get('isVisible') else 0,
-                1 if asset.get('isArchived') else 0,
+                asset.get('isFavorite'),
+                1 if asset.get('visibility') == 'archive' else 0,
+
                 asset.get('localDateTime'),
                 asset.get('thumbnail_path'),
                 asset.get('preview_path'),
@@ -378,9 +378,42 @@ def saveBy(asset: dict, c: Cursor):  #, onExist:Callable[[models.Asset],None]):
                 jsonExif,
             ))
 
-            return True
+            return 1  # new asset added
 
-        return False  # ignore duplicates
+        # Check if update needed
+        needUpdate = False
+        if row['originalPath'] != asset.get('originalPath'): needUpdate = True
+        if row['pathThumbnail'] != asset.get('thumbnail_path'): needUpdate = True
+        if row['pathPreview'] != asset.get('preview_path'): needUpdate = True
+        if row['pathVdo'] != (str(asset.get('video_path')) if asset.get('video_path') else None): needUpdate = True
+        if row['jsonExif'] != jsonExif: needUpdate = True
+        if row['isFavorite'] != asset.get('isFavorite'): needUpdate = True
+        if row['isArchived'] != (1 if asset.get('visibility') == 'archive' else 0): needUpdate = True
+
+        if needUpdate:
+            c.execute('''
+                Update assets Set
+                    originalPath = ?,
+                    pathThumbnail = ?,
+                    pathPreview = ?,
+                    pathVdo = ?,
+                    jsonExif = ?,
+                    isFavorite = ?,
+                    isArchived = ?
+                Where id = ?
+            ''', (
+                asset.get('originalPath'),
+                asset.get('thumbnail_path'),
+                asset.get('preview_path'),
+                asset.get('video_path'),
+                jsonExif,
+                asset.get('isFavorite'),
+                1 if asset.get('visibility') == 'archive' else 0,
+                str(assId)
+            ))
+            return 2
+
+        return 0
     except Exception as e:
         raise mkErr("Failed to save asset", e)
 

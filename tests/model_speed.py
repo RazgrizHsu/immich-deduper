@@ -26,8 +26,6 @@ class SimpleAsset(BaseDictModel):
     ownerId: str = ""
     deviceId: str = ""
     type: str = ""
-    isVisible: int = 1
-    isArchived: int = 0
 
 @dataclass
 class Address(BaseDictModel):
@@ -55,8 +53,6 @@ class ComplexAsset(BaseDictModel):
     tags: List[Tag]
     locations: List[Address] = None
     metadata: Json = None
-    isVisible: int = 1
-    isArchived: int = 0
 
 
 # noinspection SqlResolve

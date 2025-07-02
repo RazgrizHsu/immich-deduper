@@ -124,16 +124,16 @@ class AssetExInfo(BaseDictModel):
 class Asset(BaseDictModel):
     autoId: int = 0
     id: str = ""
-    ownerId: Optional[str] = None
+    ownerId: str = ""
     deviceId: Optional[str] = None
     vdoId: Optional[str] = None
     type: Optional[str] = None
-    originalFileName: Optional[str] = None
+    originalFileName: str = ""
+    originalPath: str = ""
     fileCreatedAt: Optional[str] = None
     fileModifiedAt: Optional[str] = None
-    isFavorite: Optional[int] = 0
-    isVisible: Optional[int] = 0
-    isArchived: Optional[int] = 0
+    isFavorite: int = 0
+    isArchived: int = 0
     localDateTime: Optional[str] = None
     pathThumbnail: Optional[str] = None
     pathPreview: Optional[str] = None

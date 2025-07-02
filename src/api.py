@@ -144,59 +144,6 @@ def _api_delete(endpoint: str, apiKey: str, json_data=None, headers=None):
 #         lg.error(f"Failed to FetchAssets: {str(e)}")
 #         return []
 
-# Single API asset structure:
-# {
-#   "id": "e97e7882-b74a-48a1-aeaf-ca1d9e7a77cd",
-#   "deviceAssetId": "./photos/20220214_164607.jpg-1644828367.0",
-#   "ownerId": "85d32b71-4068-45e8-bd25-22e629d50388",
-#   "deviceId": "python-uploader",
-#   "libraryId": null,
-#   "type": "IMAGE",
-#   "originalPath": "upload/library/zz/2022/02/20220214_164607.jpg",
-#   "originalFileName": "20220214_164607.jpg",
-#   "originalMimeType": "image/jpeg",
-#   "thumbhash": "YCgKDIKGKDdZWGdwiJegdEAiCA==",
-#   "fileCreatedAt": "2022-02-14T08:46:07.000Z",
-#   "fileModifiedAt": "2022-02-14T08:46:07.000Z",
-#   "localDateTime": "2022-02-14T08:46:07.000Z",
-#   "updatedAt": "2025-05-01T16:50:07.044Z",
-#   "isFavorite": false,
-#   "isArchived": false,
-#   "isTrashed": false,
-#   "duration": "0:00:00.00000",
-#   "exifInfo": {
-#     "make": null,
-#     "model": null,
-#     "exifImageWidth": 1700,
-#     "exifImageHeight": 956,
-#     "fileSizeInByte": 384977,
-#     "orientation": null,
-#     "dateTimeOriginal": "2022-02-14T08:46:07+00:00",
-#     "modifyDate": "2022-02-14T08:46:07+00:00",
-#     "timeZone": null,
-#     "lensModel": null,
-#     "fNumber": null,
-#     "focalLength": null,
-#     "iso": null,
-#     "exposureTime": null,
-#     "latitude": null,
-#     "longitude": null,
-#     "city": null,
-#     "state": null,
-#     "country": null,
-#     "description": "",
-#     "projectionType": null,
-#     "rating": null
-#   },
-#   "livePhotoVideoId": null,
-#   "people": [],
-#   "checksum": "GZO1ZMUEfUgC1mvWUt3tDYbbgNE=",
-#   "isOffline": false,
-#   "hasMetadata": true,
-#   "duplicateId": null,
-#   "resized": true
-# }
-
 
 # def getImage(apiKey, assetId, photoQ=Ks.db.thumbnail):
 #

@@ -88,6 +88,8 @@
 
 @for $i from 10 through 100 {
   .w-#{$i} { width: unquote($i + '%') }
+
+  .tag.w-#{$i} { width: unquote($i + '%')!important; overflow:hidden!important; }
 }
 
 ul {
