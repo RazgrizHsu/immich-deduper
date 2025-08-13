@@ -118,120 +118,161 @@ window.dash_clientside.similar = {
 
 
 //------------------------------------------------------------------------
-// Export IDs to CSV
+// Group assets by their visual groups in Similar View
+//------------------------------------------------------------------------
+function groupAssetsByVisualGroups(data) {
+	const groups = []
+	let currentGroupId = 1
+
+	// Find all group headers in the DOM
+	const gvContainer = document.querySelector('.gv.fsp')
+	if (!gvContainer) {
+		// No groups found, return all assets as one group
+		return [{
+			group: 1,
+			assets: data.map(item => ({
+				assetId: item.assetId,
+				autoId: parseInt(item.autoId),
+				filename: item.filename,
+				path: item.path
+			}))
+		}]
+	}
+
+	const children = Array.from(gvContainer.children)
+	let currentGroupAssets = []
+
+	children.forEach(child => {
+		// Check if this is a group header
+		if (child.classList.contains('hr')) {
+			// Save previous group if it has assets
+			if (currentGroupAssets.length > 0) {
+				groups.push({
+					group: currentGroupId,
+					assets: currentGroupAssets
+				})
+				currentGroupAssets = []
+				currentGroupId++
+			}
+		} else {
+			// This should be an asset card
+			const metaDiv = child.querySelector('.card-meta')
+			if (metaDiv && metaDiv.dataset.meta) {
+				try {
+					const meta = JSON.parse(metaDiv.dataset.meta)
+					currentGroupAssets.push({
+						assetId: meta.id,
+						autoId: parseInt(meta.autoId),
+						filename: meta.originalFileName,
+						path: meta.originalPath
+					})
+				} catch (e) {
+					console.error('[Export] Error parsing group asset meta:', e)
+				}
+			}
+		}
+	})
+
+	// Add the last group
+	if (currentGroupAssets.length > 0) {
+		groups.push({
+			group: currentGroupId,
+			assets: currentGroupAssets
+		})
+	}
+
+	return groups
+}
+
+//------------------------------------------------------------------------
+// Export IDs to JSON
 //------------------------------------------------------------------------
 window.exportIdsToCSV = function exportIdsToCSV()
 {
-	console.log('[Export] exportIdsToCSV called - extracting from DOM')
-
 	try {
-		// Get all cards
-		const cards = document.querySelectorAll('.card')
-		console.log('[Export] Found cards:', cards.length)
+		// Get all image cards that have meta data
+		const cards = document.querySelectorAll('.card-meta')
 
 		if (cards.length === 0) {
-			console.warn('[Export] No cards found to export')
 			alert('No images found to export')
 			return
 		}
 
-		// Extract data from each card
+		// Extract data from each meta element
 		const data = []
-		cards.forEach(card => {
+		cards.forEach(metaDiv => {
 			try {
-				// Find the card-select element to get autoId
-				const cardSelect = card.querySelector('[id*="card-select"]')
-				let autoId = ''
-				if (cardSelect) {
-					const idStr = cardSelect.getAttribute('id')
-					const match = idStr.match(/"id":(\d+)/)
-					if (match && match[1]) {
-						autoId = match[1]
+				console.log('[Export] Processing metaDiv:', metaDiv.dataset)
+				if (metaDiv.dataset.meta) {
+					console.log('[Export] Meta data:', metaDiv.dataset.meta)
+					try {
+						const meta = JSON.parse(metaDiv.dataset.meta)
+						console.log('[Export] Parsed meta:', meta)
+						data.push({
+							assetId: meta.id || '',
+							autoId: meta.autoId || '',
+							filename: meta.originalFileName || '',
+							path: meta.originalPath || ''
+						})
+					} catch (e) {
+						console.error('[Export] Error parsing meta data:', e, 'Raw data:', metaDiv.dataset.meta)
 					}
+				} else {
+					console.warn('[Export] No meta data in dataset')
 				}
-
-				// Find the asset ID from the grid row
-				const gridRow = card.querySelector('.grid')
-				let assetId = ''
-				let filename = ''
-				let path = ''
-
-				if (gridRow) {
-					const spans = gridRow.querySelectorAll('span.tag')
-					// The first tag after "id" label contains the asset ID
-					const idLabel = Array.from(gridRow.querySelectorAll('span')).find(s => s.textContent === 'id')
-					if (idLabel && idLabel.nextElementSibling) {
-						assetId = idLabel.nextElementSibling.textContent
-					}
-
-					// Find filename
-					const fileLabel = Array.from(gridRow.querySelectorAll('span')).find(s => s.textContent === 'File')
-					if (fileLabel && fileLabel.nextElementSibling) {
-						filename = fileLabel.nextElementSibling.textContent
-					}
-
-					// Find path
-					const pathLabel = Array.from(gridRow.querySelectorAll('span')).find(s => s.textContent === 'Path')
-					if (pathLabel && pathLabel.nextElementSibling) {
-						path = pathLabel.nextElementSibling.textContent
-					}
-				}
-
-				if (assetId || autoId) {
-					data.push({
-						assetId: assetId,
-						autoId: autoId,
-						filename: filename,
-						path: path
-					})
-				}
-			} catch (e) {
-				console.error('[Export] Error extracting data from card:', e)
+			}
+			catch (e) {
+				console.error('[Export] Error extracting data from meta element:', e)
 			}
 		})
 
-		console.log('[Export] Extracted data for', data.length, 'assets')
 
 		if (data.length === 0) {
-			console.warn('[Export] No data extracted')
 			alert('No data could be extracted')
 			return
 		}
 
-		// Create CSV content
-		let csvContent = 'Asset ID,Auto ID,Filename,Path\n'
-		data.forEach(item => {
-			// Escape fields that might contain commas or quotes
-			const escapeField = (field) => {
-				if (!field) return ''
-				field = String(field)
-				if (field.includes(',') || field.includes('"') || field.includes('\n')) {
-					return `"${field.replace(/"/g, '""')}"`
-				}
-				return field
-			}
+		// Check if we're in Similar View to create grouped structure
+		const isGroupedView = window.location.pathname.includes('/similar')
+		let exportData
 
-			csvContent += `${escapeField(item.assetId)},${escapeField(item.autoId)},${escapeField(item.filename)},${escapeField(item.path)}\n`
-		})
+		if (isGroupedView) {
+			// Group assets by their visual groups in Similar View
+			exportData = groupAssetsByVisualGroups(data)
+		} else {
+			// For View page, just export as flat array
+			exportData = data.map(item => ({
+				assetId: item.assetId,
+				autoId: parseInt(item.autoId),
+				filename: item.filename,
+				path: item.path
+			}))
+		}
+
+		// Create JSON content
+		const jsonContent = JSON.stringify(exportData, null, 2)
 
 		// Create download link
-		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+		const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' })
 		const link = document.createElement('a')
 		const url = URL.createObjectURL(blob)
 
 		// Generate filename with timestamp
 		const now = new Date()
 		const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, -5)
+		const fileType = isGroupedView ? 'groups' : 'assets'
 		link.setAttribute('href', url)
-		link.setAttribute('download', `immich_ids_${timestamp}.csv`)
+		link.setAttribute('download', `immich_${fileType}_${timestamp}.json`)
 		link.style.visibility = 'hidden'
 
 		document.body.appendChild(link)
 		link.click()
 		document.body.removeChild(link)
 
-		console.log(`[Export] Successfully exported ${data.length} assets to CSV`)
-		alert(`Exported ${data.length} assets to CSV file`)
+		const message = isGroupedView ?
+			`Exported ${exportData.length} groups with ${data.length} total assets` :
+			`Exported ${data.length} assets`
+		alert(`${message} to JSON file`)
 	} catch (e) {
 		console.error('[Export] Error exporting IDs:', e)
 		alert('Error exporting IDs: ' + e.message)

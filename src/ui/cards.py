@@ -41,6 +41,14 @@ def mk(ass: models.Asset, modSim=True):
 
     return htm.Div([
         #------------------------------------------------------------------------
+        # hidden meta data for export
+        #------------------------------------------------------------------------
+        htm.Div(
+            className="card-meta",
+            style={"display": "none"},
+            **{"data-meta": f'{{"id":"{ass.id}","autoId":{ass.autoId},"originalFileName":"{ass.originalFileName}","originalPath":"{ass.originalPath}"}}'}
+        ),
+        #------------------------------------------------------------------------
         # dynamic
         #------------------------------------------------------------------------
         htm.Div([
