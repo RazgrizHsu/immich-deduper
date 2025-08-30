@@ -213,7 +213,7 @@ To create the network execute the following command (on the host, not in the doc
 docker network create immich-mediakit
 ```
 
-Then add the netowrk to your immich database container and to the docker compose:
+Then add the network to your immich database container and to the docker compose:
 ```yaml
 services:
   database:
@@ -271,6 +271,7 @@ Using Docker Compose is the easiest installation method, automatically including
    - `PSQL_HOST`: Database connection (service name for same-host, IP address for different-host)
    - `IMMICH_PATH`: Path to your Immich upload directory
    - `MKIT_DATA`: Directory for MediaKit data storage
+   - `QDRANT_URL`: (Optional) Custom Qdrant database URL for non-Docker environments or custom container setups
 
 3. **Create Docker Network (Same-host only)**
 
