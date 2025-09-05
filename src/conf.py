@@ -259,6 +259,7 @@ class envs:
     isDevUI = False if isDock else bool(os.getenv('IsDevUI', False))
     isDock = False if not isDock else True
     immichPath:str = '/immich' if isDock else os.getenv('IMMICH_PATH', '')
+    immichThumb:str = os.getenv('IMMICH_THUMB', '')
     qdrantUrl:str = 'http://immich-mediakit-qdrant:6333' if isDock else os.getenv('QDRANT_URL','')
     psqlHost:str = os.getenv('PSQL_HOST','')
     psqlPort:str = os.getenv('PSQL_PORT','')
@@ -303,6 +304,10 @@ class envs:
             if not nor: return ""
 
             if os.path.isabs(nor): return nor
+
+            if envs.immichThumb and nor.startswith('thumbs/'):
+                fullPath = os.path.join(envs.immichThumb, nor.replace('thumbs/', ''))
+                return os.path.normpath(fullPath)
 
             if nor.startswith(envs.immichPath): return nor
 

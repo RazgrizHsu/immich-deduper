@@ -269,7 +269,8 @@ Using Docker Compose is the easiest installation method, automatically including
 
    Choose the appropriate `.env` file based on your setup and modify:
    - `PSQL_HOST`: Database connection (service name for same-host, IP address for different-host)
-   - `IMMICH_PATH`: Path to your Immich upload directory
+   - `IMMICH_PATH`: Path to your Immich upload directory  
+   - `IMMICH_THUMB`: (Optional) Path for separate thumbnail directory (requires additional volume mount)
    - `MKIT_DATA`: Directory for MediaKit data storage
    - `QDRANT_URL`: (Optional) Custom Qdrant database URL for non-Docker environments or custom container setups
 

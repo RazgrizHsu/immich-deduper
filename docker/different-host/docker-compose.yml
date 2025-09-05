@@ -11,6 +11,8 @@ services:
       - ${MKIT_DATA}:/app/data                  # mediakit data
       - ${MKIT_DATA}/cache:/root/.cache/torch/  # model cache
       - ${IMMICH_PATH}:/immich:ro               # Read-only access to Immich photos
+      # Optional: for separate thumbnail directory (uncomment if using IMMICH_THUMB)
+      # - ${IMMICH_THUMB}:/thumbs:ro
     env_file:
       - .env
     environment:

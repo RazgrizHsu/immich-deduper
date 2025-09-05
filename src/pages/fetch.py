@@ -122,6 +122,13 @@ def fth_Init(dta_pi):
     opts = []
     usrs = db.psql.fetchUsers()
     if usrs and len(usrs) > 0:
+        # Check if stored usrId exists in fetched users
+        if db.dto.usrId:
+            validUsrIds = {str(usr.id) for usr in usrs}
+            if db.dto.usrId not in validUsrIds:
+                lg.warn(f"[fth:init] stored usrId[{db.dto.usrId}] not found in database, clearing...")
+                db.dto.usrId = None
+
         for usr in usrs:
             opts.append({"label": usr.name, "value": str(usr.id)})
 
