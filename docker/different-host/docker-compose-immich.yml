@@ -1,6 +1,10 @@
 
 #------------------------------------------------
-# Example Immich docker-compose.yml configuration
+# Example Immich docker-compose.yml modifications for different-host setup
+#
+# IMPORTANT: This file only shows the parts you need to pay attention to.
+# Use your official Immich docker-compose.yml and apply these modifications.
+# https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml
 #
 # WARNING: This is the different-host version
 #------------------------------------------------
@@ -8,21 +12,20 @@ name: immich
 services:
   immich-server:
     container_name: immich_server
-    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
     volumes:
-      - ${UPLOAD_LOCATION}:/usr/src/app/upload
+      # For Immich >= 2.0 (use this if you're on Immich 2.0 or later):
+      - ${UPLOAD_LOCATION}:/data
+      # For Immich < 2.0 (comment the line above and uncomment this if you're on older Immich):
+      # - ${UPLOAD_LOCATION}:/usr/src/app/upload
 
   immich-machine-learning:
     container_name: immich_ml
-    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}-cuda
 
   redis:
     container_name: immich_redis
-    image: docker.io/valkey/valkey:8-bookworm@sha256:ff21bc0f8194dc9c105b769aeabf9585fea6a8ed649c0781caeac5cb3c247884
 
   database:
     container_name: immich_postgres
-    image: ghcr.io/immich-app/postgres:14-vectorchord0.3.0-pgvectors0.2.0
 #------------------------------------------------
 # Modification 1: Expose database port for external access
 #------------------------------------------------

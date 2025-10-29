@@ -6,7 +6,7 @@ services:
     image: razgrizhsu/immich-mediakit:latest
     restart: unless-stopped
     ports:
-      - ${MKIT_PORT:-8086}:8086
+      - ${MKIT_PORT:-8086}:${MKIT_PORT:-8086}
     volumes:
       - ${MKIT_DATA}:/app/data                  # mediakit data
       - ${MKIT_DATA}/cache:/root/.cache/torch/  # model cache
@@ -33,12 +33,6 @@ services:
 
     depends_on:
       - qdrant
-    healthcheck:
-      test: sh -c "curl -f http://localhost:${MKIT_PORT:-8086}/ || exit 1"
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     networks:
       - immich-mediakit
 
