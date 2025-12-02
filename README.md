@@ -35,26 +35,19 @@ enabling advanced management capabilities through AI-powered similarity detectio
 
 ## Version Compatibility
 
-**Important**: Different versions of MediaKit are compatible with different versions of Immich due to database schema changes.
+**MediaKit v0.1.11+** supports all Immich versions through automatic schema detection.
 
-| MediaKit Version | Compatible Immich Version | Notes |
-|-----------------|---------------------------|-------|
-| 0.1.9 and below | Immich ≤ 1.135.3 | Uses plural table names (assets, users, albums) |
-| 0.1.10 and above | Immich ≥ 1.136.0 | Uses singular table names (asset, user, album) |
+**Automatic Schema Detection:**
+MediaKit automatically detects and adapts to your Immich database schema:
+- Table names (plural vs singular: assets/asset, albums/album, tags/tag, users/user)
+- Junction table column names (plural vs singular: albumsId/albumId, assetsId/assetId, tagsId/tagId)
 
-**Database Schema Changes:**
-- Immich v1.136.0 introduced significant database schema changes, switching from plural to singular table names
-- MediaKit versions have been updated to match these changes
-- Using mismatched versions will result in database connection errors
+No manual configuration needed - MediaKit works seamlessly across all Immich versions.
 
-**How to check your Immich version:**
-1. Open your Immich web interface
-2. Go to Settings → About
-3. Check the version number displayed
-
-**Upgrade Path:**
-- If upgrading Immich from pre-1.136.0 to 1.136.0 or later, you must also upgrade MediaKit to version 0.1.10 or later
-- If you need to stay on an older Immich version, use MediaKit 0.1.9
+**Immich Schema Evolution:**
+- **Immich v1.136.0**: Changed main table names from plural to singular (assets → asset, albums → album, tags → tag, users → user)
+- **Immich v2.3.0**: Changed junction table column names from plural to singular (albumsId → albumId, assetsId → assetId, tagsId → tagId)
+- MediaKit automatically handles all these variations
 
 ---
 

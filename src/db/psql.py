@@ -16,6 +16,118 @@ from util.err import mkErr
 lg = log.get(__name__)
 
 
+class SchemaInfo:
+    def __init__(self):
+        # Table names
+        self.asset = None
+        self.album = None
+        self.tag = None
+        self.user = None
+
+        # album_asset junction table columns
+        self.albumAssetAlbumId = None
+        self.albumAssetAssetId = None
+
+        # tag_asset junction table columns
+        self.tagAssetTagId = None
+        self.tagAssetAssetId = None
+
+        # album_user junction table columns
+        self.albumUserAlbumId = None
+        self.albumUserUserId = None
+
+_schema = None
+
+def detectSchema():
+    """
+    Detect Immich database schema to support different versions.
+    Called once during init() and cached globally.
+
+    Detects:
+    - Table names (plural vs singular: assets/asset, albums/album, etc.)
+    - Junction table column names (plural vs singular: albumsId/albumId, assetsId/assetId, etc.)
+    """
+    global _schema
+
+    if _schema is not None:
+        return _schema
+
+    schema = SchemaInfo()
+
+    try:
+        with mkConn() as conn:
+            with conn.cursor() as c:
+                # Detect main table names (plural vs singular)
+                c.execute("""
+                    SELECT table_name FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    AND table_name IN ('assets', 'asset', 'albums', 'album', 'tags', 'tag', 'users', 'user')
+                    ORDER BY table_name
+                """)
+                tables = {row[0] for row in c.fetchall()}
+
+                schema.asset = 'asset' if 'asset' in tables else 'assets'
+                schema.album = 'album' if 'album' in tables else 'albums'
+                schema.tag = 'tag' if 'tag' in tables else 'tags'
+                schema.user = 'user' if 'user' in tables else 'users'
+
+                # Detect album_asset junction table column names
+                c.execute("""
+                    SELECT column_name FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                    AND table_name = 'album_asset'
+                    AND (column_name LIKE '%albumId' OR column_name LIKE '%albumsId'
+                         OR column_name LIKE '%assetId' OR column_name LIKE '%assetsId')
+                """)
+                cols = {row[0] for row in c.fetchall()}
+                schema.albumAssetAlbumId = 'albumId' if 'albumId' in cols else 'albumsId'
+                schema.albumAssetAssetId = 'assetId' if 'assetId' in cols else 'assetsId'
+
+                # Detect tag_asset junction table column names
+                c.execute("""
+                    SELECT column_name FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                    AND table_name = 'tag_asset'
+                    AND (column_name LIKE '%tagId' OR column_name LIKE '%tagsId'
+                         OR column_name LIKE '%assetId' OR column_name LIKE '%assetsId')
+                """)
+                cols = {row[0] for row in c.fetchall()}
+                schema.tagAssetTagId = 'tagId' if 'tagId' in cols else 'tagsId'
+                schema.tagAssetAssetId = 'assetId' if 'assetId' in cols else 'assetsId'
+
+                # Detect album_user junction table column names
+                c.execute("""
+                    SELECT column_name FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                    AND table_name = 'album_user'
+                    AND (column_name LIKE '%albumId' OR column_name LIKE '%albumsId'
+                         OR column_name LIKE '%userId' OR column_name LIKE '%usersId')
+                """)
+                cols = {row[0] for row in c.fetchall()}
+                schema.albumUserAlbumId = 'albumId' if 'albumId' in cols else 'albumsId'
+                schema.albumUserUserId = 'userId' if 'userId' in cols else 'usersId'
+
+                lg.info(f"Schema detected - Tables: asset={schema.asset}, album={schema.album}, tag={schema.tag}, user={schema.user}")
+                lg.info(f"Schema detected - album_asset: albumId={schema.albumAssetAlbumId}, assetId={schema.albumAssetAssetId}")
+                lg.info(f"Schema detected - tag_asset: tagId={schema.tagAssetTagId}, assetId={schema.tagAssetAssetId}")
+
+                _schema = schema
+                return schema
+
+    except Exception as e:
+        raise mkErr("Failed to detect database schema", e)
+
+
+def getSchema():
+    """
+    Get cached schema info. Must call init() first to detect schema.
+    """
+    global _schema
+    if _schema is None:
+        raise RuntimeError("Schema not detected yet. Call init() first.")
+    return _schema
+
+
 def setup_safe_timestamp_loader():
     """
     Setup custom timestamp loader to handle BC dates and out-of-range timestamps
@@ -86,6 +198,10 @@ def init():
         with mkConn() as conn:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT 1")
+
+        # Detect schema after connection is verified
+        detectSchema()
+
         return True
     except Exception as e:
         lg.error(f"PostgreSQL connection test failed: {str(e)}")
@@ -518,12 +634,13 @@ def getUsrAlbumsBy(usrId: str) -> List[models.Album]:
 
 def getAlbumAssetIds(albumId: str) -> List[str]:
     try:
+        sch = getSchema()
         with mkConn() as conn:
-            sql = """
-            Select aa."assetsId"
+            sql = f"""
+            Select aa."{sch.albumAssetAssetId}"
             From album_asset aa
-            Join album a On a.id = aa."albumsId"
-            Where aa."albumsId" = %s And a."deletedAt" Is Null
+            Join {sch.album} a On a.id = aa."{sch.albumAssetAlbumId}"
+            Where aa."{sch.albumAssetAlbumId}" = %s And a."deletedAt" Is Null
             Order By aa."createdAt" Desc
             """
             with conn.cursor() as cursor:
@@ -536,8 +653,9 @@ def getAlbumAssetIds(albumId: str) -> List[str]:
 
 def getAssetAlbums(assetId: str) -> List[models.Album]:
     try:
+        sch = getSchema()
         with mkConn() as conn:
-            sql = """
+            sql = f"""
             Select
                 a.id,
                 a."ownerId",
@@ -548,9 +666,9 @@ def getAssetAlbums(assetId: str) -> List[models.Album]:
                 a."albumThumbnailAssetId",
                 a."isActivityEnabled",
                 a."order"
-            From album a
-            Join album_asset aa On a.id = aa."albumsId"
-            Where aa."assetsId" = %s And a."deletedAt" Is Null
+            From {sch.album} a
+            Join album_asset aa On a.id = aa."{sch.albumAssetAlbumId}"
+            Where aa."{sch.albumAssetAssetId}" = %s And a."deletedAt" Is Null
             Order By a."createdAt" Desc
             """
             with conn.cursor(row_factory=dict_row) as cursor:
@@ -565,14 +683,16 @@ def addToAlbum(albumId: str, assetIds: List[str]) -> int:
     if not assetIds: return 0
 
     try:
+        sch = getSchema()
         with mkConn() as conn:
             with conn.cursor() as cursor:
-                checkSql = "Select 1 From album Where id = %s And \"deletedAt\" Is Null"
+                checkSql = f"Select 1 From {sch.album} Where id = %s And \"deletedAt\" Is Null"
                 cursor.execute(checkSql, (albumId,))
                 if not cursor.fetchone(): raise RuntimeError(f"Album not found: {albumId}")
 
-                existingSql = """
-                Select "assetsId" From album_asset Where "albumsId" = %s And "assetsId" = ANY(%s)
+                existingSql = f"""
+                Select "{sch.albumAssetAssetId}" From album_asset
+                Where "{sch.albumAssetAlbumId}" = %s And "{sch.albumAssetAssetId}" = ANY(%s)
                 """
                 cursor.execute(existingSql, (albumId, assetIds))
                 existing = {row[0] for row in cursor.fetchall()}
@@ -581,8 +701,8 @@ def addToAlbum(albumId: str, assetIds: List[str]) -> int:
                 if not newAssetIds: return 0
 
                 values = [(albumId, aid) for aid in newAssetIds]
-                insertSql = """
-                Insert Into album_asset ("albumsId", "assetsId", "createdAt")
+                insertSql = f"""
+                Insert Into album_asset ("{sch.albumAssetAlbumId}", "{sch.albumAssetAssetId}", "createdAt")
                 Values (%s, %s, Now())
                 """
                 cursor.executemany(insertSql, values)
@@ -597,10 +717,11 @@ def delFromAlbumBy(albumId: str, assetIds: List[str]) -> int:
     if not assetIds: return 0
 
     try:
+        sch = getSchema()
         with mkConn() as conn:
-            sql = """
+            sql = f"""
             Delete From album_asset
-            Where "albumsId" = %s And "assetsId" = ANY(%s)
+            Where "{sch.albumAssetAlbumId}" = %s And "{sch.albumAssetAssetId}" = ANY(%s)
             """
             with conn.cursor() as cursor:
                 cursor.execute(sql, (albumId, assetIds))
@@ -722,6 +843,7 @@ def fetchExInfos(assetIds: List[str]) -> Dict[str, models.AssetExInfo]:
     if not assetIds: return {}
 
     try:
+        sch = getSchema()
         with mkConn() as conn:
             with conn.cursor(row_factory=dict_row) as cursor:
                 rst = {}
@@ -732,12 +854,12 @@ def fetchExInfos(assetIds: List[str]) -> Dict[str, models.AssetExInfo]:
                 # Fetch albums in chunks
                 for i in range(0, len(assetIds), szChunk):
                     chunk = assetIds[i:i + szChunk]
-                    albSql = """
-                    Select aaa."assetsId", a.id, a."ownerId", a."albumName", a.description,
+                    albSql = f"""
+                    Select aaa."{sch.albumAssetAssetId}", a.id, a."ownerId", a."albumName", a.description,
                            a."createdAt", a."updatedAt", a."albumThumbnailAssetId", a."isActivityEnabled", a."order"
-                    From album a
-                    Join album_asset aaa On a.id = aaa."albumsId"
-                    Where aaa."assetsId" = ANY(%s) And a."deletedAt" Is Null
+                    From {sch.album} a
+                    Join album_asset aaa On a.id = aaa."{sch.albumAssetAlbumId}"
+                    Where aaa."{sch.albumAssetAssetId}" = ANY(%s) And a."deletedAt" Is Null
                     Order By a."createdAt" Desc
                     """
                     cursor.execute(albSql, (chunk,))
@@ -745,27 +867,27 @@ def fetchExInfos(assetIds: List[str]) -> Dict[str, models.AssetExInfo]:
                     # lg.info(f"Album query returned {len(albRows)} rows for chunk {chunk}")
 
                     for row in albRows:
-                        assetId = str(row['assetsId']).strip()
+                        assetId = str(row[sch.albumAssetAssetId]).strip()
                         if assetId in rst:
-                            albData = {k: v for k, v in row.items() if k != 'assetsId'}
+                            albData = {k: v for k, v in row.items() if k != sch.albumAssetAssetId}
                             rst[assetId].albs.append(models.Album.fromDic(albData))
 
                 # Fetch tags in chunks
                 for i in range(0, len(assetIds), szChunk):
                     chunk = assetIds[i:i + szChunk]
-                    tagSql = """
-                    Select ta."assetsId", t.id, t.value, t."userId"
-                    From tag t
-                    Join tag_asset ta On t.id = ta."tagsId"
-                    Where ta."assetsId" = ANY(%s)
+                    tagSql = f"""
+                    Select ta."{sch.tagAssetAssetId}", t.id, t.value, t."userId"
+                    From {sch.tag} t
+                    Join tag_asset ta On t.id = ta."{sch.tagAssetTagId}"
+                    Where ta."{sch.tagAssetAssetId}" = ANY(%s)
                     """
                     cursor.execute(tagSql, (chunk,))
                     tagRows = cursor.fetchall()
 
                     for row in tagRows:
-                        assetId = str(row['assetsId']).strip()
+                        assetId = str(row[sch.tagAssetAssetId]).strip()
                         if assetId in rst:
-                            tagData = {k: v for k, v in row.items() if k != 'assetsId'}
+                            tagData = {k: v for k, v in row.items() if k != sch.tagAssetAssetId}
                             rst[assetId].tags.append(models.Tags.fromDic(tagData))
 
                 # Fetch faces in chunks
