@@ -18,6 +18,8 @@ services:
     environment:
       - DASH_DEBUG=${DASH_DEBUG:-false}
       - IMMICH_PATH=/immich                     # Override path inside container
+      # Optional: uncomment if using IMMICH_THUMB volume above
+      # - IMMICH_THUMB=/thumbs
 
     # GPU Support (Linux + NVIDIA GPU only)
     # To enable NVIDIA GPU acceleration:

@@ -292,7 +292,7 @@ def processChildren( asset: models.Asset, bseInfos: List[models.SimInfo], simAid
 
 def getAutoSelectAuids(src: List[models.Asset]) -> List[int]:
     lg.info(f"[ausl] Starting auto-selection, auSelEnable[{db.dto.ausl}], assets count={len(src) if src else 0}")
-    lg.info(f"[ausl] Weights: Earlier[{db.dto.ausl_Earlier}] Later[{db.dto.ausl_Later}] ExifRich[{db.dto.ausl_ExRich}] ExifPoor[{db.dto.ausl_ExPoor}] BigSize[{db.dto.ausl_OfsBig}] SmallSize[{db.dto.ausl_OfsSml}] BigDim[{db.dto.ausl_DimBig}] SmallDim[{db.dto.ausl_DimSml}] HighSim[{db.dto.ausl_SkipLow}] AlwaysPickLivePhoto[{db.dto.ausl_AllLive}] jpg[{db.dto.ausl_TypJpg}] png[{db.dto.ausl_TypPng}]")
+    lg.info(f"[ausl] Weights: Earlier[{db.dto.ausl_Earlier}] Later[{db.dto.ausl_Later}] ExifRich[{db.dto.ausl_ExRich}] ExifPoor[{db.dto.ausl_ExPoor}] BigSize[{db.dto.ausl_OfsBig}] SmallSize[{db.dto.ausl_OfsSml}] BigDim[{db.dto.ausl_DimBig}] SmallDim[{db.dto.ausl_DimSml}] HighSim[{db.dto.ausl_SkipLow}] AlwaysPickLivePhoto[{db.dto.ausl_AllLive}] jpg[{db.dto.ausl_TypJpg}] png[{db.dto.ausl_TypPng}] heic[{db.dto.ausl_TypHeic}]")
 
     if not db.dto.ausl or not src: return []
 
@@ -302,7 +302,7 @@ def getAutoSelectAuids(src: List[models.Asset]) -> List[int]:
         db.dto.ausl_OfsBig > 0, db.dto.ausl_OfsSml > 0,
         db.dto.ausl_DimBig > 0, db.dto.ausl_DimSml > 0,
         db.dto.ausl_NamLon > 0, db.dto.ausl_NamSht > 0,
-        db.dto.ausl_TypJpg > 0, db.dto.ausl_TypPng > 0,
+        db.dto.ausl_TypJpg > 0, db.dto.ausl_TypPng > 0, db.dto.ausl_TypHeic > 0,
     ])
 
     if not active: return []
@@ -479,6 +479,10 @@ def _selectBestAsset(grpAssets: List[models.Asset]) -> int:
             pts = db.dto.ausl_TypPng * 10
             score += pts
             details.append(f"PNG+{pts}")
+        if db.dto.ausl_TypHeic > 0 and met[idx].fileType in ['heic', 'heif']:
+            pts = db.dto.ausl_TypHeic * 10
+            score += pts
+            details.append(f"HEIC+{pts}")
 
         return score, details
 
