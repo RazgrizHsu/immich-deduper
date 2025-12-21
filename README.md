@@ -57,6 +57,9 @@ No manual configuration needed - MediaKit works seamlessly across all Immich ver
 2. Processes images through ResNet152 to extract feature vectors
 3. Stores vectors in the Qdrant vector database
 4. Uses vector similarity to identify similar/duplicate photos
+   - **Multi-user scope**: Duplicate detection operates across all imported users
+   - Import single user: duplicates detected within that user only
+   - Import multiple users: duplicates detected across all imported users
 5. Displays similar photo groups based on the configured threshold
 6. Manages asset deletion by updating Immich database directly:
    - Follows Immich's deletion logic for compatibility
@@ -132,6 +135,13 @@ No manual configuration needed - MediaKit works seamlessly across all Immich ver
 - **Large collection tips**
   - For 8000+ photos: Enable Multi Mode with appropriate Max Group settings
   - Use batch operations for efficiency
+
+- **Finding similar content (reverse approach)**
+  - For finding similar themes (memes, similar scenes, burst shots):
+    - Start with low threshold (0.60-0.70) + `Multi Mode` with limited `Max Group`
+    - Progressively raise threshold to filter out less similar matches
+  - This is the reverse of duplicate cleaning - work your way up instead of down
+  - Always limit `Max Group` when using low thresholds to avoid overwhelming results
 
 - **External library considerations**
   - Ensure external library paths are not set to read-only if using Docker Compose
