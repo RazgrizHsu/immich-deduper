@@ -539,6 +539,8 @@ h3 { font-size: 1.68rem; }
 
 .tag { display: inline-block; border: #e0e0e099 1px solid; padding: 0 4px 0 4px; margin: 1px 3px; border-radius: 5px; font-size: 12px !important; vertical-align: middle; background: #2d4a69; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
 
+.tag.multiline { white-space: normal !important; overflow: visible !important; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; display: block; line-height: 1.25; }
+
 .tag.warp { white-space: normal !important; overflow: visible !important; }
 
 .tag.second { background: #4a4a4a; }

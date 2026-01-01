@@ -570,6 +570,16 @@ $spac: ($pad * 2) + ($gx * 2) + $sideW + 10px;
 	overflow: hidden !important;
 	text-overflow: ellipsis !important;
 
+	&.multiline {
+		white-space: normal !important;
+		overflow: visible !important;
+		overflow-wrap: anywhere;
+		word-break: break-word;
+		max-width: 100%;
+		display: block;
+		line-height: 1.25;
+	}
+
 	&.warp {
 		white-space: normal !important;
 		overflow: visible !important;

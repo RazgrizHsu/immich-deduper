@@ -143,12 +143,11 @@ def mk(ass: models.Asset, modSim=True):
                 ], className="RB")
             ], className="viewer"),
             dbc.CardBody([
-
                 dbc.Row([
                     htm.Span("id"), htm.Span(f"{ass.id}", className="tag"),
                     htm.Span("device"), htm.Span(f"{ass.deviceId}", className="tag second"),
-                    htm.Span("File"), htm.Span(f"{ass.originalFileName}", className="tag second"),
-                    htm.Span("Path"), htm.Span(f"{ass.originalPath}", className="tag second"),
+                    htm.Span("File"), htm.Span(f"{ass.originalFileName}", className="tag second multiline"),
+                    htm.Span("Path"), htm.Span(f"{ass.originalPath}", className="tag second multiline"),
                     htm.Span("CreateAt"), htm.Span(f"{ass.fileCreatedAt}", className="tag second"),
 
                     *([ htm.Span("livePhoto"), htm.Span(f"{ass.pathVdo}", className="tag blue"), ] if isLive else []),
