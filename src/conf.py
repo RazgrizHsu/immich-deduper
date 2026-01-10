@@ -152,7 +152,7 @@ class cmds:
         assDel = co.tit('view_AssDel',desc='Delete asset')
 
 class ks:
-    title = "Immich-MediaKit"
+    title = "Immich-Deduper"
     cmd = cmds
 
     class glo:
@@ -260,18 +260,18 @@ class envs:
     isDock = False if not isDock else True
     immichPath:str = '/immich' if isDock else os.getenv('IMMICH_PATH', '')
     immichThumb:str = os.getenv('IMMICH_THUMB', '')
-    qdrantUrl:str = 'http://immich-mediakit-qdrant:6333' if isDock else os.getenv('QDRANT_URL','')
+    qdrantUrl:str = 'http://immich-deduper-qdrant:6333' if isDock else os.getenv('QDRANT_URL','')
     psqlHost:str = os.getenv('PSQL_HOST','')
     psqlPort:str = os.getenv('PSQL_PORT','')
     psqlDb:str = os.getenv('PSQL_DB','')
     psqlUser:str = os.getenv('PSQL_USER','')
     psqlPass:str = os.getenv('PSQL_PASS','')
-    mkitPort:str = os.getenv('MKIT_PORT', '8086')
+    mkitPort:str = os.getenv('DEDUP_PORT', '8086')
 
     if os.getcwd().startswith(os.path.join(pathRoot, 'tests')):
         mkitData = os.path.join(pathRoot, 'data/')
     else:
-        mkitData = 'data/' if isDock else os.getenv('MKIT_DATA', os.path.join(pathRoot, 'data/'))
+        mkitData = 'data/' if isDock else os.getenv('DEDUP_DATA', os.path.join(pathRoot, 'data/'))
         if not mkitData.endswith('/'): mkitData += '/'
 
     class pth:
@@ -340,8 +340,8 @@ class envs:
         lg.info(f"  IMMICH_PATH: {envs.immichPath}")
         lg.info(f"  IMMICH_THUMB: {envs.immichThumb}")
         lg.info(f"  QDRANT_URL: {envs.qdrantUrl}")
-        lg.info(f"  MKIT_PORT: {envs.mkitPort}")
-        lg.info(f"  MKIT_DATA: {envs.mkitData}")
+        lg.info(f"  DEDUP_PORT: {envs.mkitPort}")
+        lg.info(f"  DEDUP_DATA: {envs.mkitData}")
         lg.info(f"  IS_DOCKER: {envs.isDock}")
         lg.info(f"  IS_DEV: {envs.isDev}")
 

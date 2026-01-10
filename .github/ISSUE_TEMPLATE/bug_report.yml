@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug or issue with Immich-MediaKit
+description: Report a bug or issue with Immich-Deduper
 title: "[Bug] "
 labels: ["bug"]
 assignees: []
@@ -56,7 +56,7 @@ body:
     id: deployment-method
     attributes:
       label: Deployment Method
-      description: How are you running Immich-MediaKit?
+      description: How are you running Immich-Deduper?
       options:
         - Docker Compose (same-host with Immich)
         - Docker Compose (different-host from Immich)
@@ -75,7 +75,7 @@ body:
         OS: [e.g. Ubuntu 22.04, Windows 11, macOS 13]
         Python Version: [e.g. 3.11.5]
         Immich Version: [e.g. v1.95.1]
-        MediaKit Version: [e.g. 0.1.3]
+        Deduper Version: [e.g. 0.1.3]
         GPU: [e.g. NVIDIA RTX 4080, CPU only]
         Docker Version: [if using Docker]
     validations:

@@ -100,7 +100,7 @@ def layout(autoId=None):
                 cardSets.renderThreshold(),
                 cardSets.renderAutoSelect(),
                 #------------------------------------------------------------------------
-            ], width=4),
+            ], width=5),
 
             dbc.Col([
 
@@ -119,7 +119,7 @@ def layout(autoId=None):
                     ], width=6, className="text-end"),
                 ], className="mt-3"),
 
-            ], width=8),
+            ], width=7),
         ], className=""),
 
         #====== top end =========================================================
@@ -524,7 +524,7 @@ def sim_UpdateButtons(dta_now, dta_ste, dta_cnt):
     cntSel = len(ste.selectedIds) if ste.selectedIds else 0
     disRm = cntSel == 0
     disRS = cntSel == 0
-    
+
     disExport = cntAssets <= 0
 
     # lg.info(f"[sim:UpdBtns] disFind[{disFind}]")
@@ -926,6 +926,7 @@ def sim_FindSimilar(doReport: IFnProg, sto: models.ITaskStore):
             if len(grps) >= mxGrp: msg.append(f"Reached maximum group limit ({mxGrp} groups).")
         else:
             root = grps[0].asset
+            assert root is not None
             cntInfos = len(grps[0].bseInfos)
             cntAll = len(assets)
             hasRoot = any(a.autoId == root.autoId for a in assets)

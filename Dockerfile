@@ -7,8 +7,8 @@ FROM python:3.12
 
 WORKDIR /app
 
-ARG MKIT_PORT=8086
-ENV PORT=${MKIT_PORT}
+ARG DEDUP_PORT=8086
+ENV PORT=${DEDUP_PORT}
 
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 

@@ -38,7 +38,7 @@ def layout():
                             htm.Div([
                                 htm.Div([
                                     htm.I(),
-                                    htm.Small("MediaKit Data Path", className="text-muted")
+                                    htm.Small("Deduper Data Path", className="text-muted")
                                 ], className="d-flex align-items-center"),
                                 htm.Div([
                                     htm.Span(envs.mkitData or "(Not configured)", className="fw-semibold text-break me-2"),

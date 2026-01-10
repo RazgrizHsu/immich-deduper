@@ -1,4 +1,4 @@
-# MediaKit CUDA Dependencies
+# Deduper CUDA Dependencies
 # Same as requirements.txt but with CUDA-enabled PyTorch
 
 requests~=2.32.3

@@ -76,7 +76,7 @@ if __name__ == "__main__":
     try:
         from conf import envs
         lg.info("========================================================================")
-        lg.info(f"[MediaKit] Start ... ver[{ envs.version }] {'DEBUG Mode' if conf.envs.isDev else ''}")
+        lg.info(f"[Deduper] Start ... ver[{ envs.version }] {'DEBUG Mode' if conf.envs.isDev else ''}")
         lg.info("========================================================================")
 
         envs.showVars()

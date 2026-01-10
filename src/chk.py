@@ -30,7 +30,7 @@ def ver() -> ChkInfo:
         import re
         verL = envs.version
 
-        url = "https://github.com/RazgrizHsu/immich-mediakit/blob/main/pyproject.toml"
+        url = "https://github.com/RazgrizHsu/immich-deduper/blob/main/pyproject.toml"
 
         try:
             txt = immich.getGithubRaw(url)
@@ -125,24 +125,24 @@ def immichPath() -> ChkInfo:
 
 def mkitData() -> ChkInfo:
     try:
-        if not envs.mkitData: return ChkInfo(False, 'MKIT_DATA not configured')
+        if not envs.mkitData: return ChkInfo(False, 'DEDUP_DATA not configured')
 
         if not os.path.exists(envs.mkitData):
             try:
                 os.makedirs(envs.mkitData, exist_ok=True)
             except Exception as e:
-                return ChkInfo(False, ['Cannot create MKIT_DATA directory', f'Path: {envs.mkitData}', str(e)])
+                return ChkInfo(False, ['Cannot create DEDUP_DATA directory', f'Path: {envs.mkitData}', str(e)])
 
-        if not os.path.isdir(envs.mkitData): return ChkInfo(False, ['MKIT_DATA is not a directory', f'Path: {envs.mkitData}'])
+        if not os.path.isdir(envs.mkitData): return ChkInfo(False, ['DEDUP_DATA is not a directory', f'Path: {envs.mkitData}'])
 
-        if not os.access(envs.mkitData, os.R_OK): return ChkInfo(False, ['MKIT_DATA is not readable', f'Path: {envs.mkitData}'])
+        if not os.access(envs.mkitData, os.R_OK): return ChkInfo(False, ['DEDUP_DATA is not readable', f'Path: {envs.mkitData}'])
 
-        if not os.access(envs.mkitData, os.W_OK): return ChkInfo(False, ['MKIT_DATA is not writable', f'Path: {envs.mkitData}'])
+        if not os.access(envs.mkitData, os.W_OK): return ChkInfo(False, ['DEDUP_DATA is not writable', f'Path: {envs.mkitData}'])
 
-        return ChkInfo(True, ['MKIT_DATA accessible', f'Path: {envs.mkitData}'])
+        return ChkInfo(True, ['DEDUP_DATA accessible', f'Path: {envs.mkitData}'])
 
     except Exception as e:
-        return ChkInfo(False, ['MKIT_DATA check failed', str(e)])
+        return ChkInfo(False, ['DEDUP_DATA check failed', str(e)])
 
 def immichLogic() -> ChkInfo:
     try:

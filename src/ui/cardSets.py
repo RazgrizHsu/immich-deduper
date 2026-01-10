@@ -174,7 +174,7 @@ def renderAutoSelect():
                     dbc.Select(id=k.id(k.auSelTypePng), options=optWeights, value=db.dto.ausl_TypPng, disabled=not db.dto.ausl, size="sm", className="me-1"), #type:ignore
                     htm.Label("Heic", className="me-2"),
                     dbc.Select(id=k.id(k.auSelTypeHeic), options=optWeights, value=db.dto.ausl_TypHeic, disabled=not db.dto.ausl, size="sm"), #type:ignore
-                ], className="icriteria"),
+                ], className="icriteria icriteria-wrap"),
 
                 htm.Div([
                     htm.Span(htm.Span("Immich", className="tag txt-smx me-1")),

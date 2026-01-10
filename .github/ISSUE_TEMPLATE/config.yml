@@ -8,4 +8,4 @@ contact_links:
     about: Ask questions and discuss ideas with the community
   - name: 🐛 Immich Issues
     url: https://github.com/immich-app/immich/issues
-    about: For issues with Immich itself (not MediaKit)
+    about: For issues with Immich itself (not Deduper)

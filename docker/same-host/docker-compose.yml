@@ -1,15 +1,15 @@
-name: immich-mediakit
+name: immich-deduper
 services:
-  immich-mediakit:
-    container_name: immich-mediakit
-    hostname: immich-mediakit
-    image: razgrizhsu/immich-mediakit:latest
+  immich-deduper:
+    container_name: immich-deduper
+    hostname: immich-deduper
+    image: razgrizhsu/immich-deduper:latest
     restart: unless-stopped
     ports:
-      - ${MKIT_PORT:-8086}:${MKIT_PORT:-8086}
+      - ${DEDUP_PORT:-8086}:${DEDUP_PORT:-8086}
     volumes:
-      - ${MKIT_DATA}:/app/data                  # mediakit data
-      - ${MKIT_DATA}/cache:/root/.cache/torch/  # model cache
+      - ${DEDUP_DATA}:/app/data                  # deduper data
+      - ${DEDUP_DATA}/cache:/root/.cache/torch/  # model cache
       - ${IMMICH_PATH}:/immich:ro               # Read-only access to Immich photos
       # Optional: for separate thumbnail directory (uncomment if using IMMICH_THUMB)
       # - ${IMMICH_THUMB}:/thumbs:ro
@@ -23,7 +23,7 @@ services:
 
     # GPU Support (Linux + NVIDIA GPU only)
     # To enable NVIDIA GPU acceleration:
-    # 1. Change image tag to razgrizhsu/immich-mediakit:latest-cuda
+    # 1. Change image tag to razgrizhsu/immich-deduper:latest-cuda
     # 2. Uncomment the deploy configuration below
     # deploy:
     #   resources:
@@ -36,17 +36,17 @@ services:
     depends_on:
       - qdrant
     networks:
-      - immich-mediakit
+      - immich-deduper
 
   qdrant:
-    container_name: immich-mediakit-qdrant
+    container_name: immich-deduper-qdrant
     image: qdrant/qdrant:latest
     restart: unless-stopped
     networks:
-      - immich-mediakit
+      - immich-deduper
     volumes:
-      - ${MKIT_DATA}/qdrant:/qdrant/storage
+      - ${DEDUP_DATA}/qdrant:/qdrant/storage
 
 networks:
-  immich-mediakit:
+  immich-deduper:
     external: true

@@ -56,7 +56,7 @@ def renderFooter():
                 dbc.Col(
                     htm.Div([
                         f"{ks.title} © 2025 ",
-                        htm.A(" GitHub ", href="https://github.com/RazgrizHsu/immich-mediakit", target="_blank")
+                        htm.A(" GitHub ", href="https://github.com/RazgrizHsu/immich-deduper", target="_blank")
                     ], className="text-center text-sm"),
                     width=12
                 ),

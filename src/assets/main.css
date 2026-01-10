@@ -726,9 +726,11 @@ h3 { font-size: 1.68rem; }
 
 .card .igrid.divRows > div > *:nth-child(2n) { justify-self: start; }
 
-.card .igrid .icriteria { display: grid; grid-template-columns: 28% repeat(auto-fit, minmax(0, 1fr)); }
+.card .igrid .icriteria { display: grid; grid-template-columns: 28% repeat(4, 1fr); }
 
 .card .igrid .icriteria span { overflow: hidden; text-wrap: balance; }
+
+.card .igrid .icriteria.icriteria-wrap > *:nth-child(6) { grid-column-start: 2; }
 
 .card .irow { font-size: 14px; margin: 0; }
 

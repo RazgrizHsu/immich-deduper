@@ -1,5 +1,5 @@
 [project]
-name = "immich-mediakit"
+name = "immich-deduper"
 version = "0.1.13"
 
 [tool.pyright]

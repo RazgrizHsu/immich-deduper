@@ -29,15 +29,15 @@ services:
     # ports:
     #   - "5433:5432"
 #------------------------------------------------
-# Modification 1: Add networks to enable communication with immich-mediakit
+# Modification 1: Add networks to enable communication with immich-deduper
 #------------------------------------------------
     networks:
-      - immich-mediakit
+      - immich-deduper
       #------------------------------------------------
       # Note: On some Docker environments, you might need to add '- default' to keep
-      # the database in both the default network and immich-mediakit network.
+      # the database in both the default network and immich-deduper network.
       # This ensures other Immich services can still connect to the database.
-      # See: https://github.com/RazgrizHsu/immich-mediakit/issues/30
+      # See: https://github.com/RazgrizHsu/immich-deduper/issues/30
       #------------------------------------------------
       # - default  # Uncomment if Immich services cannot connect to the database
 
@@ -45,12 +45,12 @@ services:
 # Modification 2: Add global networks section to declare external network usage
 #------------------------------------------------
 networks:
-  immich-mediakit:
+  immich-deduper:
     external: true
   #------------------------------------------------
   # Note: On some Docker environments, you might need to add '- default' to keep
-  # the database in both the default network and immich-mediakit network.
+  # the database in both the default network and immich-deduper network.
   # This ensures other Immich services can still connect to the database.
-  # See: https://github.com/RazgrizHsu/immich-mediakit/issues/30
+  # See: https://github.com/RazgrizHsu/immich-deduper/issues/30
   #------------------------------------------------
   #default  # Uncomment if Immich services cannot connect to the database

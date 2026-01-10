@@ -2,7 +2,7 @@
 
 set -e
 
-IMAGE_NAME="razgrizhsu/immich-mediakit"
+IMAGE_NAME="razgrizhsu/immich-deduper"
 
 SCRIPT_DIR="$(dirname "$0")"
 if [ ! -f "$SCRIPT_DIR/pyproject.toml" ]; then
@@ -122,7 +122,7 @@ build_image() {
   echo "Building ${device} image: ${IMAGE_NAME}:${TAG}${tag_suffix}"
   
   BUILD_ARGS=(
-    "--build-arg" "MKIT_PORT=8086"
+    "--build-arg" "DEDUP_PORT=8086"
     "--build-arg" "DEVICE=${device}"
     "."
   )

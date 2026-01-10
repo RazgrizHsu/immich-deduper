@@ -1,4 +1,4 @@
-# MediaKit Similarity Processing Data Flow Analysis
+# Deduper Similarity Processing Data Flow Analysis
 
 ## Data Structure Overview
 

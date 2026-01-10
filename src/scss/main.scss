@@ -1198,11 +1198,15 @@ $spac: ($pad * 2) + ($gx * 2) + $sideW + 10px;
 
 		.icriteria {
 			display: grid;
-			grid-template-columns: 28% repeat(auto-fit, minmax(0, 1fr)); // 第一个列30%，其余平均分配
+			grid-template-columns: 28% repeat(4, 1fr);
 
 			span {
 				overflow: hidden;
 				text-wrap: balance;
+			}
+
+			&.icriteria-wrap > *:nth-child(6) {
+				grid-column-start: 2;
 			}
 		}
 	}

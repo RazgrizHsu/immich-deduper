@@ -2,9 +2,13 @@
 
 <p align="center"><img src="src/assets/logo.png" width="256" height="256" alt="logo" /></p>
 <p align="center">
+  Immich-Deduper<br/>
+  <small>(Previously: Immich MediaKit)</small>
+</p>
+<p align="center">
 <small>
-An extension toolkit for <a href="https://github.com/immich-app/immich">Immich</a>
-enabling advanced management capabilities through AI-powered similarity detection
+AI-powered duplicate photo finder and remover for <a href="https://github.com/immich-app/immich">Immich</a>.<br/>
+Find and remove similar/duplicate images using deep learning.
 </small>
 </p>
 <p align="center">
@@ -35,19 +39,19 @@ enabling advanced management capabilities through AI-powered similarity detectio
 
 ## Version Compatibility
 
-**MediaKit v0.1.11+** supports all Immich versions through automatic schema detection.
+**Deduper v0.1.11+** supports all Immich versions through automatic schema detection.
 
 **Automatic Schema Detection:**
-MediaKit automatically detects and adapts to your Immich database schema:
+Deduper automatically detects and adapts to your Immich database schema:
 - Table names (plural vs singular: assets/asset, albums/album, tags/tag, users/user)
 - Junction table column names (plural vs singular: albumsId/albumId, assetsId/assetId, tagsId/tagId)
 
-No manual configuration needed - MediaKit works seamlessly across all Immich versions.
+No manual configuration needed - Deduper works seamlessly across all Immich versions.
 
 **Immich Schema Evolution:**
 - **Immich v1.136.0**: Changed main table names from plural to singular (assets → asset, albums → album, tags → tag, users → user)
 - **Immich v2.3.0**: Changed junction table column names from plural to singular (albumsId → albumId, assetsId → assetId, tagsId → tagId)
-- MediaKit automatically handles all these variations
+- Deduper automatically handles all these variations
 
 ---
 
@@ -146,13 +150,13 @@ No manual configuration needed - MediaKit works seamlessly across all Immich ver
 - **External library considerations**
   - Ensure external library paths are not set to read-only if using Docker Compose
   - Enable Immich's recycle bin feature before processing external libraries
-  - Remember that MediaKit reads from Immich thumbnails, so original file locations don't affect similarity detection
+  - Remember that Deduper reads from Immich thumbnails, so original file locations don't affect similarity detection
 
 ---
 
 ## System Startup
 
-When MediaKit starts up, it performs several system checks as shown below:
+When Deduper starts up, it performs several system checks as shown below:
 
 <p align="center">
 <img src="docs/chk.gif" alt="System startup checks" />
@@ -168,10 +172,10 @@ If you encounter any startup errors or version mismatches, follow the update ins
 
 ## Logging
 
-MediaKit automatically logs system operations and errors to help with troubleshooting.
+Deduper automatically logs system operations and errors to help with troubleshooting.
 
 **Log Location:**
-- Logs are stored in the `MKIT_DATA/logs/` directory
+- Logs are stored in the `DEDUP_DATA/logs/` directory
 - Log files are rotated daily for better organization
 
 **Troubleshooting:**
@@ -207,13 +211,13 @@ Choose the installation method that suits your needs:
 - A configured `.env` file (see below)
 
 ### Set up your Immich database
-Before you can use mediakit, you need to set your database up, so MediaKit can connect to it. This explanation covers only Immich installations via docker compose.
+Before you can use deduper, you need to set your database up, so Deduper can connect to it. This explanation covers only Immich installations via docker compose.
 
-#### Immich on the same host as mediakit
-If your Immich installation is on the same machine than you want to install MediaKit on, a docker network can be used to connect to the db.
+#### Immich on the same host as deduper
+If your Immich installation is on the same machine than you want to install Deduper on, a docker network can be used to connect to the db.
 To create the network execute the following command (on the host, not in the docker container):
 ```bash
-docker network create immich-mediakit
+docker network create immich-deduper
 ```
 
 Then add the network to your immich database container and to the docker compose:
@@ -222,19 +226,19 @@ services:
   database:
     container_name: immich_postgres
     image: ghcr.io/immich-app/postgres:14-vectorchord0.3.0-pgvectors0.2.0
-    networks: # Add the immich-mediakit network to the db to allow immich-mediakit to access the db
-      - immich-mediakit
+    networks: # Add the immich-deduper network to the db to allow immich-deduper to access the db
+      - immich-deduper
 
 
-networks: # Add the immich-mediakit network to the immich docker compose without any indentation
-  immich-mediakit:
+networks: # Add the immich-deduper network to the immich docker compose without any indentation
+  immich-deduper:
     external: true
 ```
 
 After updating, restart Immich to apply the changes. The `PSQL_HOST` in your `.env` file should match the container name of the database.
 
-#### Immich on a different host as mediakit
-If your Immich installation is on a different machine than you want to install MediaKit on, you need to expose the PostgreSQL port. Note that this exposes your database to anyone in the hosts network, so use a secure password!
+#### Immich on a different host as deduper
+If your Immich installation is on a different machine than you want to install Deduper on, you need to expose the PostgreSQL port. Note that this exposes your database to anyone in the hosts network, so use a secure password!
 Add the following port mapping to your Immich's docker compose:
 
 ```yaml
@@ -246,7 +250,7 @@ services:
       - "5432:5432"  # Add this line to expose PostgreSQL
 ```
 
-After updating, restart Immich to apply the changes. The exposed port (5432 in this example) should match the `PSQL_PORT` setting in your MediaKit `.env` file.
+After updating, restart Immich to apply the changes. The exposed port (5432 in this example) should match the `PSQL_PORT` setting in your Deduper `.env` file.
 
 
 ### Option 1: Docker Compose
@@ -256,7 +260,7 @@ Using Docker Compose is the easiest installation method, automatically including
 
 1. **Copy Docker Configuration Files**
 
-   The compose has a few differences when you're installing MediaKit on the same host vs on a different host than Immich. Choose the same as you have for setting up the database.
+   The compose has a few differences when you're installing Deduper on the same host vs on a different host than Immich. Choose the same as you have for setting up the database.
 
    **Same host configuration:**
    - [docker-compose.yml](./docker/same-host/docker-compose.yml)
@@ -274,14 +278,14 @@ Using Docker Compose is the easiest installation method, automatically including
    - `PSQL_HOST`: Database connection (service name for same-host, IP address for different-host)
    - `IMMICH_PATH`: Path to your Immich upload directory  
    - `IMMICH_THUMB`: (Optional) Path for separate thumbnail directory (requires additional volume mount)
-   - `MKIT_DATA`: Directory for MediaKit data storage
+   - `DEDUP_DATA`: Directory for Deduper data storage
    - `QDRANT_URL`: (Optional) Custom Qdrant database URL for non-Docker environments or custom container setups
 
 3. **Create Docker Network (Same-host only)**
 
    If using same-host setup, create the shared network:
    ```bash
-   docker network create immich-mediakit
+   docker network create immich-deduper
    ```
 
 4. **Update Immich Configuration (Required)**
@@ -295,7 +299,7 @@ Using Docker Compose is the easiest installation method, automatically including
    **CPU Version (Default):**
    The default configuration uses the CPU-only image:
    ```yaml
-   image: razgrizhsu/immich-mediakit:latest
+   image: razgrizhsu/immich-deduper:latest
    ```
    No additional configuration needed.
 
@@ -305,7 +309,7 @@ Using Docker Compose is the easiest installation method, automatically including
    
    a. Change the image to the CUDA version:
    ```yaml
-   image: razgrizhsu/immich-mediakit:latest-cuda
+   image: razgrizhsu/immich-deduper:latest-cuda
    ```
    
    b. Uncomment the deploy configuration:
@@ -334,8 +338,8 @@ Using Docker Compose is the easiest installation method, automatically including
 7. **Access Application**
    - Open browser to `http://localhost:8086`
 
-8. **Updating MediaKit**
-   To update MediaKit when using Docker Compose, run:
+8. **Updating Deduper**
+   To update Deduper when using Docker Compose, run:
    ```bash
    docker compose down && docker compose pull && docker compose up -d
    ```
@@ -359,8 +363,8 @@ For custom environments and development needs.
 
 2. **Clone Source Code**
    ```bash
-   git clone https://github.com/RazgrizHsu/immich-mediakit.git
-   cd immich-mediakit
+   git clone https://github.com/RazgrizHsu/immich-deduper.git
+   cd immich-deduper
    ```
 
 3. **Configure Environment Variables**
@@ -439,6 +443,6 @@ Please consider the following:
 - The developers are not responsible for any data loss that may occur from using this tool
 - Vector similarity is based on AI models and may not perfectly match human perception of similarity
 
-Immich-MediaKit is provided "as is" without warranty of any kind. By using this software, you acknowledge the potential risks involved in managing and potentially modifying your photo collection.
+Immich-Deduper is provided "as is" without warranty of any kind. By using this software, you acknowledge the potential risks involved in managing and potentially modifying your photo collection.
 
 Happy organizing! We hope this tool enhances your Immich experience by helping you maintain a clean, duplicate-free library.
