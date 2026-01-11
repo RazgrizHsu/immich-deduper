@@ -121,6 +121,7 @@ class DtoSets:
     ausl_TypHeic:int = AutoDbField('ausl_TypHeic', int, 0 ) #type:ignore
     ausl_Fav:int = AutoDbField('ausl_Fav', int, 0 ) #type:ignore
     ausl_InAlb:int = AutoDbField('ausl_InAlb', int, 0 ) #type:ignore
+    asul_Usr:str = AutoDbField('asul_Usr', str, '' ) #type:ignore
 
     excl:bool = AutoDbField('excl', bool, True ) #type:ignore
     excl_FndLes:int = AutoDbField('excl_FndLes', int, 0) #type:ignore

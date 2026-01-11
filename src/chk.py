@@ -25,6 +25,10 @@ class SysSte:
     logic: ChkInfo
 
 
+def _parseVer(v: str):
+    parts = v.split('.')
+    return tuple(int(p) for p in parts if p.isdigit())
+
 def ver() -> ChkInfo:
     try:
         import re
@@ -38,14 +42,18 @@ def ver() -> ChkInfo:
             if not mth: return ChkInfo(False, ['Version check failed', 'Cannot parse version from remote pyproject.toml'])
             verR = mth.group(1)
 
-            if verL == verR: return ChkInfo(True, [verL])
-            else:
+            verLTuple = _parseVer(verL)
+            verRTuple = _parseVer(verR)
+
+            if verRTuple > verLTuple:
                 return ChkInfo(False, [
-                    f'Version mismatch detected!',
+                    f'New version available!',
                     f'Local : {verL}',
                     f'Remote: {verR}',
                     f'Visit Github for update details'
                 ])
+            else:
+                return ChkInfo(True, [verL])
 
         except RuntimeError as e:
             return ChkInfo(False, ['Version check failed', str(e)])

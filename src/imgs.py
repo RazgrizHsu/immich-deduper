@@ -39,7 +39,7 @@ class FeatureExtractor(torch.nn.Module):
     def forward(self, x):
         x = self.features(x)
         x = self.avgpool(x)
-        return x.reshape(-1)
+        return x.view(x.size(0), -1)
 
 
 model = FeatureExtractor(base_model)
@@ -99,7 +99,7 @@ def extractFeatures(image) -> np.ndarray:
     image_tensor = transform(image).unsqueeze(0)
     image_tensor = image_tensor.to(conf.device)
     with torch.no_grad():
-        features = model(image_tensor)
+        features = model(image_tensor).squeeze(0)
 
     feature_length = features.shape[0]
     if feature_length != 2048:
@@ -142,14 +142,14 @@ def extractFeaturesBatch(images: List[Image.Image]) -> List[np.ndarray]:
 
         with torch.no_grad(): features_batch = model(batch_tensor)
 
-        # 修正 MPS 批次輸出格式問題
-        if device_type == 'mps' and len(features_batch.shape) == 1:
-            # MPS 可能輸出扁平向量，需要重塑為批次格式
+        # Fix: squeeze removes batch dim when size=1, causing 1D output
+        if len(features_batch.shape) == 1:
+            # Reshape flattened vector back to batch format
             batch_size = batch_tensor.shape[0]
             expected_feature_size = features_batch.shape[0] // batch_size
             features_batch = features_batch.view(batch_size, expected_feature_size)
 
-        # 批次處理特徵向量維度調整（在 GPU 上完成）
+        # Adjust feature vector dimensions on GPU
         batch_size = features_batch.shape[0]
         feature_dim = features_batch.shape[1]
 
@@ -444,7 +444,7 @@ def processVectors(assets: List[models.Asset], photoQ, onUpdate: models.IFnProg,
                         #     pi.erro += len(assets) - cntDone
                         #     break
 
-                        # 批次提交資料庫更新
+                        # Batch commit database updates
                         if len(updAssets) >= commitBatch:
                             assetsBatch = updAssets[:]
                             updAssets = []

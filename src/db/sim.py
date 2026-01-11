@@ -13,8 +13,7 @@ def normalizeDate(dt) -> str:
     if not dt: return ''
     try:
         # Check if it's a datetime object (has microsecond attribute)
-        if hasattr(dt, 'microsecond'):
-            return str(dt.replace(microsecond=0))
+        if hasattr(dt, 'microsecond'): return str(dt.replace(microsecond=0))
         else:
             dtStr = str(dt)
             if '.' in dtStr and ('+' in dtStr or dtStr.endswith('Z')):
@@ -22,11 +21,9 @@ def normalizeDate(dt) -> str:
                 if '+' in dtStr:
                     timezone = '+' + dtStr.split('+')[-1]
                     return beforeDot + timezone
-                elif dtStr.endswith('Z'):
-                    return beforeDot + 'Z'
+                elif dtStr.endswith('Z'): return beforeDot + 'Z'
             return dtStr
-    except Exception as e:
-        return str(dt) if dt else ''
+    except Exception as e: return str(dt) if dt else ''
 
 @dataclass
 class SearchInfo:
@@ -35,8 +32,6 @@ class SearchInfo:
     bseInfos: List[models.SimInfo] = field(default_factory=list)
     simAids: List[int] = field(default_factory=list)
     assets: List[models.Asset] = field(default_factory=list)
-
-
 
 
 
@@ -94,8 +89,7 @@ def findCandidate(autoId: int, taskArgs: dict) -> models.Asset:
         assetId = taskArgs.get('assetId')
         asset = db.pics.getById(assetId)
         if asset: autoId = asset.autoId
-    else:
-        asset = db.pics.getByAutoId(autoId) if autoId else None
+    else: asset = db.pics.getByAutoId(autoId) if autoId else None
 
     if not autoId: raise RuntimeError(f"[tsk] sim.assAid is empty")
 
@@ -107,8 +101,7 @@ def findCandidate(autoId: int, taskArgs: dict) -> models.Asset:
 
 
 
-
-def searchBy( src: Optional[models.Asset], doRep: IFnProg, isCancel: IFnCancel, fromUrl: bool = False) -> List[SearchInfo]:
+def searchBy(src: Optional[models.Asset], doRep: IFnProg, isCancel: IFnCancel, fromUrl: bool=False) -> List[SearchInfo]:
     gis = []
     ass = src
     grpIdx = 1
@@ -118,7 +111,6 @@ def searchBy( src: Optional[models.Asset], doRep: IFnProg, isCancel: IFnCancel, 
     sizeMax = db.dto.muod_Size
 
     while len(gis) < sizeMax:
-
         if isCancel():
             lg.info(f"[sim:sh] user cancelled")
             break
@@ -138,7 +130,6 @@ def searchBy( src: Optional[models.Asset], doRep: IFnProg, isCancel: IFnCancel, 
             gi = findGroupBy(ass, doRep, grpIdx, fromUrl)
 
             if not gi.assets:
-
                 if fromUrl:
                     lg.info(f"[sim:sh] not found from url #{ass.autoId}")
                     break
@@ -160,7 +151,6 @@ def searchBy( src: Optional[models.Asset], doRep: IFnProg, isCancel: IFnCancel, 
             grpIdx += 1
 
             ass = None
-
         except Exception as e:
             lg.error(f"[sim:sh] Error processing asset #{ass.autoId}: {e}")
             raise
@@ -173,8 +163,7 @@ def searchBy( src: Optional[models.Asset], doRep: IFnProg, isCancel: IFnCancel, 
     return gis
 
 
-def findGroupBy( asset: models.Asset, doReport: IFnProg, grpId: int, fromUrl = False) -> SearchInfo:
-
+def findGroupBy(asset: models.Asset, doReport: IFnProg, grpId: int, fromUrl=False) -> SearchInfo:
     lg.info(f"[sim:fg] grpId[{grpId}] #{asset.autoId}")
     result = SearchInfo()
     result.asset = asset
@@ -236,14 +225,12 @@ def findGroupBy( asset: models.Asset, doReport: IFnProg, grpId: int, fromUrl = F
 
         lg.info(f"[sim:fnd] Found group {grpId} with {len(assets)} assets")
         result.assets = assets
-    else:
-        result.assets = db.pics.getSimAssets(asset.autoId, db.dto.rtree)
+    else: result.assets = db.pics.getSimAssets(asset.autoId, db.dto.rtree)
 
     return result
 
 
-def processChildren( asset: models.Asset, bseInfos: List[models.SimInfo], simAids: List[int], doReport: IFnProg) -> Set[int]:
-
+def processChildren(asset: models.Asset, bseInfos: List[models.SimInfo], simAids: List[int], doReport: IFnProg) -> Set[int]:
     thMin = db.dto.thMin
     maxItems = db.dto.rtreeMax
 
@@ -276,9 +263,7 @@ def processChildren( asset: models.Asset, bseInfos: List[models.SimInfo], simAid
             if len(doneIds) < maxItems:
                 for inf in cInfos:
                     if inf.aid not in doneIds: simQ.append((inf.aid, depth + 1))
-
-        except Exception as ce:
-            raise RuntimeError(f"Error processing similar image {aid}: {ce}")
+        except Exception as ce: raise RuntimeError(f"Error processing similar image {aid}: {ce}")
 
         # Check item limit
         if len(doneIds) >= maxItems:
@@ -297,14 +282,14 @@ def getAutoSelectAuids(src: List[models.Asset]) -> List[int]:
     if not db.dto.ausl or not src: return []
 
     active = any([
-        db.dto.ausl_Earlier > 0, db.dto.ausl_Later > 0,
-        db.dto.ausl_ExRich > 0, db.dto.ausl_ExPoor > 0,
-        db.dto.ausl_OfsBig > 0, db.dto.ausl_OfsSml > 0,
-        db.dto.ausl_DimBig > 0, db.dto.ausl_DimSml > 0,
-        db.dto.ausl_NamLon > 0, db.dto.ausl_NamSht > 0,
-        db.dto.ausl_TypJpg > 0, db.dto.ausl_TypPng > 0, db.dto.ausl_TypHeic > 0,
-        db.dto.ausl_Fav > 0, db.dto.ausl_InAlb > 0,
-    ])
+            db.dto.ausl_Earlier > 0, db.dto.ausl_Later > 0,
+            db.dto.ausl_ExRich > 0, db.dto.ausl_ExPoor > 0,
+            db.dto.ausl_OfsBig > 0, db.dto.ausl_OfsSml > 0,
+            db.dto.ausl_DimBig > 0, db.dto.ausl_DimSml > 0,
+            db.dto.ausl_NamLon > 0, db.dto.ausl_NamSht > 0,
+            db.dto.ausl_TypJpg > 0, db.dto.ausl_TypPng > 0, db.dto.ausl_TypHeic > 0,
+            db.dto.ausl_Fav > 0, db.dto.ausl_InAlb > 0,
+        ])
 
     if not active: return []
 
@@ -330,8 +315,7 @@ def getAutoSelectAuids(src: List[models.Asset]) -> List[int]:
         if bestId:
             selIds.append(bestId)
             lg.info(f"[ausl] Group {grpId}: Selected best weighted asset {bestId}")
-        else:
-            lg.warn(f"[ausl] Group {grpId}: No best asset found despite having {len(grpAss)} assets")
+        else: lg.warn(f"[ausl] Group {grpId}: No best asset found despite having {len(grpAss)} assets")
 
     lg.info(f"[ausl] Final selection: {len(selIds)} assets: {selIds}")
     return selIds
@@ -369,8 +353,7 @@ def _groupAssetsByCondGroup(src: List[models.Asset]) -> dict:
         if grpId is None:
             grpId = at.autoId
             lg.debug(f"[ausl] Asset {at.autoId}: No muodId, using autoId as groupId")
-        else:
-            lg.debug(f"[ausl] Asset {at.autoId}: Using muodId {grpId}")
+        else: lg.debug(f"[ausl] Asset {at.autoId}: Using muodId {grpId}")
 
         if grpId not in rst: rst[grpId] = []
         rst[grpId].append(at)
@@ -380,7 +363,6 @@ def _groupAssetsByCondGroup(src: List[models.Asset]) -> dict:
         lg.info(f"[ausl] Group {grpId}: Contains {len(grpAss)} assets: {assIds}")
 
     return rst
-
 
 
 
@@ -395,10 +377,10 @@ class IMetrics:
     fileType: str
     isFav: bool
     hasAlb: bool
+    ownerId: str
 
 
 def _selectBestAsset(grpAssets: List[models.Asset]) -> int:
-
     if not grpAssets: raise RuntimeError("No Group")
 
     def countExif(exif) -> int:
@@ -417,8 +399,7 @@ def _selectBestAsset(grpAssets: List[models.Asset]) -> int:
         metrics = []
         for ass in assets:
             dt = None
-            if ass.jsonExif:
-                dt = ass.jsonExif.dateTimeOriginal or ass.fileCreatedAt
+            if ass.jsonExif: dt = ass.jsonExif.dateTimeOriginal or ass.fileCreatedAt
 
             exfCnt = countExif(ass.jsonExif) if ass.jsonExif else 0
             fileSz = ass.jsonExif.fileSizeInByte if ass.jsonExif and ass.jsonExif.fileSizeInByte else 0
@@ -432,13 +413,13 @@ def _selectBestAsset(grpAssets: List[models.Asset]) -> int:
             nameLen = len(ass.originalFileName) if ass.originalFileName else 0
 
             fileType = ''
-            if ass.originalFileName:
-                fileType = ass.originalFileName.lower().split('.')[-1] if '.' in ass.originalFileName else ''
+            if ass.originalFileName: fileType = ass.originalFileName.lower().split('.')[-1] if '.' in ass.originalFileName else ''
 
             ndt = normalizeDate(dt)
             isFav = bool(ass.isFavorite)
             hasAlb = bool(ass.ex and ass.ex.albs)
-            metrics.append(IMetrics( aid=ass.autoId, dt=ndt, exfCnt=exfCnt, fileSz=fileSz, dim=dim, nameLen=nameLen, fileType=fileType, isFav=isFav, hasAlb=hasAlb))
+            ownerId = ass.ownerId or ''
+            metrics.append(IMetrics(aid=ass.autoId, dt=ndt, exfCnt=exfCnt, fileSz=fileSz, dim=dim, nameLen=nameLen, fileType=fileType, isFav=isFav, hasAlb=hasAlb, ownerId=ownerId))
         return metrics
 
     def calcScore(idx: int, met: List[IMetrics]) -> Tuple[int, List[str]]:
@@ -498,13 +479,22 @@ def _selectBestAsset(grpAssets: List[models.Asset]) -> int:
             score += pts
             details.append(f"InAlb+{pts}")
 
+        usrPar = db.dto.asul_Usr or ''
+        if usrPar and ':' in usrPar:
+            parts = usrPar.split(':')
+            uid = parts[0]
+            sco = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
+            if sco > 0 and met[idx].ownerId == uid:
+                pts = sco * 10
+                score += pts
+                details.append(f"Owner+{pts}")
+
         return score, details
 
     met = collectMetrics(grpAssets)
 
     lg.info(f"[ausl] Group comparison:")
-    for m in met:
-        lg.info(f"[ausl]   #{m.aid}: date[{m.dt}] exif[{m.exfCnt}] fsize[{m.fileSz}] dim[{m.dim}] name[{m.nameLen}] fav[{m.isFav}] alb[{m.hasAlb}]")
+    for m in met: lg.info(f"[ausl]   #{m.aid}: date[{m.dt}] exif[{m.exfCnt}] fsize[{m.fileSz}] dim[{m.dim}] name[{m.nameLen}] fav[{m.isFav}] alb[{m.hasAlb}] owner[{m.ownerId[:8] if m.ownerId else ''}]")
 
     bestAss = None
     bestScr = -1
@@ -538,5 +528,3 @@ def _checkAlwaysPickLivePhoto(grpAssets: List[models.Asset], grpId: int) -> List
 
     lg.info(f"[ausl] Group {grpId}: Selecting ALL {len(liveIds)} LivePhoto assets: {liveIds}")
     return liveIds
-
-

@@ -384,6 +384,10 @@ def onFetchAssets(doReport: IFnProg, sto: models.ITaskStore):
             if toDeleteIds:
                 doReport(92, f"Found {len(toDeleteIds)} assets to remove (no longer active in Immich)")
 
+                # Get autoIds before deleting
+                localMap = {str(a.id): a.autoId for a in localAssets}
+                toDelAids = [localMap[aid] for aid in toDeleteIds if aid in localMap]
+
                 # Delete from local database
                 with db.pics.mkConn() as conn:
                     c = conn.cursor()
@@ -393,7 +397,7 @@ def onFetchAssets(doReport: IFnProg, sto: models.ITaskStore):
 
                 # Delete vectors
                 try:
-                    db.vecs.deleteBy(toDeleteIds)
+                    db.vecs.deleteBy(toDelAids)
                     doReport(95, f"Removed {len(toDeleteIds)} assets and their vectors")
                 except Exception as e:
                     lg.error(f"Failed to delete vectors for removed assets: {str(e)}")

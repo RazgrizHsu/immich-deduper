@@ -1208,6 +1208,10 @@ $spac: ($pad * 2) + ($gx * 2) + $sideW + 10px;
 			&.icriteria-wrap > *:nth-child(6) {
 				grid-column-start: 2;
 			}
+
+			&.icriteria-user > *:nth-child(2) {
+				grid-column: span 2;
+			}
 		}
 	}
 

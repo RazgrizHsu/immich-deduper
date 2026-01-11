@@ -49,6 +49,8 @@ class k:
     auSelTypeHeic = "autoSelTypeHeic"
     auSelFav = "autoSelFav"
     auSelInAlb = "autoSelInAlb"
+    auSelUsrPri = "autoSelUsrPri"
+    auSelUsrWgt = "autoSelUsrWgt"
 
     gpuAutoMode = "gpuAutoMode"
     gpuBatchSize = "gpuBatchSize"
@@ -75,6 +77,31 @@ for i in [2, 5, 10, 20, 25, 50, 100]: optMaxGroups.append({"label": f"{i}", "val
 
 optWeights = []
 for i in range(5): optWeights.append({"label": f"{i}", "value": i})
+
+def _getUsrOpts():
+    opts = [{"label": "--", "value": ""}]
+    try:
+        usrs = db.psql.fetchUsers()
+        if usrs:
+            for usr in usrs:
+                opts.append({"label": usr.name or usr.email or usr.id[:8], "value": str(usr.id)})
+    except: pass
+    return opts
+
+def _parseUsrPri():
+    val = db.dto.asul_Usr or ''
+    if ':' in val:
+        parts = val.split(':')
+        return parts[0], int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
+    return '', 0
+
+def _getUsrPriVal():
+    uid, _ = _parseUsrPri()
+    return uid
+
+def _getUsrWgtVal():
+    _, wgt = _parseUsrPri()
+    return wgt
 
 optExclLess = [
     {"label": "--", "value": 0},
@@ -182,6 +209,14 @@ def renderAutoSelect():
                     dbc.Select(id=k.id(k.auSelFav), options=optWeights, value=db.dto.ausl_Fav, disabled=not db.dto.ausl, size="sm", className="me-1"), #type:ignore
                     htm.Label("In Album", className="me-2"),
                     dbc.Select(id=k.id(k.auSelInAlb), options=optWeights, value=db.dto.ausl_InAlb, disabled=not db.dto.ausl, size="sm"), #type:ignore
+                ], className="icriteria"),
+
+                htm.Div([
+                    htm.Span(htm.Span("User", className="tag txt-smx me-1")),
+                    htm.Label("name", className="me-2"),
+                    dbc.Select(id=k.id(k.auSelUsrPri), options=_getUsrOpts(), value=_getUsrPriVal(), disabled=not db.dto.ausl, size="sm", className="me-1", style={"minWidth": "60px"}), #type:ignore
+                    htm.Label("Weight", className="me-2"),
+                    dbc.Select(id=k.id(k.auSelUsrWgt), options=optWeights, value=_getUsrWgtVal(), disabled=not db.dto.ausl, size="sm"), #type:ignore
                 ], className="icriteria"),
 
                 htm.Hr(),
@@ -387,6 +422,8 @@ def settings_OnUpd(th, auNxt, shGdInfo, rtree,  maxItems, muodEnable, muodDate, 
         out(k.id(k.auSelTypeHeic), "disabled"),
         out(k.id(k.auSelFav), "disabled"),
         out(k.id(k.auSelInAlb), "disabled"),
+        out(k.id(k.auSelUsrPri), "disabled"),
+        out(k.id(k.auSelUsrWgt), "disabled"),
     ],
     inp(k.id(k.auSelEnable), "value"),
     inp(k.id(k.auSelSkipLowSim), "value"),
@@ -406,9 +443,11 @@ def settings_OnUpd(th, auNxt, shGdInfo, rtree,  maxItems, muodEnable, muodDate, 
     inp(k.id(k.auSelTypeHeic), "value"),
     inp(k.id(k.auSelFav), "value"),
     inp(k.id(k.auSelInAlb), "value"),
+    inp(k.id(k.auSelUsrPri), "value"),
+    inp(k.id(k.auSelUsrWgt), "value"),
     prevent_initial_call=True
 )
-def autoSelect_OnUpd(enable, skipLo, onlyLive, earl, late, exRich, exPoor, szBig, szSml, dimBig, dimSml, namLn, namSt, tJpg, tPng, tHeic, fav, inAlb):
+def autoSelect_OnUpd(enable, skipLo, onlyLive, earl, late, exRich, exPoor, szBig, szSml, dimBig, dimSml, namLn, namSt, tJpg, tPng, tHeic, fav, inAlb, usrPri, usrWgt):
     db.dto.ausl = enable
     db.dto.ausl_SkipLow = skipLo
     db.dto.ausl_AllLive = onlyLive
@@ -428,12 +467,17 @@ def autoSelect_OnUpd(enable, skipLo, onlyLive, earl, late, exRich, exPoor, szBig
     db.dto.ausl_Fav = fav
     db.dto.ausl_InAlb = inAlb
 
-    lg.info(f"[autoSel:OnUpd] Enable[{enable}] HighSim[{skipLo}] AlwaysPickLivePhoto[{onlyLive}] Earlier[{earl}] Later[{late}] ExifRich[{exRich}] ExifPoor[{exPoor}] BigSize[{szBig}] SmallSize[{szSml}] BigDim[{dimBig}] SmallDim[{dimSml}] namLn[{namLn}] namSt[{namSt}] jpg[{tJpg}] png[{tPng}] heic[{tHeic}] fav[{fav}] inAlb[{inAlb}]")
+    if usrPri and usrWgt:
+        db.dto.asul_Usr = f"{usrPri}:{usrWgt}"
+    else:
+        db.dto.asul_Usr = ''
+
+    lg.info(f"[autoSel:OnUpd] Enable[{enable}] HighSim[{skipLo}] AlwaysPickLivePhoto[{onlyLive}] Earlier[{earl}] Later[{late}] ExifRich[{exRich}] ExifPoor[{exPoor}] BigSize[{szBig}] SmallSize[{szSml}] BigDim[{dimBig}] SmallDim[{dimSml}] namLn[{namLn}] namSt[{namSt}] jpg[{tJpg}] png[{tPng}] heic[{tHeic}] fav[{fav}] inAlb[{inAlb}] usrPri[{usrPri}:{usrWgt}]")
 
     # Control enable/disable states
     dis = not enable
 
-    return [dis] * 17
+    return [dis] * 19
 
 
 @cbk(

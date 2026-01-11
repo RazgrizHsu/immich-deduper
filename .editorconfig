@@ -14,8 +14,8 @@ trim_trailing_whitespace = true
 
 
 space_in_parens = false
-space_in_brackets = true
-space_in_braces = true
+space_in_brackets = false
+space_in_braces = false
 space_in_call = false
 space_before_blocks = false
 space_around_operators = true
@@ -29,11 +29,12 @@ brace_style = same_line
 quote_style = keep
 trailing_comma = true
 reduce_semicolon = true
-compact_mode = true
+
 align_imports = true
 align_comments = true
 align_enum = true
 
+compact_mode = true
 
 [*.py]
 indent_style = space

@@ -732,6 +732,8 @@ h3 { font-size: 1.68rem; }
 
 .card .igrid .icriteria.icriteria-wrap > *:nth-child(6) { grid-column-start: 2; }
 
+.card .igrid .icriteria.icriteria-user > *:nth-child(2) { grid-column: span 2; }
+
 .card .irow { font-size: 14px; margin: 0; }
 
 .card .irow:not(:last-child) { border-bottom: 1px solid #888888aa; padding-bottom: 5px; }

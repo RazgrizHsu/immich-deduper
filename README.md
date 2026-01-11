@@ -7,7 +7,7 @@
 </p>
 <p align="center">
 <small>
-AI-powered duplicate photo finder and remover for <a href="https://github.com/immich-app/immich">Immich</a>.<br/>
+duplicate photo finder and remover for <a href="https://github.com/immich-app/immich">Immich</a>.<br/>
 Find and remove similar/duplicate images using deep learning.
 </small>
 </p>
@@ -17,41 +17,26 @@ Find and remove similar/duplicate images using deep learning.
 
 ## Features
 
-- **Asset Management**: Import and manage photo assets from Immich
-- **AI-Powered Vector**: Convert photos to feature vectors using ResNet152 for advanced similarity detection
-- **Duplicate Detection**: Find and manage duplicate photos based on visual similarity
-- **Filtering and Batch**: Browse photo library with filtering options and perform batch operations
-- **Web-Based UI**: User-friendly dashboard for all operations
+- **Visual Similarity Detection**: Find duplicates by how photos look
+- **Flexible Threshold**: Adjust from exact duplicates (0.97+) to similar shots (0.60+)
+- **Related Tree**: Discover connected similarities - find photos related to related photos
+- **Multi Mode**: Process up to 50 duplicate groups at once
+- **Cross-User Detection**: Find duplicates across multiple Immich users
+- **Auto-Selection**: Pick best photo by date, size, EXIF, and more
+- **Exclude Filters**: Skip specific extensions (.dng, .png) or filename patterns
+- **Safe Deletion**: Removed photos go to Immich trash, fully recoverable
 
 
-## preivew
+## Preivew
 
 <p align="center">
 <img src="docs/intro.jpg" alt="preview" />
 </p>
 
-### processing
+### Processing
 <p align="center">
 <img src="docs/intro.gif" alt="preview" />
 </p>
-
----
-
-## Version Compatibility
-
-**Deduper v0.1.11+** supports all Immich versions through automatic schema detection.
-
-**Automatic Schema Detection:**
-Deduper automatically detects and adapts to your Immich database schema:
-- Table names (plural vs singular: assets/asset, albums/album, tags/tag, users/user)
-- Junction table column names (plural vs singular: albumsId/albumId, assetsId/assetId, tagsId/tagId)
-
-No manual configuration needed - Deduper works seamlessly across all Immich versions.
-
-**Immich Schema Evolution:**
-- **Immich v1.136.0**: Changed main table names from plural to singular (assets → asset, albums → album, tags → tag, users → user)
-- **Immich v2.3.0**: Changed junction table column names from plural to singular (albumsId → albumId, assetsId → assetId, tagsId → tagId)
-- Deduper automatically handles all these variations
 
 ---
 
@@ -69,7 +54,6 @@ No manual configuration needed - Deduper works seamlessly across all Immich vers
    - Follows Immich's deletion logic for compatibility
    - **Important**: Enable trash feature in Immich settings first
    - Deleted assets appear in Immich's trash where you can permanently delete or restore them
-
 
 
 ## Usage Guide
@@ -170,22 +154,7 @@ When Deduper starts up, it performs several system checks as shown below:
 
 If you encounter any startup errors or version mismatches, follow the update instructions above or check the logs for detailed error information.
 
-## Logging
-
-Deduper automatically logs system operations and errors to help with troubleshooting.
-
-**Log Location:**
-- Logs are stored in the `DEDUP_DATA/logs/` directory
-- Log files are rotated daily for better organization
-
-**Troubleshooting:**
-- If you encounter any issues or unexpected behavior, check the log files in the logs directory
-- The logs contain detailed information about system operations, errors, and warnings
-- Log files can help identify configuration issues, database connection problems, or processing errors
-
-
 ---
-
 
 ## Installation & Setup
 
@@ -200,10 +169,10 @@ Choose the installation method that suits your needs:
 | **Source Installation** | Custom environment, development | Multi-platform GPU support (CUDA/MPS), customizable | Manual Qdrant and dependency setup |
 
 **Recommended Choice:**
-- 🚀 **Most users**: Use Docker Compose (CPU version)
-- ⚡ **Linux users with NVIDIA GPU**: Use Docker Compose (GPU version)
-- 🍎 **macOS users needing GPU**: Use source installation (MPS support)
-- 🔧 **Custom development or specific requirements**: Use source installation
+- **Most users**: Use Docker Compose (CPU version)
+- **Linux users with NVIDIA GPU**: Use Docker Compose (GPU version)
+- **macOS users needing GPU**: Use source installation (MPS support)
+- **Custom development or specific requirements**: Use source installation
 
 ### Prerequisites
 
@@ -400,6 +369,38 @@ For custom environments and development needs.
    python -m src.app
    ```
 
+---
+
+## Logging
+
+Deduper automatically logs system operations and errors to help with troubleshooting.
+
+**Log Location:**
+- Logs are stored in the `DEDUP_DATA/logs/` directory
+- Log files are rotated daily for better organization
+
+**Troubleshooting:**
+- If you encounter any issues or unexpected behavior, check the log files in the logs directory
+- The logs contain detailed information about system operations, errors, and warnings
+- Log files can help identify configuration issues, database connection problems, or processing errors
+
+---
+
+## Version Compatibility
+
+**Deduper v0.1.11+** supports all Immich versions through automatic schema detection.
+
+**Automatic Schema Detection:**
+Deduper automatically detects and adapts to your Immich database schema:
+- Table names (plural vs singular: assets/asset, albums/album, tags/tag, users/user)
+- Junction table column names (plural vs singular: albumsId/albumId, assetsId/assetId, tagsId/tagId)
+
+No manual configuration needed - Deduper works seamlessly across all Immich versions.
+
+**Immich Schema Evolution:**
+- **Immich v1.136.0**: Changed main table names from plural to singular (assets → asset, albums → album, tags → tag, users → user)
+- **Immich v2.3.0**: Changed junction table column names from plural to singular (albumsId → albumId, assetsId → assetId, tagsId → tagId)
+- Deduper automatically handles all these variations
 
 ---
 
@@ -441,7 +442,6 @@ Please consider the following:
 - Always backup your Immich database before performing operations that modify data
 - Use the similarity threshold carefully when identifying duplicates to avoid false positives
 - The developers are not responsible for any data loss that may occur from using this tool
-- Vector similarity is based on AI models and may not perfectly match human perception of similarity
 
 Immich-Deduper is provided "as is" without warranty of any kind. By using this software, you acknowledge the potential risks involved in managing and potentially modifying your photo collection.
 
