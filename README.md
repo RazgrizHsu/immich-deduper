@@ -27,7 +27,7 @@ Find and remove similar/duplicate images using deep learning.
 - **Safe Deletion**: Removed photos go to Immich trash, fully recoverable
 
 
-## Preivew
+## Preview
 
 <p align="center">
 <img src="docs/intro.jpg" alt="preview" />
