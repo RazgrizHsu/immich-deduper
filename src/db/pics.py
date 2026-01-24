@@ -13,7 +13,7 @@ from db import psql
 
 lg = log.get(__name__)
 
-pathDb = envs.mkitData + 'pics.db'
+pathDb = envs.ddupData + 'pics.db'
 
 
 @contextmanager

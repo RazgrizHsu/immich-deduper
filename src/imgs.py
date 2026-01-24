@@ -46,7 +46,7 @@ _model = None
 def getModel():
     global _model
     if _model is None:
-        model_dir = os.path.join(envs.mkitData, 'models')
+        model_dir = os.path.join(envs.ddupData, 'models')
         os.makedirs(model_dir, exist_ok=True)
         torch.hub.set_dir(model_dir)
 

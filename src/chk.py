@@ -127,23 +127,23 @@ def immichPath() -> tuple[bool, list[str]]:
     except Exception as e:
         return False, ['IMMICH_PATH check failed', str(e)]
 
-def mkitData() -> tuple[bool, list[str]]:
+def ddupData() -> tuple[bool, list[str]]:
     try:
-        if not envs.mkitData: return False, ['DEDUP_DATA not configured']
+        if not envs.ddupData: return False, ['DEDUP_DATA not configured']
 
-        if not os.path.exists(envs.mkitData):
+        if not os.path.exists(envs.ddupData):
             try:
-                os.makedirs(envs.mkitData, exist_ok=True)
+                os.makedirs(envs.ddupData, exist_ok=True)
             except Exception as e:
-                return False, ['Cannot create DEDUP_DATA directory', f'Path: {envs.mkitData}', str(e)]
+                return False, ['Cannot create DEDUP_DATA directory', f'Path: {envs.ddupData}', str(e)]
 
-        if not os.path.isdir(envs.mkitData): return False, ['DEDUP_DATA is not a directory', f'Path: {envs.mkitData}']
+        if not os.path.isdir(envs.ddupData): return False, ['DEDUP_DATA is not a directory', f'Path: {envs.ddupData}']
 
-        if not os.access(envs.mkitData, os.R_OK): return False, ['DEDUP_DATA is not readable', f'Path: {envs.mkitData}']
+        if not os.access(envs.ddupData, os.R_OK): return False, ['DEDUP_DATA is not readable', f'Path: {envs.ddupData}']
 
-        if not os.access(envs.mkitData, os.W_OK): return False, ['DEDUP_DATA is not writable', f'Path: {envs.mkitData}']
+        if not os.access(envs.ddupData, os.W_OK): return False, ['DEDUP_DATA is not writable', f'Path: {envs.ddupData}']
 
-        return True, ['DEDUP_DATA accessible', f'Path: {envs.mkitData}']
+        return True, ['DEDUP_DATA accessible', f'Path: {envs.ddupData}']
 
     except Exception as e:
         return False, ['DEDUP_DATA check failed', str(e)]
@@ -187,7 +187,7 @@ def model() -> tuple[bool, list[str]]:
         url = weights.url
         filename = url.split('/')[-1]
 
-        model_dir = os.path.join(envs.mkitData, 'models', 'checkpoints')
+        model_dir = os.path.join(envs.ddupData, 'models', 'checkpoints')
         local_path = os.path.join(model_dir, filename)
 
         if os.path.exists(local_path):
@@ -229,7 +229,7 @@ def exiftool() -> tuple[bool, list[str]]:
 def checkSystem() -> list[ChkItem]:
     return [
         ChkItem('ver', *ver()),
-        ChkItem('data', *mkitData()),
+        ChkItem('data', *ddupData()),
         ChkItem('logic', *immichLogic()),
         ChkItem('vec', *testVec()),
         ChkItem('psql', *psql()),

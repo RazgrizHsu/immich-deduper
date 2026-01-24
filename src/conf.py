@@ -267,14 +267,14 @@ class envs:
     psqlDb:str = os.getenv('PSQL_DB','')
     psqlUser:str = os.getenv('PSQL_USER','')
     psqlPass:str = os.getenv('PSQL_PASS','')
-    mkitPort:str = os.getenv('DEDUP_PORT', '8086')
+    ddupPort:str = os.getenv('DEDUP_PORT', '8086')
     offline:bool = os.getenv('OFFLINE', 'false').lower() == 'true'
 
     if os.getcwd().startswith(os.path.join(pathRoot, 'tests')):
-        mkitData = os.path.join(pathRoot, 'data/')
+        ddupData = os.path.join(pathRoot, 'data/')
     else:
-        mkitData = 'data/' if isDock else os.getenv('DEDUP_DATA', os.path.join(pathRoot, 'data/'))
-        if not mkitData.endswith('/'): mkitData += '/'
+        ddupData = 'data/' if isDock else os.getenv('DEDUP_DATA', os.path.join(pathRoot, 'data/'))
+        if not ddupData.endswith('/'): ddupData += '/'
 
     @staticmethod
     def showVars():
@@ -293,8 +293,8 @@ class envs:
         lg.info(f"  IMMICH_PATH_HOST: {envs.immichPathHost}")
         lg.info(f"  IMMICH_THUMB: {envs.immichThumb}")
         lg.info(f"  QDRANT_URL: {envs.qdrantUrl}")
-        lg.info(f"  DEDUP_PORT: {envs.mkitPort}")
-        lg.info(f"  DEDUP_DATA: {envs.mkitData}")
+        lg.info(f"  DEDUP_PORT: {envs.ddupPort}")
+        lg.info(f"  DEDUP_DATA: {envs.ddupData}")
         lg.info(f"  IS_DOCKER: {envs.isDock}")
         lg.info(f"  IS_DEV: {envs.isDev}")
 
@@ -312,7 +312,7 @@ def getHostName():
         return None
 
 def getEnvs():
-    return { 'port':envs.mkitPort }
+    return { 'port':envs.ddupPort }
 
 def getWsConfig():
     return {
@@ -323,4 +323,4 @@ def getWsConfig():
 # const
 #------------------------------------------------------------------------
 
-pathCache = envs.mkitData + 'cache/'
+pathCache = envs.ddupData + 'cache/'

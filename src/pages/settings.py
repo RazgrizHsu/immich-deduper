@@ -38,7 +38,7 @@ def layout():
                             dbc.Row([
                                 dbc.Col(htm.Div([
                                     htm.I(), htm.Small("Deduper Data", className="text-muted ms-2"),
-                                    htm.Div(envs.mkitData or "(Not configured)", className="fw-semibold text-break small")
+                                    htm.Div(envs.ddupData or "(Not configured)", className="fw-semibold text-break small")
                                 ], className="p-2 rounded chk-data"), width=6),
                                 dbc.Col(htm.Div([
                                     htm.I(), htm.Small("Immich Logic", className="text-muted ms-2"),

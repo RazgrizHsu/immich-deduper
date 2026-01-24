@@ -18,11 +18,12 @@ Find and remove similar/duplicate images using deep learning.
 ## Features
 
 - **Visual Similarity Detection**: Find duplicates by how photos look
-- **Flexible Threshold**: Adjust from exact duplicates (0.97+) to similar shots (0.60+)
-- **Related Tree**: Discover connected similarities - find photos related to related photos
+- **Search from Photo**: Find similar photos starting from any specific image
 - **Multi Mode**: Process up to 50 duplicate groups at once
 - **Cross-User Detection**: Find duplicates across multiple Immich users
+- **Flexible Threshold**: Adjust from exact duplicates (0.97+) to similar shots (0.60+)
 - **Auto-Selection**: Pick best photo by date, size, EXIF, and more
+- **Related Tree**: Discover connected similarities - find photos related to related photos
 - **Exclude Filters**: Skip specific extensions (.dng, .png) or filename patterns
 - **Safe Deletion**: Removed photos go to Immich trash, fully recoverable
 - **Metadata Merge** *(BETA)*: Transfer metadata from deleted photos to kept ones (albums, favorites, tags, rating, description, location)
@@ -441,6 +442,21 @@ For custom environments and development needs.
 
 ---
 
+### Environment Variables Reference
+
+**Path Variables:**
+- **Docker**: 
+  - `IMMICH_PATH`, `IMMICH_THUMB` refer to container paths (must match volume mount targets).
+  - `DEDUP_DATA` is used for host-side volume mount; inside the container, data is always at `/app/data`.
+- **Source**: All path variables refer directly to your filesystem paths.
+
+**Path Mapping (Docker only):**  
+> If your Immich database stores host paths instead of container paths,  
+> set `IMMICH_PATH_HOST` to the original host path.  
+> Deduper will auto-detect and map paths (e.g., `/mnt/photos/upload/...` → `/immich/...`).
+
+---
+
 ## Offline Mode
 
 For air-gapped environments without internet access, Deduper supports offline operation.
@@ -552,4 +568,4 @@ Please consider the following:
 
 Immich-Deduper is provided "as is" without warranty of any kind. By using this software, you acknowledge the potential risks involved in managing and potentially modifying your photo collection.
 
-Happy organizing! We hope this tool enhances your Immich experience by helping you maintain a clean, duplicate-free library.
+Happy organizing! I hope this tool enhances your Immich experience by helping you maintain a clean, duplicate-free library.

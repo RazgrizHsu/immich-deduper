@@ -7,7 +7,7 @@ from util import log
 
 lg = log.get(__name__)
 
-pathDb = envs.mkitData + 'sets.db'
+pathDb = envs.ddupData + 'sets.db'
 
 @contextmanager
 def mkConn():

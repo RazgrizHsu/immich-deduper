@@ -96,7 +96,7 @@ if __name__ == "__main__":
                 dev_tools_silence_routes_logging=True,
                 dev_tools_serve_dev_bundles=True,
                 host='0.0.0.0',
-                port=int(conf.envs.mkitPort)
+                port=int(conf.envs.ddupPort)
             )
             # socketio.run(
             #     app.server,
@@ -104,7 +104,7 @@ if __name__ == "__main__":
             #     use_reloader=True,
             #     log_output=False,
             #     host='0.0.0.0',
-            #     port=int(conf.envs.mkitPort),
+            #     port=int(conf.envs.ddupPort),
             #     allow_unsafe_werkzeug=True
             # )
 
@@ -115,7 +115,7 @@ if __name__ == "__main__":
                 debug=False,
                 log_output=False,
                 host='0.0.0.0',
-                port=int(conf.envs.mkitPort),
+                port=int(conf.envs.ddupPort),
                 allow_unsafe_werkzeug=True
             )
 
