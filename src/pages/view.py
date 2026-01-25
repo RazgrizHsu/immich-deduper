@@ -2,7 +2,7 @@ import db
 from db import psql
 import json
 from conf import ks
-from dsh import dash, htm, dcc, cbk, dbc, inp, out, ste, getTrgId, noUpd, ALL
+from dsh import dash, htm, dcc, cbk, ccbk, cbkFn, dbc, inp, out, ste, getTrgId, noUpd, ALL
 from mod import models
 from mod.models import Pager
 from ui import pager, gv
@@ -90,6 +90,7 @@ def layout():
                         dbc.Checkbox(id=k.cbxArc, label="Archived", value=False, className="mt-2"),
                         dbc.Checkbox(id=k.cbxLive, label="LivePhoto", value=False, className="mt-2"),
                         dbc.Checkbox(id=k.cbxGridInfo, label="Show Grid Info", value=db.dto.showGridInfo, className="mt-2"),
+                        htm.Div(id={"type": "dummy", "id": "grid-info-view"}, style={"display": "none"}),
                     ], width=4),
                 ]),
 
@@ -307,4 +308,12 @@ def onAssetDel(doReport: IFnProg, sto: models.ITaskStore):
 # Set up global functions
 #========================================================================
 mapFns[ks.cmd.view.assDel] = onAssetDel
+
+
+ccbk(
+    cbkFn("ui", "toggleGridInfo"),
+    out({"type": "dummy", "id": "grid-info-view"}, "children"),
+    inp(k.cbxGridInfo, "value"),
+    prevent_initial_call=False
+)
 

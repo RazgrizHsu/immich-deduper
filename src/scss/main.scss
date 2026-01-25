@@ -1527,6 +1527,11 @@ $spac: ($pad * 2) + ($gx * 2) + $sideW + 10px;
 			// padding: 0;
 			// border: red 1px solid;
 		}
+
+		&.grid-info {
+			display: none;
+			body.show-grid-info & { display: grid; }
+		}
 	}
 
 	.tagbox {

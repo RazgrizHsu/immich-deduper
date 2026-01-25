@@ -155,8 +155,7 @@ def mk(ass: models.Asset, modSim=True):
                     *([ htm.Span("livePhoto"), htm.Span(f"{ass.pathVdo}", className="tag blue"), ] if isLive else []),
                     *([ htm.Span("live VdoId"), htm.Span(f"{ass.vdoId}", className="tag blue"), ] if isLive else []),
 
-                ], class_name="grid"
-                ) if db.dto.showGridInfo else None,
+                ], class_name="grid grid-info"),
                 htm.Div([
                     tipExif,
 

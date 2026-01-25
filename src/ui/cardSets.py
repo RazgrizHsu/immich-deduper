@@ -1,6 +1,6 @@
 import json
 from dash.dependencies import ALL
-from dsh import htm, dcc, dbc, inp, out, ste, cbk, noUpd, ctx
+from dsh import htm, dcc, dbc, inp, out, ste, cbk, ccbk, cbkFn, noUpd, ctx
 
 from util import log
 
@@ -290,6 +290,7 @@ def renderCard():
                 htm.Div([
                     dbc.Checkbox(id=k.id(k.autoNext), label="Auto Find Next", value=db.dto.autoNext),
                     dbc.Checkbox(id=k.id(k.showGridInfo), label="Show Grid Info", value=db.dto.showGridInfo),
+                    htm.Div(id={"type": "dummy", "id": "grid-info"}, style={"display": "none"}),
 
                     htm.Div([
                         htm.Label("Max Items: "),
@@ -458,7 +459,6 @@ def settings_OnUpd(th, auNxt, shGdInfo, rtree,  maxItems, pathFilter, muodEnable
 
     if db.dto.showGridInfo != shGdInfo:
         db.dto.showGridInfo = shGdInfo
-        if retNow == noUpd: reloadAssets()
 
     if db.dto.rtree != rtree:
         db.dto.rtree = rtree
@@ -889,3 +889,11 @@ def immichThumb_OnUpd(val):
     db.dto.pathThumb = val or ""
     lg.info(f"[immichThumb:OnUpd] Updated to: {val}")
     return _chkPathIcon(val)
+
+
+ccbk(
+    cbkFn("ui", "toggleGridInfo"),
+    out({"type": "dummy", "id": "grid-info"}, "children"),
+    inp(k.id(k.showGridInfo), "value"),
+    prevent_initial_call=False
+)

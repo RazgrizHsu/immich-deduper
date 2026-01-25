@@ -245,3 +245,24 @@ document.addEventListener( 'DOMContentLoaded', () => {
 } )
 
 ui.init()
+
+window.dash_clientside.ui = {
+	toggleGridInfo( checked ) {
+		document.body.classList.toggle( 'show-grid-info', checked )
+		return dash_clientside.no_update
+	}
+}
+
+//========================================================================
+// showGridInfo toggle
+//========================================================================
+ui.mob.waitFor( '#sets-showGridInfo', cbx => {
+	const inp = cbx.querySelector( 'input[type="checkbox"]' )
+	if ( !inp ) return
+
+	if ( inp.checked ) document.body.classList.add( 'show-grid-info' )
+
+	inp.addEventListener( 'change', () => {
+		document.body.classList.toggle( 'show-grid-info', inp.checked )
+	})
+})
