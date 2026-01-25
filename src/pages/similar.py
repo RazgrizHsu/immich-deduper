@@ -376,15 +376,15 @@ def sim_Load(dta_now, dta_cnt):
 
     cntNo, cntOk, cntPn = cnt.simNo, cnt.simOk, cnt.simPnd
 
-    gvSim = []
+    gview = []
 
     # Check multi mode from dto settings
     if db.dto.muod:
-        gvSim = gv.mkGrdGrps(now.sim.assCur, onEmpty=[
+        gview = gv.mkGrdGrps(now.sim.assCur, onEmpty=[
             dbc.Alert("No grouped results found..", color="secondary", className="text-center m-5"),
         ])
     else:
-        gvSim = gv.mkGrd(now.sim.assCur, onEmpty=[
+        gview = gv.mkGrd(now.sim.assCur, onEmpty=[
             dbc.Alert("Please find the similar images..", color="secondary", className="text-center m-5"),
         ])
 
@@ -444,7 +444,7 @@ def sim_Load(dta_now, dta_cnt):
     activeTab = now.sim.activeTab if now.sim.activeTab else k.tabCur
 
     return [
-        gvSim, gvPnd,
+        gview, gvPnd,
         nowDict,
         pagerData.toDict() if pagerData else noUpd,
         tabDisabled, tabLabel, activeTab

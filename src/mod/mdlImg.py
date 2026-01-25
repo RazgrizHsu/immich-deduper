@@ -6,6 +6,7 @@ from conf import ks
 from mod import models
 from ui import gvEx
 from util import log
+from db import dto
 
 
 lg = log.get(__name__)
@@ -18,10 +19,10 @@ class k:
     floatL = "img-modal-floatL"
     floatR = "img-modal-floatR"
 
-    help = "img-modal-help"
+    imgHelp = "img-modal-help"
     btnHelp = "btn-img-help"
 
-    info = "img-modal-info"
+    imgInfo = "img-modal-info"
     btnInfo = "btn-img-info"
 
     btnMode = "btn-img-mode"
@@ -30,55 +31,10 @@ class k:
     btnSelect = "btn-img-select"
     navCtrls = "img-nav-controls"
 
-    txtHAuto = "🔄 Auto Height"
-    txtHFix = "🔄 Fixed Height"
+    txtHAuto = "🔄 Auto Height ?"
+    txtHFix = "🔄 Fixed Height ?"
 
     cssAuto = "auto"
-
-
-#------------------------------------------------------------------------
-# Helper functions
-#------------------------------------------------------------------------
-def _isAssetSelected(ste, autoId) -> bool:
-    if not ste or not ste.selectedIds or not autoId: return False
-    return autoId in ste.selectedIds
-
-
-def _getAssetBy(now, assId) -> Optional[models.Asset]:
-    if now.sim.assCur and assId:
-        return next((a for a in now.sim.assCur if a.id == assId), None)
-    return None
-
-
-def _getNavStyles(mdl, now):
-    if mdl.isMulti and now.sim.assCur and len(now.sim.assCur) > 1:
-        prevStyle = {"display": "block", "opacity": "0.3" if mdl.curIdx <= 0 else "1"}
-        nextStyle = {"display": "block", "opacity": "0.3" if mdl.curIdx >= len(now.sim.assCur) - 1 else "1"}
-    else:
-        prevStyle = {"display": "none"}
-        nextStyle = {"display": "none"}
-    return prevStyle, nextStyle
-
-
-def _getSelectBtnState(isSelected):
-    if isSelected:
-        return "✅ Selected", "success"
-    return "◻️ Select", "primary"
-
-
-def _getHelpState(mdl: models.MdlImg):
-    css = "help collapsed" if mdl.helpCollapsed else "help"
-    txt = "❔" if mdl.helpCollapsed else "❎"
-    if not mdl.isMulti: css = "hide"
-    return css, txt
-
-
-def _getInfoState(mdl: models.MdlImg):
-    css = "info collapsed" if mdl.infoCollapsed else "info"
-    txt = "ℹ️" if mdl.infoCollapsed else "❎"
-    if not mdl.isMulti: css = "hide"
-    return css, txt
-
 
 
 
@@ -130,7 +86,7 @@ layoutHelp = htm.Div([
             ], className="small")
         ], className="help-content")
     ], className="desc"),
-], id=k.help, className="help")
+], id=k.imgHelp, className="help")
 
 layoutInfo = htm.Div([
     htm.Div([
@@ -142,22 +98,22 @@ layoutInfo = htm.Div([
         ),
         htm.Div([
             htm.H6("Image Information", className="mb-2"),
-            htm.Div(id=f"{k.info}-content")
+            htm.Div(id=f"{k.imgInfo}-content")
         ], className="info-content")
     ], className="desc"),
-], id=k.info, className="info")
+], id=k.imgInfo, className="info")
 
 
 def render():
     return [
-        # Dummy element for mdlImg current autoId tracking
         htm.Div(id={"type": "dummy-output", "id": "mdlimg-current"}, style={"display": "none"}),
+        htm.Div(id={"type": "dummy", "id": "mdlimg-db"}, style={"display": "none"}),
 
         dbc.Modal([
             dbc.ModalHeader([
                 htm.Span("Image Preview", className="me-auto"),
                 dbc.Button(
-                    k.txtHFix,
+		            "mode",
                     id=k.btnMode,
                     color="secondary",
                     size="sm",
@@ -167,7 +123,7 @@ def render():
                 htm.Div(id=k.content, className="img"),
                 htm.Div([
                     dbc.Button(
-                        "📌 Select",
+                        "Select",
                         id=k.btnSelect,
                         color="info",
                         className="",
@@ -222,10 +178,15 @@ def mdlImg_OnImgPopClicked(clks, dta_mdl):
 
     mdl = models.MdlImg.fromDic(dta_mdl)
 
+    sets = dto.mdlImgSets or {}
+    mdl.modeH = sets.get('auto', False)
+    mdl.hideHelp = sets.get('help', False)
+    mdl.hideInfo = sets.get('info', False)
+
     trigIdx = ctx.triggered_id
     if isinstance(trigIdx, dict) and "aid" in trigIdx:
         aid = trigIdx["aid"]
-        lg.info(f"[mdlImg] clicked, aid[{aid}]")
+        lg.info(f"[mdlImg:single] clicked, aid[{aid}]")
 
         if aid:
             mdl.open = True
@@ -252,15 +213,20 @@ def mdlImg_OnImgPopMultiClicked(clks, dta_mdl, dta_now):
 
     if not ctx.triggered: return noUpd
 
-    mdl = models.MdlImg.fromDic(dta_mdl)
     now = models.Now.fromDic(dta_now)
+    mdl = models.MdlImg.fromDic(dta_mdl)
+
+    sets = dto.mdlImgSets or {}
+    mdl.modeH = sets.get('auto', False)
+    mdl.hideHelp = sets.get('help', True)
+    mdl.hideInfo = sets.get('info', True)
 
     trigIdx = ctx.triggered_id
 
     if isinstance(trigIdx, dict) and "aid" in trigIdx:
         aid = trigIdx["aid"]
         lens = len(now.sim.assCur)
-        lg.info(f"[mdlImg] clicked, aid[{aid}] lens[{lens}]")
+        lg.info(f"[mdlImg:multi] clicked, aid[{aid}] lens[{lens}] dta:{mdl}")
 
         if aid and now.sim.assCur:
             mdl.open = True
@@ -275,7 +241,7 @@ def mdlImg_OnImgPopMultiClicked(clks, dta_mdl, dta_now):
 # Client-side callback for mdlImg content update
 #------------------------------------------------------------------------
 ccbk(
-    cbkFn("mdlImg", "onContentUpdate"),
+    cbkFn("mdlImg", "onUpdMdl"),
 
     [
         out(k.modal, "is_open"),
@@ -285,11 +251,13 @@ ccbk(
         out(k.btnSelect, "style"),
         out(k.btnSelect, "children"),
         out(k.btnSelect, "color"),
-        out(k.help, "className"),
+        out(k.imgHelp, "className"),
         out(k.btnHelp, "children"),
-        out(k.info, "className"),
+        out(k.imgInfo, "className"),
         out(k.btnInfo, "children"),
-        out(f"{k.info}-content", "children"),
+        out(f"{k.imgInfo}-content", "children"),
+        out(k.modal, "className", allow_duplicate=True),
+        out(k.btnMode, "children", allow_duplicate=True),
     ],
     inp(k.store, "data"),
     [
@@ -333,7 +301,7 @@ ccbk(
 
     [
         out(k.store, "data", allow_duplicate=True),
-        out(k.help, "className", allow_duplicate=True),
+        out(k.imgHelp, "className", allow_duplicate=True),
         out(k.btnHelp, "children", allow_duplicate=True),
     ],
     inp(k.btnHelp, "n_clicks"),
@@ -349,7 +317,7 @@ ccbk(
 
     [
         out(k.store, "data", allow_duplicate=True),
-        out(k.info, "className", allow_duplicate=True),
+        out(k.imgInfo, "className", allow_duplicate=True),
         out(k.btnInfo, "children", allow_duplicate=True),
     ],
     inp(k.btnInfo, "n_clicks"),
@@ -364,11 +332,12 @@ ccbk(
     cbkFn("mdlImg", "onModeToggle"),
 
     [
-        out(k.modal, "className"),
-        out(k.btnMode, "children")
+        out(k.store, "data", allow_duplicate=True),
+        out(k.modal, "className", allow_duplicate=True),
+        out(k.btnMode, "children", allow_duplicate=True),
     ],
     inp(k.btnMode, "n_clicks"),
-    ste(k.modal, "className"),
+    [ste(k.store, "data")],
     prevent_initial_call=True
 )
 
@@ -412,3 +381,22 @@ ccbk(
     [inp(k.store, "data"), inp(ks.sto.now, "data")],
     prevent_initial_call=True
 )
+
+#------------------------------------------------------------------------
+# Server callback to persist mdlImg settings to db
+#------------------------------------------------------------------------
+@cbk(
+    out({"type": "dummy", "id": "mdlimg-db"}, "children"),
+    inp(k.store, "data"),
+    prevent_initial_call=True
+)
+def mdlImg_SaveSets(dta_mdl):
+    if not dta_mdl: return noUpd
+    import db
+    mdl = models.MdlImg.fromDic(dta_mdl)
+    db.dto.mdlImgSets = {
+        'auto': mdl.modeH,
+        'help': mdl.hideHelp,
+        'info': mdl.hideInfo,
+    }
+    return noUpd

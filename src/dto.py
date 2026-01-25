@@ -119,6 +119,8 @@ class DtoSets:
     mrg_Location:bool = AutoDbField('mrg_Location', bool, False) #type:ignore
     mrg_Visibility:bool = AutoDbField('mrg_Visibility', bool, False) #type:ignore
 
+    mdlImgSets:dict = AutoDbField('mdlImgSets', dict, {'auto': False, 'help': True, 'info': True}) #type:ignore
+
     def checkIsExclude(self, asset) -> bool:
         if not self.excl or not self.excl_FilNam:
             return False

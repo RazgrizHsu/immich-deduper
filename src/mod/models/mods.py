@@ -139,6 +139,7 @@ class MdlImg(BaseDictModel):
     imgUrl: Optional[str] = None
     isMulti: bool = False
     curIdx: int = 0
-    helpCollapsed: bool = False
-    infoCollapsed: bool = False
+    hideHelp: bool = False
+    hideInfo: bool = False
+    modeH: bool = False
 
