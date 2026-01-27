@@ -34,65 +34,74 @@ def mkConn():
 
 
 
+_SCHEMAS = {
+    'assets': '''
+        autoId           INTEGER Primary Key AUTOINCREMENT,
+        id               TEXT Unique,
+        ownerId          TEXT,
+        deviceId         TEXT,
+        libId            TEXT,
+        type             TEXT,
+        originalFileName TEXT,
+        originalPath     TEXT,
+        sidecarPath      TEXT,
+        fileCreatedAt    TEXT,
+        fileModifiedAt   TEXT,
+        localDateTime    TEXT,
+        isFavorite       INTEGER Default 0,
+        isArchived       INTEGER Default 0,
+
+        vdoId            TEXT,
+        pathThumbnail    TEXT,
+        pathPreview      TEXT,
+        pathVdo          TEXT,
+        jsonExif         TEXT Default '{}',
+        isVectored       INTEGER Default 0,
+        simOk            INTEGER Default 0,
+        simInfos         TEXT Default '[]',
+        simGIDs          TEXT Default '[]'
+    ''',
+    'libraries': '''
+        id          TEXT Primary Key,
+        name        TEXT,
+        ownerId     TEXT,
+        importPaths TEXT Default '[]'
+    ''',
+    'users': '''
+        id     TEXT Primary Key,
+        name   TEXT,
+        email  TEXT,
+        apiKey TEXT
+    ''',
+}
+
+# auto-key columns: autoId (AUTOINCREMENT) and PRIMARY KEY columns
+_AUTO_COLS = {'autoId'}
+
+
+def _migrate(c, tbl, schema):
+    c.execute(f"PRAGMA table_info({tbl})")
+    existCols = {row[1] for row in c.fetchall()}
+    tmpTbl = f"_mig_{tbl}"
+    c.execute(f"Create Temp Table {tmpTbl} ({schema})")
+    c.execute(f"PRAGMA temp.table_info({tmpTbl})")
+    for row in c.fetchall():
+        col, typ, defVal = row[1], row[2], row[4]
+        if col not in _AUTO_COLS and col not in existCols:
+            colDef = f"{col} {typ}" + (f" Default {defVal}" if defVal is not None else "")
+            c.execute(f"ALTER TABLE {tbl} ADD COLUMN {colDef}")
+            lg.info(f"[pics:migration] added {tbl}.{col}")
+    c.execute(f"Drop Table {tmpTbl}")
+
+
 def init():
     try:
         with mkConn() as conn:
             c = conn.cursor()
 
-            c.execute('''
-                Create Table If Not Exists assets (
-                    autoId           INTEGER Primary Key AUTOINCREMENT,
-                    id               TEXT Unique,
-                    ownerId          TEXT,
-                    deviceId         TEXT,
-                    libId            TEXT,
-                    type             TEXT,
-                    originalFileName TEXT,
-                    originalPath     TEXT,
-                    fileCreatedAt    TEXT,
-                    fileModifiedAt   TEXT,
-                    localDateTime    TEXT,
-                    isFavorite       INTEGER Default 0,
-                    isArchived       INTEGER Default 0,
-
-                    vdoId            TEXT,
-                    pathThumbnail    TEXT,
-                    pathPreview      TEXT,
-                    pathVdo          TEXT,
-                    jsonExif         TEXT Default '{}',
-                    isVectored       INTEGER Default 0,
-                    simOk            INTEGER Default 0,
-                    simInfos         TEXT Default '[]',
-                    simGIDs          TEXT Default '[]'
-                )
-                ''')
-
-            c.execute('''
-                Create Table If Not Exists libraries (
-                    id          TEXT Primary Key,
-                    name        TEXT,
-                    ownerId     TEXT,
-                    importPaths TEXT Default '[]'
-                )
-                ''')
-
-            c.execute('''
-                Create Table If Not Exists users (
-                    id     TEXT Primary Key,
-                    name   TEXT,
-                    email  TEXT,
-                    apiKey TEXT
-                )
-                ''')
-
-            # migration: add missing columns
-            c.execute("PRAGMA table_info(assets)")
-            existCols = {row[1] for row in c.fetchall()}
-            migs = [("libId", "TEXT"), ("sidecarPath", "TEXT")]
-            for col, typ in migs:
-                if col not in existCols:
-                    c.execute(f"ALTER TABLE assets ADD COLUMN {col} {typ}")
-                    lg.info(f"[pics:migration] added assets.{col}")
+            for tbl, schema in _SCHEMAS.items():
+                c.execute(f"Create Table If Not Exists {tbl} ({schema})")
+                _migrate(c, tbl, schema)
 
             # indexes
             c.execute('''CREATE INDEX IF NOT EXISTS idx_assets_autoId_simOk ON assets(autoId, simOk)''')

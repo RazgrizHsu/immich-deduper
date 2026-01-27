@@ -3,6 +3,9 @@ from mod import models
 from conf import ks, envs
 import conf
 
+from util import log
+lg = log.get(__name__)
+
 class k:
     connInfo = 'div-conn-info'
     sideState = 'div-side-state'
@@ -38,6 +41,7 @@ def layout():
         out(k.cardEnv, "children"),
         out(k.cardCnt, "children"),
         out(ks.sto.nfy, "data", allow_duplicate=True),
+        out(ks.sto.cnt, "data", allow_duplicate=True),
     ],
     inp(ks.sto.init, "children"),
     inp(ks.sto.cnt, "data"),
@@ -48,6 +52,10 @@ def layout():
 def onUpdateSideBar(_trigger, dta_count, dta_nfy):
     cnt = models.Cnt.fromDic(dta_count)
     nfy = models.Nfy.fromDic(dta_nfy)
+
+    if cnt.ass <= 0:
+        lg.info(f'[sidebar] refresh cnt')
+        cnt.refreshFromDB()
 
     dvcType = conf.device.type
     if dvcType == 'cuda':
@@ -117,4 +125,4 @@ def onUpdateSideBar(_trigger, dta_count, dta_nfy):
         ]),
     ]
 
-    return envRows, cacheRows, nfy.toDict()
+    return envRows, cacheRows, nfy.toDict(), cnt.toDict()

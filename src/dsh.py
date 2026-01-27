@@ -1,4 +1,5 @@
 import os
+from typing import Any, Sequence
 import dash
 
 import dash_bootstrap_components as dbc
@@ -17,6 +18,11 @@ from util import log
 lg = log.get(__name__)
 
 os.makedirs(pathCache, exist_ok=True)
+
+
+
+#Wrap options list for dbc.Select type compatibility
+def toOpts(o: list[dict[str, Any]]) -> Sequence[Any]: return o
 
 
 def getTrgId(ctx=None):
@@ -121,7 +127,7 @@ class NoUpdList(list):
 
 
 # noinspection PyProtectedMember
-class NoUpdHelper(dash._callback.NoUpdate):
+class NoUpdHelper(dash._no_update.NoUpdate):
     """
     Extended no_update utility class
 

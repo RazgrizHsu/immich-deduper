@@ -13,6 +13,33 @@ from util import log
 
 lg = log.get(__name__)
 
+
+class SioWrap:
+    """SocketIO wrapper with type-safe API and runtime validation"""
+    def __init__(self, sio: SocketIO):
+        self._sio = sio
+
+    def emit(self, event: str, data: dict, room: str | None = None):
+        try:
+            self._sio.emit(event, data, room=room)  # type: ignore[call-arg]
+        except TypeError as e:
+            if 'room' in str(e):
+                raise RuntimeError("flask-socketio API changed: room param removed") from e
+            raise
+
+    def on(self, event: str, handler):
+        self._sio.on_event(event, handler)
+
+    def broadcast(self, event: str, data: dict):
+        self._sio.emit(event, data)
+
+    @staticmethod
+    def sid() -> str:
+        sid = getattr(request, 'sid', None)
+        if sid is None:
+            raise RuntimeError("flask-socketio API changed: request.sid removed")
+        return sid
+
 from mod.models import TskStatus, IFnRst, IFnProg, Gws
 
 DEBUG = False
@@ -51,12 +78,13 @@ class BseTsk(ABC):
 #========================================================================
 class TskMgr:
     def __init__(self):
-        self.socketio: Optional[SocketIO] = None
+        self.sio: Optional[SioWrap] = None
         self.infos: Dict[str, TskInfo] = {}
         self.threads: Dict[str, threading.Thread] = {}
         self.tsks: Dict[str, BseTsk] = {}
         self.connected_clients: Set[str] = set()
         self.running = False
+        self.startupId = str(uuid.uuid4())
 
     def _sendCurrentTaskStatus(self, client_id: str):
         try:
@@ -67,71 +95,72 @@ class TskMgr:
             for tsn, ti in tsks:
                 lg.info(f"[tskMgr] Sending current task status to new client: {ti.name} - {ti.status.value}")
 
-                if self.socketio:
-                    self.socketio.emit('task_message', ti.gws('start').toDict(), room=client_id)
+                if self.sio:
+                    self.sio.emit('task_message', ti.gws('start').toDict(), room=client_id)
 
                     if ti.status == TskStatus.RUNNING:
                         msg = ti.gws('prog')
-                        self.socketio.emit('task_message', msg.toDict(), room=client_id)
+                        self.sio.emit('task_message', msg.toDict(), room=client_id)
 
                 break  # Only one task should be running at a time
         except Exception as e:
             lg.error(f"[tskMgr] Error sending current task status: {e}")
 
     def setup_socketio(self, socketio: SocketIO):
-        self.socketio = socketio
+        self.sio = SioWrap(socketio)
         self._register_handlers()
         lg.info(f"[tskMgr] SocketIO setup completed")
 
     def _register_handlers(self):
-        if not self.socketio: return
-        
-        self.socketio.on_event('connect', self._handle_connect)
-        self.socketio.on_event('disconnect', self._handle_disconnect) 
-        self.socketio.on_event('message', self._handle_message)
+        if not self.sio: return
+
+        self.sio.on('connect', self._handle_connect)
+        self.sio.on('disconnect', self._handle_disconnect)
+        self.sio.on('message', self._handle_message)
 
     def _handle_connect(self):
-        client_id = request.sid
+        client_id = SioWrap.sid()
         self.connected_clients.add(client_id)
-        
+
         cnt = len(self.connected_clients)
         lg.info(f"[tskMgr] connected.. Total[{cnt}] client[{client_id}]")
-        
-        # Send connected message
-        emit('task_message', Gws.mk('connected', '', '', '', '', 0).toDict())
-        
+
+        # Send connected message with startupId for reload detection
+        msg = Gws.mk('connected', '', '', '', '', 0).toDict()
+        msg['startupId'] = self.startupId
+        emit('task_message', msg)
+
         # Send current running task status to newly connected client
         self._sendCurrentTaskStatus(client_id)
 
     def _handle_disconnect(self):
-        client_id = request.sid
+        client_id = SioWrap.sid()
         if client_id in self.connected_clients:
             self.connected_clients.remove(client_id)
             lg.info(f"[tskMgr] disconnected.. Total[{len(self.connected_clients)}] client[{client_id}]")
 
     def _handle_message(self, data):
-        client_id = request.sid
+        client_id = SioWrap.sid()
         if DEBUG: lg.info(f"[tskMgr] Received message from client {client_id}: {data}")
 
     def broadcast(self, gws: Gws):
-        if not self.socketio:
+        if not self.sio:
             lg.warning(f"[tskMgr] SocketIO not initialized, cannot broadcast {gws.typ}")
             return
 
         if self.connected_clients:
             try:
-                # 廣播給所有連接的客戶端
-                self.socketio.emit('task_message', gws.toDict())
-                
+                self.sio.broadcast('task_message', gws.toDict())
+
                 if gws.typ == 'progress':
                     if DEBUG: lg.info(f"[tskMgr] Progress sent: {gws.prg}%")
                 elif gws.typ == 'complete':
                     lg.info(f"[tskMgr] Complete sent: status[{gws.ste}]")
                 elif gws.typ == 'start':
                     lg.info(f"[tskMgr] Start sent: name[{gws.nam}]")
-                    
+
                 if DEBUG: lg.info(f"[tskMgr:broadcast] Sent to {len(self.connected_clients)} clients")
-                
+
             except Exception as e:
                 lg.error(f"[tskMgr] Broadcast error: {e}")
 
@@ -168,7 +197,7 @@ class TskMgr:
         lg.info(f"[tskMgr] Task {tsn} cancelled, sending complete message")
 
         # Send cancel complete message to update UI
-        if self.socketio:
+        if self.sio:
             self.broadcast(ti.gws('complete'))
 
         return True

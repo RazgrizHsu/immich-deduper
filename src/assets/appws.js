@@ -15,42 +15,39 @@ const TskWS = {
 	fnTimeout: null,
 	fnConned: null,
 	fnErroed: null,
+	startupId: null,
 
-	init( fnConned, fnErroed )
-	{
+	init(fnConned, fnErroed){
 		this.fnConned = fnConned
 		this.fnErroed = fnErroed
-		dsh.syncStore( k.wsId, {} ) //init all null, let backend know conection status
+		dsh.syncStore(k.wsId, {}) //init all null, let backend know conection status
 
 		if (typeof io === 'undefined') {
-			console.error('[wst] WebSocket client library not found');
-			notify('❌ WebSocket client library not found. Task functionality unavailable.', 'error');
-			return;
+			console.error('[wst] WebSocket client library not found')
+			notify('❌ WebSocket client library not found. Task functionality unavailable.', 'error')
+			return
 		}
 
-		window.addEventListener( 'beforeunload', () => this.disconnect() )
+		window.addEventListener('beforeunload', () => this.disconnect())
 		this.connect()
 	},
-	connect()
-	{
-		if ( this.isConnecting || this.isConnected ) return
+	connect(){
+		if (this.isConnecting || this.isConnected) return
 
 		this.cleanup()
 		this.isConnecting = true
 
-		console.log( `[wst] Connecting to server...` )
+		console.log(`[wst] Connecting to server...`)
 
-		this.fnTimeout = setTimeout( () => {
-			if ( this.socket && !this.isConnected )
-			{
-				console.warn( '[wst] Connection timeout' )
+		this.fnTimeout = setTimeout(() =>{
+			if (this.socket && !this.isConnected) {
+				console.warn('[wst] Connection timeout')
 				this.socket.disconnect()
-				this.onError( 'Connection timeout' )
+				this.onError('Connection timeout')
 			}
-		}, 5000 )
+		}, 5000)
 
-		try
-		{
+		try{
 			let wsUrl = '/'
 			if (this.wsConfig && this.wsConfig.isDevUI) {
 				const currentPort = parseInt(window.location.port) || 8086
@@ -59,49 +56,42 @@ const TskWS = {
 			}
 			console.log(`[wst] Connecting...`)
 
-			this.socket = io(wsUrl, { transports: ['websocket', 'polling'], upgrade: true, reconnection: false })
+			this.socket = io(wsUrl, {transports: ['websocket', 'polling'], upgrade: true, reconnection: false})
 
-			this.socket.on('connect', this.onConn.bind(this));
-			this.socket.on('task_message', this.onMsg.bind(this));
-			this.socket.on('disconnect', this.onClose.bind(this));
-			this.socket.on('connect_error', this.onError.bind(this));
+			this.socket.on('connect', this.onConn.bind(this))
+			this.socket.on('task_message', this.onMsg.bind(this))
+			this.socket.on('disconnect', this.onClose.bind(this))
+			this.socket.on('connect_error', this.onError.bind(this))
 		}
-		catch ( error )
-		{
-			console.error( '[wst] WebSocket creation failed:', error )
-			this.onError( error.message )
+		catch (error){
+			console.error('[wst] WebSocket creation failed:', error)
+			this.onError(error.message)
 		}
 	},
 
-	cleanup()
-	{
-		if ( this.socket )
-		{
+	cleanup(){
+		if (this.socket) {
 			this.socket.removeAllListeners()
 			this.socket.disconnect()
 			this.socket = null
 		}
 	},
 
-	schedule()
-	{
-		setTimeout( () => {
+	schedule(){
+		setTimeout(() =>{
 			console.info(`[wst] reconnecting..`)
 			this.connect()
-		}, 5000 )
+		}, 5000)
 	},
 
-	clearCnnTimeout()
-	{
-		if ( this.fnTimeout )
-		{
-			clearTimeout( this.fnTimeout )
+	clearCnnTimeout(){
+		if (this.fnTimeout) {
+			clearTimeout(this.fnTimeout)
 			this.fnTimeout = null
 		}
 	},
 
-	onConn()
-	{
+	onConn(){
 		this.clearCnnTimeout()
 		this.isConnecting = false
 		this.isConnected = true
@@ -109,76 +99,73 @@ const TskWS = {
 		this.fnConned()
 	},
 
-	onError( error )
-	{
-		console.error( '[wst] Error:', error )
+	onError(error){
+		console.error('[wst] Error:', error)
 		this.clearCnnTimeout()
 		this.isConnecting = false
 		this.isConnected = false
 
-		this.updStoreWs( { err: typeof error === 'string' ? error : 'Connection error' } )
+		this.updStoreWs({err: typeof error === 'string' ? error : 'Connection error'})
 		//notify('❌ WebSocket connection failed. Task functionality is unavailable.', 'error')
-		this.fnErroed( typeof error === 'string' ? error : error?.message || 'Connection error' )
+		this.fnErroed(typeof error === 'string' ? error : error?.message || 'Connection error')
 		this.schedule()
 	},
 
-	onClose( reason )
-	{
-		console.log( `[wst] Connection closed: ${ reason }` )
+	onClose(reason){
+		console.log(`[wst] Connection closed: ${reason}`)
 		this.clearCnnTimeout()
 		this.isConnecting = false
 		this.isConnected = false
 
-		this.updStoreWs( { err: reason || 'Connection closed' } )
+		this.updStoreWs({err: reason || 'Connection closed'})
 
 		this.schedule()
 	},
 
-	onMsg( data )
-	{
-		try
-		{
-			if ( !data || typeof data !== 'object' )
-			{
-				console.error( `[wst] invalid message format:`, data )
+	onMsg(data){
+		try{
+			if (!data || typeof data !== 'object') {
+				console.error(`[wst] invalid message format:`, data)
 				return
 			}
 
-			this.updStoreWs( data )
+			if (data.typ === 'connected' && data.startupId) {
+				if (this.startupId && this.startupId !== data.startupId) {
+					console.log('[wst] server restarted, reloading...')
+					location.href = (new URL(location.href)).toString()
+					return
+				}
+				this.startupId = data.startupId
+			}
+
+			this.updStoreWs(data)
 
 		}
-		catch ( error )
-		{
-			console.error( '[wst] Message processing error:', error )
+		catch (error){
+			console.error('[wst] Message processing error:', error)
 		}
 	},
 
-	updStoreWs( state )
-	{
-		dsh.syncStore( k.wsId, state )
-
+	updStoreWs(state){
+		dsh.syncStore(k.wsId, state)
 		// const event = new CustomEvent('ws-status-change', {
 		//     detail: { state, error }
 		// })
 		// document.dispatchEvent(event)
 	},
 
-	send( message )
-	{
-		if ( this.isConnected && this.socket && this.socket.connected )
-		{
+	send(message){
+		if (this.isConnected && this.socket && this.socket.connected) {
 			this.socket.emit('message', message)
 			return true
 		}
-		else
-		{
-			console.warn( '[wst] Cannot send message - not connected' )
+		else {
+			console.warn('[wst] Cannot send message - not connected')
 			return false
 		}
 	},
 
-	disconnect()
-	{
+	disconnect(){
 		this.clearCnnTimeout()
 		this.cleanup()
 		this.isConnecting = false

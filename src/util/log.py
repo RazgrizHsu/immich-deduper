@@ -17,6 +17,18 @@ class filterLv(logging.Filter):
     def filter(self, record):
         if record.levelname == 'WARNING': record.levelname = 'WARN'
         if record.levelname == 'ERROR': record.levelname = 'ERRO'
+        msg = str(record.msg)
+        if 'werkzeug' in record.name:
+            if 'write() before start_response' in msg:
+                record.msg = '[werkzeug] page reload interrupted'
+                record.exc_info = None
+                record.exc_text = None
+            elif 'production deployment' in msg:
+                record.msg = '[werkzeug] dev server in prod (expected in docker)'
+        elif record.name == 'app' and 'Callback function not found' in msg:
+            record.msg = '[dash] stale callback - frontend needs reload'
+            record.exc_info = None
+            record.exc_text = None
         return True
 
 def setup(level=LogLevel, enableFile=EnableLogFile):

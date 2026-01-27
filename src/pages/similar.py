@@ -110,14 +110,20 @@ def layout(autoId=None):
 
                 dbc.Row([
                     dbc.Col([
-                        dbc.Button(f"Find Similar", id=k.btnFind, color="primary", className="w-100", disabled=True),
-                        htm.Br(),
-                        htm.Small("No similar found → auto-mark resolved", className="ms-2 me-2")
+                        dbc.Button([
+                            htm.Span(f"Find Similar"),
+                            htm.Br(),
+                            htm.Small("No similar found → auto-mark resolved"),
+                        ], id=k.btnFind, color="primary", className="w-100", disabled=True),
                     ], width=6),
 
                     dbc.Col([
                         dbc.Button("Clear record & Keep resolved", id=k.btnClear, color="danger me-1", className="w-100 mb-1", disabled=True),
-                        dbc.Button("Reset records", id=k.btnReset, color="danger", className="w-58", disabled=True),
+                        dbc.Button([
+                            htm.Span("Reset records"),
+                            htm.Br(),
+                            htm.Small("re-search auto-resolved"),
+                        ], id=k.btnReset, color="danger", className="w-100", disabled=True),
                     ], width=6, className="text-end"),
                 ], className="mt-3"),
 

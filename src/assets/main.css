@@ -710,6 +710,10 @@ h3 { font-size: 1.68rem; }
 .pager-size span { text-wrap: nowrap; vertical-align: middle; margin: 3px 0 0 3px; }
 
 /*======================== common ========================*/
+.btn:has(small) { padding-top: 3px; padding-bottom: 8px; }
+
+.btn:has(small) small { opacity: 0.80; display: block; line-height: 1; margin-top: 0px; font-size: 12px; }
+
 .curP { cursor: pointer !important; }
 
 .card { border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); transition: all 0.3s ease; background-color: #3a3a3a; border: 1px solid #444444; }

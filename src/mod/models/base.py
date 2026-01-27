@@ -1,16 +1,20 @@
 import inspect
 import json
-import sqlite3
 from dataclasses import dataclass, asdict, astuple
 from datetime import datetime
 from enum import Enum
-from typing import Dict, Any, Optional, Type, Tuple, TypeVar, Union, get_type_hints, get_origin, get_args
+from typing import Dict, Any, Optional, Type, Tuple, TypeVar, Union, get_type_hints, get_origin, get_args, Protocol, Sequence
 
 from util import log
 
 lg = log.get(__name__)
 
 T = TypeVar('T', bound='BaseDictModel')
+
+
+class CursorProto(Protocol):
+    @property
+    def description(self) -> Optional[Sequence[Sequence[Any]]]: ...
 
 
 # danger: replace dict to string method
@@ -279,13 +283,15 @@ class BaseDictModel:
 
 
     @classmethod
-    def fromDB(cls: Type[T], cursor: sqlite3.Cursor, row: tuple) -> T:
+    def fromDB(cls: Type[T], cursor: CursorProto, row: tuple) -> T:
         try:
             if not row: raise ValueError(f"row is empty")
 
             curid = id(cursor)
             cols = cls._cheDbCols.get(curid)
             if cols is None:
+                if cursor.description is None:
+                    raise TypeError("cursor.description is None")
                 cols = [desc[0] for desc in cursor.description]
                 cls._cheDbCols[curid] = cols
 

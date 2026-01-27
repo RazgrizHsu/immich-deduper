@@ -47,7 +47,7 @@ def mk(ass: models.Asset, modSim=True):
         htm.Div(
             className="card-meta",
             style={"display": "none"},
-            **{"data-meta": f'{{"id":"{ass.id}","autoId":{ass.autoId},"originalFileName":"{ass.originalFileName}","originalPath":"{ass.originalPath}"}}'}
+            **{"data-meta": f'{{"id":"{ass.id}","autoId":{ass.autoId},"originalFileName":"{ass.originalFileName}","originalPath":"{ass.originalPath}"}}'}  # type: ignore[arg-type]
         ),
         #------------------------------------------------------------------------
         # dynamic
