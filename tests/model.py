@@ -4,6 +4,7 @@ import os
 import sys
 import unittest
 from datetime import datetime
+from typing import Sequence, Any, Optional
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
@@ -15,8 +16,14 @@ from util import log
 lg = log.get(__name__)
 
 
-class TestBaseDictModel(unittest.TestCase):
+class MockCursor:
+    def __init__(self, cols: Sequence[str]): self._desc = tuple((c,) for c in cols)
 
+    @property
+    def description(self) -> Optional[Sequence[Sequence[Any]]]: return self._desc
+
+
+class TestBaseDictModel(unittest.TestCase):
     def test_simple_model(self):
         usr = Usr(id="1", name="TestUser", email="test@example.com")
 
@@ -53,9 +60,6 @@ class TestBaseDictModel(unittest.TestCase):
 
         self.assertEqual(usr2_restored.id, '')
         self.assertEqual(usr2_restored.name, '')
-
-
-
 
 
     def test_json_class(self):
@@ -133,7 +137,7 @@ class TestBaseDictModel(unittest.TestCase):
         self.assertEqual(asset.jsonExif.focalLength, 24.0)
 
     def test_asset_exif_from_db(self):
-        mock_cursor = type('MockCursor', (), {'description': [('id',), ('jsonExif',)]})()
+        mock_cursor = MockCursor(['id', 'jsonExif'])
         row = ('test-asset', '{"make":"Nikon","model":"D850","fNumber":4.0,"iso":200,"focalLength":70.0}')
 
         asset = Asset.fromDB(mock_cursor, row)
@@ -145,7 +149,7 @@ class TestBaseDictModel(unittest.TestCase):
         self.assertEqual(asset.jsonExif.focalLength, 70.0)
 
     def test_asset_simInfos_from_db(self):
-        mock_cursor = type('MockCursor', (), {'description': [('id',), ('simInfos',)]})()
+        mock_cursor = MockCursor(['id', 'simInfos'])
 
         row = ('test-asset', '[{"aid":1,"score":0.9},{"aid":2,"score":0.8},{"aid":3,"score":0.7}]')
         asset = Asset.fromDB(mock_cursor, row)
@@ -155,12 +159,12 @@ class TestBaseDictModel(unittest.TestCase):
         self.assertEqual(asset.simInfos[0].aid, 1)
         self.assertEqual(asset.simInfos[0].score, 0.9)
 
-        row = ('test-asset', '[]')
-        asset = Asset.fromDB(mock_cursor, row)
+        row2 = ('test-asset', '[]')
+        asset = Asset.fromDB(mock_cursor, row2)
         self.assertEqual(asset.simInfos, [])
 
-        row = ('test-asset', None)
-        asset = Asset.fromDB(mock_cursor, row)
+        row3 = ('test-asset', None)
+        asset = Asset.fromDB(mock_cursor, row3)
         self.assertEqual(asset.simInfos, [])
 
     def test_datetime_serialization(self):
@@ -191,14 +195,12 @@ class TestBaseDictModel(unittest.TestCase):
         nfy_dict = nfy.toDict()
         self.assertEqual(len(nfy_dict["msgs"]), 1)
 
-        msg_id = list(nfy_dict["msgs"].keys())[0]
-        self.assertEqual(nfy_dict["msgs"][msg_id]["message"], "Test message")
-        self.assertEqual(nfy_dict["msgs"][msg_id]["type"], "info")
+        self.assertEqual(nfy_dict["msgs"][0]["message"], "Test message")
+        self.assertEqual(nfy_dict["msgs"][0]["type"], "info")
 
         nfy_restored = Nfy.fromDic(nfy_dict)
         self.assertEqual(len(nfy_restored.msgs), 1)
-        msg_id = list(nfy_restored.msgs.keys())[0]
-        self.assertEqual(nfy_restored.msgs[msg_id]["message"], "Test message")
+        self.assertEqual(nfy_restored.msgs[0]["message"], "Test message")
 
     def test_combined_complex_scenario(self):
         now = Now()
@@ -207,15 +209,8 @@ class TestBaseDictModel(unittest.TestCase):
         nfy.info("System message")
         nfy.warn("Warning message")
 
-        tsk = Tsk(
-            id="task1",
-            name="Process task",
-        )
-
-        mdl = Mdl(
-            id="modal1",
-            msg="Confirm delete?",
-        )
+        tsk = Tsk( id="task1", name="Process task")
+        mdl = Mdl( id="modal1", msg="Confirm delete?")
 
         data = {
             "now": now.toDict(),
@@ -246,23 +241,17 @@ class TestBaseDictModel(unittest.TestCase):
             pics.init()
             assets = pics.getAll(count=5)
 
-            if not assets:
-                self.skipTest("No assets found in database")
+            if not assets: self.skipTest("No assets found in database")
 
             for asset in assets:
                 if asset.jsonExif is not None:
                     self.assertIsInstance(asset.jsonExif, AssetExif)
 
-                    if hasattr(asset.jsonExif, 'make') and asset.jsonExif.make:
-                        self.assertIsInstance(asset.jsonExif.make, str)
-                    if hasattr(asset.jsonExif, 'model') and asset.jsonExif.model:
-                        self.assertIsInstance(asset.jsonExif.model, str)
-                    if hasattr(asset.jsonExif, 'fNumber') and asset.jsonExif.fNumber:
-                        self.assertIsInstance(asset.jsonExif.fNumber, float)
-                    if hasattr(asset.jsonExif, 'iso') and asset.jsonExif.iso:
-                        self.assertIsInstance(asset.jsonExif.iso, int)
-                    if hasattr(asset.jsonExif, 'dateTimeOriginal') and asset.jsonExif.dateTimeOriginal:
-                        self.assertIsInstance(asset.jsonExif.dateTimeOriginal, str)
+                    if hasattr(asset.jsonExif, 'make') and asset.jsonExif.make: self.assertIsInstance(asset.jsonExif.make, str)
+                    if hasattr(asset.jsonExif, 'model') and asset.jsonExif.model: self.assertIsInstance(asset.jsonExif.model, str)
+                    if hasattr(asset.jsonExif, 'fNumber') and asset.jsonExif.fNumber: self.assertIsInstance(asset.jsonExif.fNumber, float)
+                    if hasattr(asset.jsonExif, 'iso') and asset.jsonExif.iso: self.assertIsInstance(asset.jsonExif.iso, int)
+                    if hasattr(asset.jsonExif, 'dateTimeOriginal') and asset.jsonExif.dateTimeOriginal: self.assertIsInstance(asset.jsonExif.dateTimeOriginal, str)
 
                 self.assertIsInstance(asset.simInfos, list)
                 for sim in asset.simInfos:
@@ -270,16 +259,14 @@ class TestBaseDictModel(unittest.TestCase):
                         self.assertIsInstance(sim, SimInfo)
                         self.assertTrue(hasattr(sim, 'aid'))
                         self.assertTrue(hasattr(sim, 'score'))
-        except Exception as e:
-            self.skipTest(f"Database test failed: {e})")
+        except Exception as e: self.skipTest(f"Database test failed: {e})")
 
     def test_db_simInfos_functionality(self):
         try:
             pics.init()
             assets = pics.getAll(count=5)
 
-            if not assets:
-                self.fail("No assets found in database")
+            if not assets: self.fail("No assets found in database")
 
             for ass in assets:
                 self.assertIsInstance(ass.simInfos, list)
@@ -288,18 +275,14 @@ class TestBaseDictModel(unittest.TestCase):
                         self.assertIsInstance(sim, SimInfo)
                         self.assertTrue(hasattr(sim, 'aid'))
                         self.assertTrue(hasattr(sim, 'score'))
-
-
-        except Exception as e:
-            self.skipTest(f"Database test failed: {e})")
+        except Exception as e: self.skipTest(f"Database test failed: {e})")
 
     def test_specific_asset_exif_conversion(self):
         try:
             pics.init()
             assets = pics.getAll(count=1)
 
-            if not assets:
-                self.skipTest("No assets found in database")
+            if not assets: self.skipTest("No assets found in database")
 
             asset_id = assets[0].id
             asset = pics.getById(asset_id)
@@ -310,21 +293,15 @@ class TestBaseDictModel(unittest.TestCase):
             if asset.jsonExif is not None:
                 self.assertIsInstance(asset.jsonExif, AssetExif)
 
-                if hasattr(asset.jsonExif, 'make') and asset.jsonExif.make:
-                    self.assertIsInstance(asset.jsonExif.make, str)
-                if hasattr(asset.jsonExif, 'model') and asset.jsonExif.model:
-                    self.assertIsInstance(asset.jsonExif.model, str)
-                if hasattr(asset.jsonExif, 'fNumber') and asset.jsonExif.fNumber:
-                    self.assertIsInstance(asset.jsonExif.fNumber, float)
-                if hasattr(asset.jsonExif, 'iso') and asset.jsonExif.iso:
-                    self.assertIsInstance(asset.jsonExif.iso, int)
-                if hasattr(asset.jsonExif, 'dateTimeOriginal') and asset.jsonExif.dateTimeOriginal:
-                    self.assertIsInstance(asset.jsonExif.dateTimeOriginal, str)
+                if hasattr(asset.jsonExif, 'make') and asset.jsonExif.make: self.assertIsInstance(asset.jsonExif.make, str)
+                if hasattr(asset.jsonExif, 'model') and asset.jsonExif.model: self.assertIsInstance(asset.jsonExif.model, str)
+                if hasattr(asset.jsonExif, 'fNumber') and asset.jsonExif.fNumber: self.assertIsInstance(asset.jsonExif.fNumber, float)
+                if hasattr(asset.jsonExif, 'iso') and asset.jsonExif.iso: self.assertIsInstance(asset.jsonExif.iso, int)
+                if hasattr(asset.jsonExif, 'dateTimeOriginal') and asset.jsonExif.dateTimeOriginal: self.assertIsInstance(asset.jsonExif.dateTimeOriginal, str)
 
             self.assertTrue(hasattr(asset, 'simInfos'))
             self.assertIsInstance(asset.simInfos, list)
-        except Exception as e:
-            self.skipTest(f"Database test failed: {e})")
+        except Exception as e: self.skipTest(f"Database test failed: {e})")
 
 
     def test_modal_basic(self):
@@ -343,8 +320,7 @@ class TestBaseDictModel(unittest.TestCase):
 
         # Missing required field 'name' should raise RuntimeError
         invalid_dict = {"id": "test"}
-        with self.assertRaises(RuntimeError):
-            RequiredFieldModel.fromDic(invalid_dict)
+        with self.assertRaises(RuntimeError): RequiredFieldModel.fromDic(invalid_dict)
 
         # Test with extra fields - should succeed as extra fields are filtered
         valid_dict = {"id": "test", "name": "test", "extra": "field", "another": "field"}
@@ -363,7 +339,6 @@ class TestBaseDictModel(unittest.TestCase):
         self.assertEqual(usr_restored.email, "test@example.com")
 
 
-
     def test_fromStr_with_datetime(self):
         test_dt = datetime(2023, 1, 1, 12, 0, 0)
         tsk = Tsk(id="task1", name="Test Task", args={"created_at": test_dt})
@@ -376,21 +351,17 @@ class TestBaseDictModel(unittest.TestCase):
         self.assertIn("created_at", tsk_restored.args)
 
     def test_fromStr_invalid_json(self):
-        with self.assertRaises(ValueError) as ctx:
-            Usr.fromStr("not a json string")
+        with self.assertRaises(ValueError) as ctx: Usr.fromStr("not a json string")
         self.assertIn("Invalid JSON string", str(ctx.exception))
 
-        with self.assertRaises(ValueError) as ctx:
-            Usr.fromStr("{invalid json}")
+        with self.assertRaises(ValueError) as ctx: Usr.fromStr("{invalid json}")
         self.assertIn("Invalid JSON string", str(ctx.exception))
 
     def test_fromStr_non_dict_json(self):
-        with self.assertRaises(ValueError) as ctx:
-            Usr.fromStr("[1, 2, 3]")
+        with self.assertRaises(ValueError) as ctx: Usr.fromStr("[1, 2, 3]")
         self.assertIn("Expected dict after JSON parse", str(ctx.exception))
 
-        with self.assertRaises(ValueError) as ctx:
-            Usr.fromStr('"string value"')
+        with self.assertRaises(ValueError) as ctx: Usr.fromStr('"string value"')
         self.assertIn("Expected dict after JSON parse", str(ctx.exception))
 
     def test_fromStr_with_complex_model(self):
@@ -422,16 +393,19 @@ class TestBaseDictModel(unittest.TestCase):
                 self.name = name
 
         # Mock cursor with only 'id' column, missing 'name' should raise TypeError
-        mock_cursor = type('MockCursor', (), {'description': [('id',)]})()
+        mock_cursor = MockCursor(['id'])
         row = ('test-id',)
-        with self.assertRaises(TypeError):
-            RequiredFieldModel.fromDB(mock_cursor, row)
+        with self.assertRaises(TypeError): RequiredFieldModel.fromDB(mock_cursor, row)
 
         # Test with None description should raise TypeError
-        mock_cursor2 = type('MockCursor', (), {'description': None})()
+        class NoneDescCursor:
+            @property
+            def description(self) -> None: return None
+
+        mock_cursor2 = NoneDescCursor()
+        BaseDictModel._cheDbCols.clear()
         row2 = ('test-id', 'test-name')
-        with self.assertRaises(TypeError):
-            RequiredFieldModel.fromDB(mock_cursor2, row2)
+        with self.assertRaises(TypeError): RequiredFieldModel.fromDB(mock_cursor2, row2)
 
 
     def test_data_with_enum(self):
@@ -517,13 +491,11 @@ class TestBaseDictModel(unittest.TestCase):
 
     def test_data_fromstr_errors(self):
         # Test invalid JSON
-        with self.assertRaises(ValueError) as ctx:
-            Gws.fromStr("not json")
+        with self.assertRaises(ValueError) as ctx: Gws.fromStr("not json")
         self.assertIn("Invalid JSON string", str(ctx.exception))
 
         # Test non-dict JSON
-        with self.assertRaises(ValueError) as ctx:
-            Gws.fromStr('["array", "not", "dict"]')
+        with self.assertRaises(ValueError) as ctx: Gws.fromStr('["array", "not", "dict"]')
         self.assertIn("Expected dict", str(ctx.exception))
 
     def test_uuid_to_usr_conversion(self):
@@ -616,50 +588,37 @@ class TestBaseDictModel(unittest.TestCase):
         self.assertEqual(asset.jsonExif.rating, 5)
 
     def test_deeply_nested_structure(self):
-        # Test complex nested structure with multiple levels
-        mdl_dict = {
-            "id": "test-modal",
-            "msg": "Delete these assets?",
-            "ok": False,
-            "assets": [
-                {
-                    "autoId": "100",
-                    "id": "asset-1",
-                    "originalFileName": "photo1.jpg",
-                    "isVectored": "1",
-                    "simInfos": [
-                        {"aid": "1001", "score": "0.95", "isSelf": False},
-                        {"aid": "1002", "score": "0.87", "isSelf": True}
-                    ],
-                    "jsonExif": {
-                        "make": "Canon",
-                        "fNumber": "1.8",
-                        "iso": "200"
-                    },
-                    "simGIDs": ["10", "20", "30"]
+        # Test Asset with nested simInfos, jsonExif, simGIDs
+        assets_data = [
+            {
+                "autoId": "100",
+                "id": "asset-1",
+                "originalFileName": "photo1.jpg",
+                "isVectored": "1",
+                "simInfos": [
+                    {"aid": "1001", "score": "0.95", "isSelf": False},
+                    {"aid": "1002", "score": "0.87", "isSelf": True}
+                ],
+                "jsonExif": {
+                    "make": "Canon",
+                    "fNumber": "1.8",
+                    "iso": "200"
                 },
-                {
-                    "autoId": "200",
-                    "id": "asset-2",
-                    "originalFileName": "photo2.jpg",
-                    "isVectored": "0",
-                    "simInfos": [
-                        {"aid": "2001", "score": "0.73", "isSelf": False}
-                    ],
-                    "simGIDs": ["40", "50"]
-                }
-            ]
-        }
+                "simGIDs": ["10", "20", "30"]
+            },
+            {
+                "autoId": "200",
+                "id": "asset-2",
+                "originalFileName": "photo2.jpg",
+                "isVectored": "0",
+                "simInfos": [
+                    {"aid": "2001", "score": "0.73", "isSelf": False}
+                ],
+                "simGIDs": ["40", "50"]
+            }
+        ]
 
-        mdl = Mdl.fromDic(mdl_dict)
-
-        # Verify basic fields
-        self.assertEqual(mdl.id, "test-modal")
-        self.assertFalse(mdl.ok)
-        self.assertEqual(len(mdl.assets), 2)
-
-        # Verify first asset
-        asset1 = mdl.assets[0]
+        asset1 = Asset.fromDic(assets_data[0])
         self.assertIsInstance(asset1, Asset)
         self.assertIsInstance(asset1.autoId, int)
         self.assertEqual(asset1.autoId, 100)
@@ -667,7 +626,6 @@ class TestBaseDictModel(unittest.TestCase):
         self.assertIsInstance(asset1.isVectored, int)
         self.assertEqual(asset1.isVectored, 1)
 
-        # Verify nested simInfos
         self.assertEqual(len(asset1.simInfos), 2)
         self.assertIsInstance(asset1.simInfos[0], SimInfo)
         self.assertIsInstance(asset1.simInfos[0].aid, int)
@@ -676,7 +634,6 @@ class TestBaseDictModel(unittest.TestCase):
         self.assertEqual(asset1.simInfos[0].score, 0.95)
         self.assertFalse(asset1.simInfos[0].isSelf)
 
-        # Verify nested jsonExif
         self.assertIsInstance(asset1.jsonExif, AssetExif)
         self.assertEqual(asset1.jsonExif.make, "Canon")
         self.assertIsInstance(asset1.jsonExif.fNumber, float)
@@ -684,13 +641,11 @@ class TestBaseDictModel(unittest.TestCase):
         self.assertIsInstance(asset1.jsonExif.iso, int)
         self.assertEqual(asset1.jsonExif.iso, 200)
 
-        # Verify simGIDs list conversion
         self.assertEqual(len(asset1.simGIDs), 3)
         self.assertIsInstance(asset1.simGIDs[0], int)
         self.assertEqual(asset1.simGIDs, [10, 20, 30])
 
-        # Verify second asset
-        asset2 = mdl.assets[1]
+        asset2 = Asset.fromDic(assets_data[1])
         self.assertIsInstance(asset2.autoId, int)
         self.assertEqual(asset2.autoId, 200)
         self.assertEqual(len(asset2.simInfos), 1)
@@ -699,5 +654,188 @@ class TestBaseDictModel(unittest.TestCase):
         self.assertEqual(asset2.simGIDs, [40, 50])
 
 
-if __name__ == "__main__":
-    unittest.main()
+class TestAutoDbField(unittest.TestCase):
+    def test_dto_types(self):
+        from dto import DtoSets
+        import db.sets as sets
+        sets.init()
+
+        fresh = DtoSets()
+        fresh.clearCache()
+
+        self.assertIsInstance(fresh.thMin, float)
+        self.assertIsInstance(fresh.autoNext, bool)
+        self.assertIsInstance(fresh.rtreeMax, int)
+        self.assertIsInstance(fresh.mdlImgSets, dict)
+
+    def test_dataclass_attr_write(self):
+        from dto import AutoDbField
+        from dataclasses import dataclass
+        import db.sets as sets
+        sets.init()
+
+        @dataclass
+        class MdlSets:
+            auto: bool = False
+            help: bool = True
+
+        class TestDto: cfg = AutoDbField('test_mdl_dc', MdlSets, MdlSets())
+
+        obj1 = TestDto()
+        obj1.cfg.auto = True
+        obj1.cfg.help = False
+
+        obj2 = TestDto()
+        if hasattr(obj2, '_cache_test_mdl_dc'): delattr(obj2, '_cache_test_mdl_dc')
+
+        self.assertEqual(obj2.cfg.auto, True)
+        self.assertEqual(obj2.cfg.help, False)
+
+    def test_dataclass_field_types(self):
+        from dto import AutoDbField
+        from dataclasses import dataclass
+        import db.sets as sets
+        sets.init()
+
+        @dataclass
+        class ISet:
+            a: bool = False
+            b: bool = True
+            c: int = 123
+
+        class Dto: cfg = AutoDbField('test_iset_types', ISet)
+
+        dto = Dto()
+        dto.cfg.a = True
+        dto.cfg.c = 456
+
+        dto2 = Dto()
+        if hasattr(dto2, '_cache_test_iset_types'): delattr(dto2, '_cache_test_iset_types')
+
+        self.assertEqual(dto2.cfg.a, True)
+        self.assertEqual(dto2.cfg.b, True)
+        self.assertEqual(dto2.cfg.c, 456)
+        self.assertIsInstance(dto2.cfg.c, int)
+
+    def test_dataclass_string_to_int_conversion(self):
+        """Test that string values from db are converted to proper types"""
+        from dto import AutoDbField
+        from dataclasses import dataclass
+        import db.sets as sets
+        sets.init()
+
+        # Simulate old db data with string numbers
+        sets.save('test_str_conv', '{"on": "true", "sz": "42", "rate": "0.95"}')
+
+        @dataclass
+        class StrTest:
+            on: bool = False
+            sz: int = 10
+            rate: float = 0.5
+
+        class Dto: cfg = AutoDbField('test_str_conv', StrTest)
+
+        dto = Dto()
+        self.assertIsInstance(dto.cfg.on, bool)
+        self.assertEqual(dto.cfg.on, True)
+        self.assertIsInstance(dto.cfg.sz, int)
+        self.assertEqual(dto.cfg.sz, 42)
+        self.assertIsInstance(dto.cfg.rate, float)
+        self.assertEqual(dto.cfg.rate, 0.95)
+
+    def test_dcproxy_setattr_type_conversion(self):
+        """Test DcProxy converts string to proper type on setattr (e.g. Dash Select returns string)"""
+        from dto import AutoDbField
+        from dataclasses import dataclass
+        import db.sets as sets
+        sets.init()
+
+        @dataclass
+        class ExclTest:
+            on: bool = True
+            fndLes: int = 0
+            fndOvr: int = 0
+            filNam: str = ''
+
+        class Dto: excl = AutoDbField('test_excl_setattr', ExclTest)
+
+        dto = Dto()
+        # Simulate Dash Select returning string values
+        dto.excl.fndOvr = "20"  # string from Select #type:ignore
+        dto.excl.on = "false"   # string bool #type:ignore
+
+        self.assertIsInstance(dto.excl.fndOvr, int)
+        self.assertEqual(dto.excl.fndOvr, 20)
+        self.assertIsInstance(dto.excl.on, bool)
+        self.assertEqual(dto.excl.on, False)
+
+        # Verify saved to db correctly
+        dto2 = Dto()
+        if hasattr(dto2, '_cache_test_excl_setattr'): delattr(dto2, '_cache_test_excl_setattr')
+        self.assertIsInstance(dto2.excl.fndOvr, int)
+        self.assertEqual(dto2.excl.fndOvr, 20)
+        self.assertIsInstance(dto2.excl.on, bool)
+        self.assertEqual(dto2.excl.on, False)
+
+
+    def test_muod_sz_type_via_proxy(self):
+        from dto import AutoDbField, Muod
+        import db.sets as sets
+        sets.init()
+
+        sets.save('test_muod_proxy', '{"on": false, "sz": 10}')
+
+        class Dto: muod = AutoDbField('test_muod_proxy', Muod)
+
+        dto = Dto()
+        self.assertIsInstance(dto.muod.sz, int)
+        self.assertEqual(dto.muod.sz, 10)
+
+        dto.muod.sz = "20"#type:ignore
+        self.assertIsInstance(dto.muod.sz, int)
+        self.assertEqual(dto.muod.sz, 20)
+
+        dto2 = Dto()
+        if hasattr(dto2, '_cache_test_muod_proxy'): delattr(dto2, '_cache_test_muod_proxy')
+        self.assertIsInstance(dto2.muod.sz, int)
+        self.assertEqual(dto2.muod.sz, 20)
+
+        sets.save('test_muod_proxy', '{"on": "false", "sz": "15"}')
+        dto3 = Dto()
+        if hasattr(dto3, '_cache_test_muod_proxy'): delattr(dto3, '_cache_test_muod_proxy')
+        self.assertIsInstance(dto3.muod.sz, int)
+        self.assertEqual(dto3.muod.sz, 15)
+
+        val = dto3.muod.sz
+        self.assertTrue(isinstance(val, int), f"muod.sz is {type(val).__name__}, val={val!r}")
+        result = len([]) < val
+        self.assertIsInstance(result, bool)
+
+
+    def test_muod_set_whole_dataclass_with_string_fields(self):
+        """Bug: Muod(muodOn, muodMxGs) from Dash Select passes string values,
+        AutoDbField.__set__ doesn't convert dataclass field types.
+        After set, cached value still has string fields."""
+        from dto import AutoDbField, Muod
+        import db.sets as sets
+        sets.init()
+
+        class Dto: muod = AutoDbField('test_muod_set_whole', Muod)
+
+        dto = Dto()
+        dto.muod = Muod("true", "5")#type:ignore
+
+        # Without clearing cache - simulates same process reading back
+        self.assertIsInstance(dto.muod.sz, int, f"cached muod.sz should be int but got {type(dto.muod.sz).__name__}={dto.muod.sz!r}")
+        self.assertEqual(dto.muod.sz, 5)
+        self.assertIsInstance(dto.muod.on, bool)
+        self.assertEqual(dto.muod.on, True)
+
+        # Also verify DB round-trip
+        dto2 = Dto()
+        if hasattr(dto2, '_cache_test_muod_set_whole'): delattr(dto2, '_cache_test_muod_set_whole')
+        self.assertIsInstance(dto2.muod.sz, int, f"db muod.sz should be int but got {type(dto2.muod.sz).__name__}={dto2.muod.sz!r}")
+        self.assertEqual(dto2.muod.sz, 5)
+
+
+if __name__ == "__main__": unittest.main()

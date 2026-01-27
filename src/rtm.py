@@ -89,10 +89,16 @@ class pth:
 
 
 # init
-if len(dto.pathImmich) == 0 and envs.immichPath and os.path.exists(envs.immichPath):
-    lg.info(f'init immichPath from env[{envs.immichPath}]')
-    dto.pathImmich = envs.immichPath
+if len(dto.pathImmich) == 0 and envs.immichPath:
+    if os.path.exists(envs.immichPath):
+        lg.info(f'init immichPath from env[{envs.immichPath}]')
+        dto.pathImmich = envs.immichPath
+    else:
+        lg.warn(f'init immichPath: path not found [{envs.immichPath}]')
 
-if len(dto.pathThumb) == 0 and envs.immichThumb and os.path.exists(envs.immichThumb):
-    lg.info(f'init immichThumb from env[{envs.immichThumb}]')
-    dto.pathThumb = envs.immichThumb
+if len(dto.pathThumb) == 0 and envs.immichThumb:
+    if os.path.exists(envs.immichThumb):
+        lg.info(f'init immichThumb from env[{envs.immichThumb}]')
+        dto.pathThumb = envs.immichThumb
+    else:
+        lg.warn(f'init immichThumb: path not found [{envs.immichThumb}] - check volume mount')

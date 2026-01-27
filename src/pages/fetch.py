@@ -36,7 +36,7 @@ def layout():
         ], className="body-header"),
 
         dbc.Card([
-            dbc.CardHeader("Settings"),
+            dbc.CardHeader("Fetch settings"),
             dbc.CardBody([
                 dbc.Row([
                     dbc.Col([
@@ -83,19 +83,28 @@ def layout():
                 ),
             ], width=4),
             dbc.Col([
-                htm.Div("Please proceed with caution", className="txt-sm"),
-                dbc.Button(
-                    "Reset All local data",
+
+                dbc.Button([
+                    htm.Span("Reset All"),
+                    htm.Br(),
+                    htm.Small("Clears all users' data & vectors", className="txt-sm")
+                ],
                     id=k.btnReset,
-                    size="sm",
                     color="danger",
                     className="w-100",
                 ),
             ], width=3),
 
-        ], className="mb-4"),
+        ], className="mb-5"),
 
-        cardSets.renderLibPaths(),
+        #------------------------------------
+        # lib settings
+        #------------------------------------
+        dbc.Row([
+
+           cardSets.renderLibPaths(),
+
+        ], className="mt-4"),
 
 
         #====== top end =========================================================

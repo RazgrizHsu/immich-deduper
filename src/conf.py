@@ -254,13 +254,14 @@ def pathFromRoot(path):
 # envs
 #------------------------------------------------------------------------
 class envs:
-    version='0.2.1'
+    version='0.2.2'
     isDev = False if isDock else bool(os.getenv('IsDev', False))
     isDevUI = False if isDock else bool(os.getenv('IsDevUI', False))
     isDock = False if not isDock else True
-    immichPathHost:str = os.getenv('IMMICH_PATH', '')  # original host path from .env
-    immichPath:str = '/immich' if isDock else immichPathHost
-    immichThumb:str = os.getenv('IMMICH_THUMB', '')
+    envImmichPath:str = os.getenv('IMMICH_PATH', '')    # original from .env
+    envImmichThumb:str = os.getenv('IMMICH_THUMB', '')  # original from .env
+    immichPath:str = '/immich' if isDock else envImmichPath
+    immichThumb:str = '/thumbs' if isDock and envImmichThumb else envImmichThumb
     qdrantUrl:str = 'http://immich-deduper-qdrant:6333' if isDock else os.getenv('QDRANT_URL','')
     psqlHost:str = os.getenv('PSQL_HOST','')
     psqlPort:str = os.getenv('PSQL_PORT','')
@@ -290,10 +291,14 @@ class envs:
         lg.info(f"  PSQL_USER: {envs.psqlUser}")
         lg.info(f"  PSQL_PASS: {maskSensitive(envs.psqlPass)}")
         if envs.isDock:
-            lg.info(f"  IMMICH_PATH: {envs.immichPathHost} → {envs.immichPath}")
+            lg.info(f"  IMMICH_PATH: {envs.envImmichPath} → {envs.immichPath}")
+            if envs.envImmichThumb:
+                lg.info(f"  IMMICH_THUMB: {envs.envImmichThumb} → {envs.immichThumb}")
+            else:
+                lg.info(f"  IMMICH_THUMB: (not set)")
         else:
             lg.info(f"  IMMICH_PATH: {envs.immichPath}")
-        lg.info(f"  IMMICH_THUMB: {envs.immichThumb}")
+            lg.info(f"  IMMICH_THUMB: {envs.immichThumb or '(not set)'}")
         lg.info(f"  QDRANT_URL: {envs.qdrantUrl}")
         lg.info(f"  DEDUP_PORT: {envs.ddupPort}")
         lg.info(f"  DEDUP_DATA: {envs.ddupData}")

@@ -203,7 +203,6 @@ def setup_safe_timestamp_loader():
         psycopg.adapters.register_loader("timestamptz", SafeTimestamptzLoader)
         psycopg.adapters.register_loader("timestamp", SafeTimestampLoader)
 
-        lg.info("Custom timestamp loaders registered successfully")
     except Exception as e:
         lg.warning(f"Failed to register custom timestamp loaders: {e}")
 
@@ -371,16 +370,21 @@ def testAssetsPath():
                     pathDB = row.get("path", "")
                     if pathDB:
                         originalPath = pathDB
+                        isThumb = '/thumbs/' in pathDB or pathDB.startswith('thumbs/')
                         pathFi = rtm.pth.full(pathDB)
-                        lg.info(f"[psql] testPath: DB[{originalPath}] → full[{pathFi}]")
 
-                        if os.path.exists(pathFi):
+                        existsFi = os.path.exists(pathFi)
+                        lg.info(f"[psql] testPath: DB[{originalPath}] → full[{pathFi}] exists[{existsFi}] isThumb[{isThumb}]")
+                        if isThumb:
+                            lg.info(f"[psql] testPath: IMMICH_THUMB env[{envs.envImmichThumb or '(not set)'}] → cont[{envs.immichThumb or '(not set)'}]")
+
+                        if existsFi:
                             lg.info(f"[psql] testPath: OK")
                             return ["OK"]
 
                         # Docker mode: try host path mapping
-                        if envs.isDock and envs.immichPathHost:
-                            hostPth = envs.immichPathHost.rstrip('/')
+                        if envs.isDock and envs.envImmichPath:
+                            hostPth = envs.envImmichPath.rstrip('/')
                             contPth = rtm.immichPath.rstrip('/')
                             lg.info(f"[psql] testPath: trying mapping host[{hostPth}] → cont[{contPth}]")
 
@@ -393,15 +397,29 @@ def testAssetsPath():
                                     lg.info(f"[psql] Path mapping enabled: {hostPth} → {contPth}")
                                     return ["OK", f"Path mapping: {hostPth} → {contPth}"]
 
+                        # error message
+                        envVar = 'IMMICH_THUMB' if isThumb else 'IMMICH_PATH'
+                        if isThumb and not envs.immichThumb:
+                            lg.error(f"[psql] testPath: FAILED - thumb path detected but IMMICH_THUMB not configured")
+                            return [
+                                "Thumbnail path detected but IMMICH_THUMB not configured:",
+                                f"  DB path: '{originalPath}'",
+                                f"  Resolved: '{pathFi}' (not found)",
+                                "",
+                                "For separate thumbnail directory, set IMMICH_THUMB in .env",
+                                "and add volume mount: - ${IMMICH_THUMB}:/thumbs:ro"
+                            ]
+
+                        lg.error(f"[psql] testPath: FAILED - {envVar} path not found [{pathFi}]")
                         return [
                             "Asset file not found at expected path:",
                             f"  {pathFi}",
                             "",
                             "This path was constructed from:",
-                            "  IMMICH_PATH + DB Path",
+                            f"  {envVar} + DB Path",
                             f"  DB Path: '{originalPath}'",
                             "",
-                            "Please verify IMMICH_PATH environment variable matches your Immich installation path."
+                            f"Please verify {envVar} environment variable matches your Immich installation path."
                         ]
 
                 return [
@@ -410,7 +428,7 @@ def testAssetsPath():
                 ]
 
     except Exception as e:
-        raise mkErr("Failed to test assets path. Please verify IMMICH_PATH environment variable matches your Immich installation path", e)
+        raise mkErr("Failed to test assets path. Please verify IMMICH_PATH/IMMICH_THUMB environment variables match your Immich installation paths", e)
 
 
 

@@ -45,14 +45,13 @@ def createReporter(doReport: IFnProg) -> Callable[[str], Tuple[int, int]]:
     return autoReport
 
 
-def checkMuodConds(assets: List[models.Asset]) -> bool:
+def checkGroupConds(assets: List[models.Asset]) -> bool:
     if not assets or len(assets) < 2: return False
-    if not db.dto.muod: return True
 
-    doDate = db.dto.muod_EqDt
-    doWidth = db.dto.muod_EqW
-    doHeight = db.dto.muod_EqH
-    doSize = db.dto.muod_EqFs
+    doDate = db.dto.gpsk.eqDt
+    doWidth = db.dto.gpsk.eqW
+    doHeight = db.dto.gpsk.eqH
+    doSize = db.dto.gpsk.eqFsz
 
     if not any([doDate, doWidth, doHeight, doSize]): return True
 
@@ -108,7 +107,7 @@ def searchBy(src: Optional[models.Asset], doRep: IFnProg, isCancel: IFnCancel, f
 
     skipAids = []
 
-    sizeMax = db.dto.muod_Size
+    sizeMax = db.dto.muod.sz
 
     while len(gis) < sizeMax:
         if isCancel():
@@ -156,7 +155,7 @@ def searchBy(src: Optional[models.Asset], doRep: IFnProg, isCancel: IFnCancel, f
             raise
 
         # break for normal mode
-        if fromUrl or not db.dto.muod: break
+        if fromUrl or not db.dto.muod.on: break
 
     totalAssets = sum(len(g.assets) for g in gis)
     doRep(100, f"Found {len(gis)} groups with {totalAssets} total assets")
@@ -182,7 +181,7 @@ def findGroupBy(asset: models.Asset, doReport: IFnProg, grpId: int, fromUrl=Fals
 
     simAids = [i.aid for i in bseInfos if not i.isSelf]
 
-    if db.dto.excl and db.dto.excl_FilNam:
+    if db.dto.excl.on and db.dto.excl.filNam:
         filteredAids = []
         for aid in simAids:
             simAsset = db.pics.getByAutoId(aid)
@@ -197,22 +196,21 @@ def findGroupBy(asset: models.Asset, doReport: IFnProg, grpId: int, fromUrl=Fals
         db.pics.setSimInfos(asset.autoId, bseInfos, isOk=1)
         return result
 
-    if db.dto.muod:
-        assets = [asset] + [db.pics.getByAutoId(aid) for aid in simAids if db.pics.getByAutoId(aid)]
-        if not checkMuodConds(assets):
-            lg.info(f"[sim:ss] Group conditions not met for #{asset.autoId}")
+    assets = [asset] + [db.pics.getByAutoId(aid) for aid in simAids if db.pics.getByAutoId(aid)]
+    if not checkGroupConds(assets):
+        lg.info(f"[sim:ss] Group conditions not met for #{asset.autoId}")
+        db.pics.setSimInfos(asset.autoId, bseInfos, isOk=1)
+        return result
+
+    if db.dto.excl.on and db.dto.excl.fndLes > 0:
+        if len(simAids) < db.dto.excl.fndLes:
+            lg.info(f"[sim:ss] Excluding #{asset.autoId}, similar count({len(simAids)}) < threshold({db.dto.excl.fndLes})")
             db.pics.setSimInfos(asset.autoId, bseInfos, isOk=1)
             return result
 
-    if db.dto.excl and db.dto.excl_FndLes > 0:
-        if len(simAids) < db.dto.excl_FndLes:
-            lg.info(f"[sim:ss] Excluding #{asset.autoId}, similar count({len(simAids)}) < threshold({db.dto.excl_FndLes})")
-            db.pics.setSimInfos(asset.autoId, bseInfos, isOk=1)
-            return result
-
-    if db.dto.excl and db.dto.excl_FndOvr > 0:
-        if len(simAids) > db.dto.excl_FndOvr:
-            lg.info(f"[sim:ss] Excluding #{asset.autoId}, similar count({len(simAids)}) > threshold({db.dto.excl_FndOvr})")
+    if db.dto.excl.on and db.dto.excl.fndOvr > 0:
+        if len(simAids) > db.dto.excl.fndOvr:
+            lg.info(f"[sim:ss] Excluding #{asset.autoId}, similar count({len(simAids)}) > threshold({db.dto.excl.fndOvr})")
             db.pics.setSimInfos(asset.autoId, bseInfos, isOk=1)
             return result
 
@@ -222,7 +220,7 @@ def findGroupBy(asset: models.Asset, doReport: IFnProg, grpId: int, fromUrl=Fals
 
     processChildren(asset, bseInfos, simAids, doReport)
 
-    if not fromUrl and db.dto.muod:
+    if not fromUrl and db.dto.muod.on:
         #not fromUrl and enable muod
         assets = db.pics.getSimAssets(asset.autoId, False) # muod group ignore rtree
         for i, ass in enumerate(assets):
@@ -290,18 +288,18 @@ def processChildren(asset: models.Asset, bseInfos: List[models.SimInfo], simAids
 
 def getAutoSelectAuids(src: List[models.Asset]) -> List[int]:
     lg.info(f"[ausl] Starting auto-selection, auSelEnable[{db.dto.ausl}], assets count={len(src) if src else 0}")
-    lg.info(f"[ausl] Weights: Earlier[{db.dto.ausl_Earlier}] Later[{db.dto.ausl_Later}] ExifRich[{db.dto.ausl_ExRich}] ExifPoor[{db.dto.ausl_ExPoor}] BigSize[{db.dto.ausl_OfsBig}] SmallSize[{db.dto.ausl_OfsSml}] BigDim[{db.dto.ausl_DimBig}] SmallDim[{db.dto.ausl_DimSml}] HighSim[{db.dto.ausl_SkipLow}] AlwaysPickLivePhoto[{db.dto.ausl_AllLive}] jpg[{db.dto.ausl_TypJpg}] png[{db.dto.ausl_TypPng}] heic[{db.dto.ausl_TypHeic}] fav[{db.dto.ausl_Fav}] inAlb[{db.dto.ausl_InAlb}]")
+    lg.info(f"[ausl] Weights: Earlier[{db.dto.ausl.earlier}] Later[{db.dto.ausl.later}] ExifRich[{db.dto.ausl.exRich}] ExifPoor[{db.dto.ausl.exPoor}] BigSize[{db.dto.ausl.ofsBig}] SmallSize[{db.dto.ausl.ofsSml}] BigDim[{db.dto.ausl.dimBig}] SmallDim[{db.dto.ausl.dimSml}] HighSim[{db.dto.ausl.skipLow}] AlwaysPickLivePhoto[{db.dto.ausl.allLive}] jpg[{db.dto.ausl.typJpg}] png[{db.dto.ausl.typPng}] heic[{db.dto.ausl.typHeic}] fav[{db.dto.ausl.fav}] inAlb[{db.dto.ausl.inAlb}]")
 
     if not db.dto.ausl or not src: return []
 
     active = any([
-            db.dto.ausl_Earlier > 0, db.dto.ausl_Later > 0,
-            db.dto.ausl_ExRich > 0, db.dto.ausl_ExPoor > 0,
-            db.dto.ausl_OfsBig > 0, db.dto.ausl_OfsSml > 0,
-            db.dto.ausl_DimBig > 0, db.dto.ausl_DimSml > 0,
-            db.dto.ausl_NamLon > 0, db.dto.ausl_NamSht > 0,
-            db.dto.ausl_TypJpg > 0, db.dto.ausl_TypPng > 0, db.dto.ausl_TypHeic > 0,
-            db.dto.ausl_Fav > 0, db.dto.ausl_InAlb > 0,
+            db.dto.ausl.earlier > 0, db.dto.ausl.later > 0,
+            db.dto.ausl.exRich > 0, db.dto.ausl.exPoor > 0,
+            db.dto.ausl.ofsBig > 0, db.dto.ausl.ofsSml > 0,
+            db.dto.ausl.dimBig > 0, db.dto.ausl.dimSml > 0,
+            db.dto.ausl.namLon > 0, db.dto.ausl.namSht > 0,
+            db.dto.ausl.typJpg > 0, db.dto.ausl.typPng > 0, db.dto.ausl.typHeic > 0,
+            db.dto.ausl.fav > 0, db.dto.ausl.inAlb > 0,
         ])
 
     if not active: return []
@@ -337,7 +335,7 @@ def getAutoSelectAuids(src: List[models.Asset]) -> List[int]:
 def _shouldSkipGroupBy(src: List[models.Asset], grpId: int) -> bool:
     lg.info(f"[ausl] ------ Group[ {grpId} ] assets[ {len(src)} ]------")
 
-    if not db.dto.ausl_SkipLow: return False
+    if not db.dto.ausl.skipLow: return False
 
     hasLow = False
     ats = []
@@ -452,47 +450,47 @@ def _selectBestAsset(grpAssets: List[models.Asset]) -> int:
         validDates = [d for d in dates if d]
 
         if dates[idx] and validDates and len(set(validDates)) > 1:
-            if db.dto.ausl_Earlier > 0 and dates[idx] == min(validDates):
-                pts = db.dto.ausl_Earlier * 10
+            if db.dto.ausl.earlier > 0 and dates[idx] == min(validDates):
+                pts = db.dto.ausl.earlier * 10
                 score += pts
                 details.append(f"Earlier+{pts}")
-            if db.dto.ausl_Later > 0 and dates[idx] == max(validDates):
-                pts = db.dto.ausl_Later * 10
+            if db.dto.ausl.later > 0 and dates[idx] == max(validDates):
+                pts = db.dto.ausl.later * 10
                 score += pts
                 details.append(f"Later+{pts}")
 
-        addScore(db.dto.ausl_ExRich, [m.exfCnt for m in met], True, "ExifRich")
-        addScore(db.dto.ausl_ExPoor, [m.exfCnt for m in met], False, "ExifPoor")
-        addScore(db.dto.ausl_OfsBig, [m.fileSz for m in met], True, "BigSize")
-        addScore(db.dto.ausl_OfsSml, [m.fileSz for m in met], False, "SmallSize")
-        addScore(db.dto.ausl_DimBig, [m.dim for m in met], True, "BigDim")
-        addScore(db.dto.ausl_DimSml, [m.dim for m in met], False, "SmallDim")
-        addScore(db.dto.ausl_NamLon, [m.nameLen for m in met], True, "LongName")
-        addScore(db.dto.ausl_NamSht, [m.nameLen for m in met], False, "ShortName")
+        addScore(db.dto.ausl.exRich, [m.exfCnt for m in met], True, "ExifRich")
+        addScore(db.dto.ausl.exPoor, [m.exfCnt for m in met], False, "ExifPoor")
+        addScore(db.dto.ausl.ofsBig, [m.fileSz for m in met], True, "BigSize")
+        addScore(db.dto.ausl.ofsSml, [m.fileSz for m in met], False, "SmallSize")
+        addScore(db.dto.ausl.dimBig, [m.dim for m in met], True, "BigDim")
+        addScore(db.dto.ausl.dimSml, [m.dim for m in met], False, "SmallDim")
+        addScore(db.dto.ausl.namLon, [m.nameLen for m in met], True, "LongName")
+        addScore(db.dto.ausl.namSht, [m.nameLen for m in met], False, "ShortName")
 
-        if db.dto.ausl_TypJpg > 0 and met[idx].fileType in ['jpg', 'jpeg']:
-            pts = db.dto.ausl_TypJpg * 10
+        if db.dto.ausl.typJpg > 0 and met[idx].fileType in ['jpg', 'jpeg']:
+            pts = db.dto.ausl.typJpg * 10
             score += pts
             details.append(f"JPG+{pts}")
-        if db.dto.ausl_TypPng > 0 and met[idx].fileType == 'png':
-            pts = db.dto.ausl_TypPng * 10
+        if db.dto.ausl.typPng > 0 and met[idx].fileType == 'png':
+            pts = db.dto.ausl.typPng * 10
             score += pts
             details.append(f"PNG+{pts}")
-        if db.dto.ausl_TypHeic > 0 and met[idx].fileType in ['heic', 'heif']:
-            pts = db.dto.ausl_TypHeic * 10
+        if db.dto.ausl.typHeic > 0 and met[idx].fileType in ['heic', 'heif']:
+            pts = db.dto.ausl.typHeic * 10
             score += pts
             details.append(f"HEIC+{pts}")
 
-        if db.dto.ausl_Fav > 0 and met[idx].isFav:
-            pts = db.dto.ausl_Fav * 10
+        if db.dto.ausl.fav > 0 and met[idx].isFav:
+            pts = db.dto.ausl.fav * 10
             score += pts
             details.append(f"Fav+{pts}")
-        if db.dto.ausl_InAlb > 0 and met[idx].hasAlb:
-            pts = db.dto.ausl_InAlb * 10
+        if db.dto.ausl.inAlb > 0 and met[idx].hasAlb:
+            pts = db.dto.ausl.inAlb * 10
             score += pts
             details.append(f"InAlb+{pts}")
 
-        usrPar = db.dto.asul_Usr or ''
+        usrPar = db.dto.ausl.usr or ''
         if usrPar and ':' in usrPar:
             parts = usrPar.split(':')
             uid = parts[0]
@@ -526,7 +524,7 @@ def _selectBestAsset(grpAssets: List[models.Asset]) -> int:
 
 
 def _checkAlwaysPickLivePhoto(grpAssets: List[models.Asset], grpId: int) -> List[int]:
-    if not db.dto.ausl_AllLive: return []
+    if not db.dto.ausl.allLive: return []
 
     liveIds = []
     for ass in grpAssets:

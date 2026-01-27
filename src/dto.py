@@ -1,18 +1,72 @@
 import json
+from dataclasses import dataclass, is_dataclass, asdict, fields as dc_fields
+from typing import Any, Callable, cast, Generic, TypeVar, overload
 from conf import ks, Optional
 from util import log
 
 lg = log.get(__name__)
 
+T = TypeVar('T')
 
-class AutoDbField:
-    def __init__(self, key, cast_type=None, default=None):
+
+def _castVal(fldType, val):
+    if fldType is bool and isinstance(val, str):
+        return val.lower() in ('true', '1', 'yes', 'on')
+    elif fldType is int and not isinstance(val, int):
+        return int(val) if val else 0
+    elif fldType is float and not isinstance(val, (int, float)):
+        return float(val) if val else 0.0
+    return val
+
+
+def _castDc(dc):
+    for fld in dc_fields(dc):
+        setattr(dc, fld.name, _castVal(fld.type, getattr(dc, fld.name)))
+    return dc
+
+
+class DcProxy:
+    def __init__(self, dc: Any, field: 'AutoDbField[Any]', owner: Any):
+        object.__setattr__(self, '_dc', dc)
+        object.__setattr__(self, '_field', field)
+        object.__setattr__(self, '_owner', owner)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(object.__getattribute__(self, '_dc'), name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        dc = object.__getattribute__(self, '_dc')
+        for fld in dc_fields(dc):
+            if fld.name == name:
+                value = _castVal(fld.type, value)
+                break
+        setattr(dc, name, value)
+        field: AutoDbField[Any] = object.__getattribute__(self, '_field')
+        owner = object.__getattribute__(self, '_owner')
+        field._saveToDb(owner, dc)
+
+    def __str__(self) -> str:
+        return str(object.__getattribute__(self, '_dc'))
+
+    def __repr__(self) -> str:
+        return repr(object.__getattribute__(self, '_dc'))
+
+
+class AutoDbField(Generic[T]):
+    def __init__(self, key: str, cast_type: type[T], default: T | None = None):
         self.key = key
-        self.cast_type = cast_type
-        self.default = default
+        self.cast_type: Callable[..., Any] = cast_type  # type: type[T], but used as callable
+        if default is None and is_dataclass(cast_type):
+            self.default = cast_type()
+        else:
+            self.default = default
         self._cache_key = f'_cache_{key}'
 
-    def __get__(self, instance, owner):
+    @overload
+    def __get__(self, instance: None, owner: type) -> 'AutoDbField[T]': ...
+    @overload
+    def __get__(self, instance: object, owner: type) -> T: ...
+    def __get__(self, instance: Any, owner: Any) -> Any:
         import db.sets as sets
         if instance is None: return self
         if hasattr(instance, self._cache_key):
@@ -24,6 +78,16 @@ class AutoDbField:
                     val = val.lower() in ('true', '1', 'yes', 'on') if isinstance(val, str) else bool(val)
                 elif self.cast_type is dict:
                     val = json.loads(val) if isinstance(val, str) and val else self.default
+                elif is_dataclass(self.cast_type):
+                    data = json.loads(val) if isinstance(val, str) else val
+                    if isinstance(data, dict):
+                        for fld in dc_fields(self.cast_type):
+                            if fld.name in data:
+                                data[fld.name] = _castVal(fld.type, data[fld.name])
+                        dc = cast(Any, self.cast_type)(**data)
+                    else:
+                        dc = self.default
+                    val = DcProxy(dc, cast(Any, self), instance)
                 else:
                     val = self.cast_type(val)
             except (ValueError, TypeError, json.JSONDecodeError):
@@ -37,103 +101,125 @@ class AutoDbField:
         if self.cast_type and value is not None:
             try:
                 if self.cast_type is bool:
-                    value = value.lower() in ('true', '1', 'yes', 'on') if isinstance(value, str) else bool(value)
+                    value = _castVal(bool, value)
                 elif self.cast_type is dict:
                     pass
+                elif is_dataclass(self.cast_type) and is_dataclass(value):
+                    _castDc(value)
                 else:
-                    value = self.cast_type(value)
+                    value = cast(Callable[..., Any], self.cast_type)(value)
             except (ValueError, TypeError):
                 lg.error(f'[AutoDbField] Failed to convert {value} to {self.cast_type} for key[{self.key}], use default[{self.default}]')
                 value = self.default
-        if self.cast_type is dict:
-            sets.save(self.key, json.dumps(value, ensure_ascii=False))
-        else:
-            sets.save(self.key, str(value))
+        self._saveToDb(instance, value)
         setattr(instance, self._cache_key, value)
 
+    def _saveToDb(self, instance, value):
+        import db.sets as sets
+        if self.cast_type is dict:
+            sets.save(self.key, json.dumps(value, ensure_ascii=False))
+        elif is_dataclass(value):
+            sets.save(self.key, json.dumps(asdict(cast(Any, value)), ensure_ascii=False))
+        else:
+            sets.save(self.key, str(value))
+
+@dataclass
+class Muod:
+  on:bool = False
+  sz:int = 10
+
+@dataclass
+class Gpsk:
+  eqDt:bool = False
+  eqW:bool = False
+  eqH:bool = False
+  eqFsz:bool = False
+
+@dataclass
+class Ausl:
+  on:bool = True
+  skipLow:bool = True
+  allLive:bool = False
+  earlier:int = 2
+  later:int = 0
+  exRich:int = 1
+  exPoor:int = 0
+  ofsBig:int = 2
+  ofsSml:int = 0
+  dimBig:int = 2
+  dimSml:int = 0
+  namLon:int = 1
+  namSht:int = 0
+  typJpg:int = 0
+  typPng:int = 0
+  typHeic:int = 0
+  fav:int = 0
+  inAlb:int = 0
+  usr:str = ''
+
+@dataclass
+class Mrg:
+  on:bool = False
+  albums:bool = False
+  favs:bool = False
+  tags:bool = False
+  rating:bool = False
+  desc:bool = False
+  loc:bool = False
+  vis:bool = False
+
+@dataclass
+class Excl:
+  on:bool = True
+  fndLes:int = 0
+  fndOvr:int = 0
+  filNam:str = ''
 
 class DtoSets:
-    tskFloat:bool = AutoDbField('tskFloat', bool, False) #type:ignore
+    tskFloat = AutoDbField('tskFloat', bool, False)
 
-    pathImmich:str = AutoDbField('immich:Path', str, '' ) #type:ignore
-    pathThumb:str = AutoDbField('immich:Thumb', str, '' ) #type:ignore
-    pathLibs:dict = AutoDbField('immich:Libs', dict, {}) #type:ignore
+    pathImmich = AutoDbField('immich:Path', str, '')
+    pathThumb = AutoDbField('immich:Thumb', str, '')
+    pathLibs = AutoDbField('immich:Libs', dict, {})
 
-    usrId:Optional[str] = AutoDbField('usrId', str, '') #type:ignore
+    usrId = AutoDbField('usrId', str, '')
 
-    photoQ:str = AutoDbField('photoQ', str, ks.db.thumbnail) #type:ignore
-    thMin:float = AutoDbField('simMin', float, 0.93) #type:ignore
+    photoQ = AutoDbField('photoQ', str, ks.db.thumbnail)
+    thMin = AutoDbField('simMin', float, 0.93)
 
-    autoNext:bool = AutoDbField('autoNext', bool, True) #type:ignore
-    showGridInfo:bool = AutoDbField('showGridInfo', bool, True) #type:ignore
+    autoNext = AutoDbField('autoNext', bool, True)
+    showGridInfo = AutoDbField('showGridInfo', bool, True)
 
-    rtree:bool = AutoDbField('simRtree', bool, False) #type:ignore
-    rtreeMax:int = AutoDbField('simMaxItems', int, 200) #type:ignore
+    rtree = AutoDbField('simRtree', bool, False)
+    rtreeMax = AutoDbField('simMaxItems', int, 200)
 
-    muod:bool = AutoDbField('muod', bool, False) #type:ignore
-    muod_Size:int = AutoDbField('muod_Size', int, 10) #type:ignore
-    muod_EqDt:bool = AutoDbField('muod_EqDt', bool, False) #type:ignore
-    muod_EqW:bool = AutoDbField('muod_EqW', bool, False) #type:ignore
-    muod_EqH:bool = AutoDbField('muod_EqH', bool, False) #type:ignore
-    muod_EqFs:bool = AutoDbField('muod_EqFs', bool, False) #type:ignore
+    muod = AutoDbField('muod', Muod)
+    gpsk = AutoDbField('gpsk', Gpsk )
 
-    ausl:bool = AutoDbField('ausl', bool, True ) #type:ignore
-    ausl_SkipLow:bool = AutoDbField('ausl_SkpLow', bool, True ) #type:ignore
-    ausl_AllLive:bool = AutoDbField('ausl_AllLive', bool, False ) #type:ignore
+    ausl = AutoDbField('ausl', Ausl)
 
-    ausl_Earlier:int = AutoDbField('ausl_Earlier', int, 2 ) #type:ignore
-    ausl_Later:int = AutoDbField('ausl_Later', int, 0 ) #type:ignore
-    ausl_ExRich:int = AutoDbField('ausl_ExRich', int, 1 ) #type:ignore
-    ausl_ExPoor:int = AutoDbField('ausl_ExPoor', int, 0 ) #type:ignore
-    ausl_OfsBig:int = AutoDbField('ausl_OfsBig', int, 2 ) #type:ignore
-    ausl_OfsSml:int = AutoDbField('ausl_OfsSml', int, 0 ) #type:ignore
-    ausl_DimBig:int = AutoDbField('ausl_DimBig', int, 2 ) #type:ignore
-    ausl_DimSml:int = AutoDbField('ausl_DimSml', int, 0 ) #type:ignore
-    ausl_NamLon:int = AutoDbField('ausl_NmLon', int, 1 ) #type:ignore
-    ausl_NamSht:int = AutoDbField('ausl_NmSht', int, 0 ) #type:ignore
-    ausl_TypJpg:int = AutoDbField('ausl_TypJpg', int, 0 ) #type:ignore
-    ausl_TypPng:int = AutoDbField('ausl_TypPng', int, 0 ) #type:ignore
-    ausl_TypHeic:int = AutoDbField('ausl_TypHeic', int, 0 ) #type:ignore
-    ausl_Fav:int = AutoDbField('ausl_Fav', int, 0 ) #type:ignore
-    ausl_InAlb:int = AutoDbField('ausl_InAlb', int, 0 ) #type:ignore
-    asul_Usr:str = AutoDbField('asul_Usr', str, '' ) #type:ignore
+    pathFilter = AutoDbField('pathFilter', str, '')
 
-    pathFilter:str = AutoDbField('pathFilter', str, '') #type:ignore
+    excl = AutoDbField('excl', Excl)
 
-    excl:bool = AutoDbField('excl', bool, True ) #type:ignore
-    excl_FndLes:int = AutoDbField('excl_FndLes', int, 0) #type:ignore
-    excl_FndOvr:int = AutoDbField('excl_FndOvr', int, 0) #type:ignore
-    excl_FilNam:str = AutoDbField('excl_FilNam', str, '') #type:ignore
+    gpuAutoMode = AutoDbField('gpuAutoMode', bool, True)
+    gpuBatchSize = AutoDbField('gpuBatchSize', int, 8)
 
-    gpuAutoMode:bool = AutoDbField('gpuAutoMode', bool, True) #type:ignore
-    gpuBatchSize:int = AutoDbField('gpuBatchSize', int, 8) #type:ignore
+    cpuAutoMode = AutoDbField('cpuAutoMode', bool, True)
+    cpuWorkers = AutoDbField('cpuWorkers', int, 4)
 
-    cpuAutoMode:bool = AutoDbField('cpuAutoMode', bool, True) #type:ignore
-    cpuWorkers:int = AutoDbField('cpuWorkers', int, 4) #type:ignore
+    mrg = AutoDbField('mrg', Mrg)
 
-    mrg:bool = AutoDbField('mrg', bool, False) #type:ignore
-    mrg_Albums:bool = AutoDbField('mrg_Albums', bool, False) #type:ignore
-    mrg_Favorites:bool = AutoDbField('mrg_Favorites', bool, False) #type:ignore
-    mrg_Tags:bool = AutoDbField('mrg_Tags', bool, False) #type:ignore
-    mrg_Rating:bool = AutoDbField('mrg_Rating', bool, False) #type:ignore
-    mrg_Description:bool = AutoDbField('mrg_Description', bool, False) #type:ignore
-    mrg_Location:bool = AutoDbField('mrg_Location', bool, False) #type:ignore
-    mrg_Visibility:bool = AutoDbField('mrg_Visibility', bool, False) #type:ignore
-
-    mdlImgSets:dict = AutoDbField('mdlImgSets', dict, {'auto': False, 'help': True, 'info': True}) #type:ignore
+    mdlImgSets = AutoDbField('mdlImgSets', dict, {'auto': False, 'help': True, 'info': True})
 
     def checkIsExclude(self, asset) -> bool:
-        if not self.excl or not self.excl_FilNam:
-            return False
+        if not self.excl.on or not self.excl.filNam: return False
+        if not asset or not asset.originalFileName: return False
 
-        if not asset or not asset.originalFileName:
-            return False
-
-        filters = [f.strip() for f in self.excl_FilNam.split(',') if f.strip()]
+        filters = [f.strip() for f in self.excl.filNam.split(',') if f.strip()]
         if not filters: return False
 
         fileName = asset.originalFileName.lower()
-
 
         for flt in filters:
             flt = flt.lower()

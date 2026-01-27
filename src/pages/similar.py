@@ -385,7 +385,7 @@ def sim_Load(dta_now, dta_cnt):
     gview = []
 
     # Check multi mode from dto settings
-    if db.dto.muod:
+    if db.dto.muod.on:
         gview = gv.mkGrdGrps(now.sim.assCur, onEmpty=[
             dbc.Alert("No grouped results found..", color="secondary", className="text-center m-5"),
         ])
@@ -701,7 +701,7 @@ def sim_RunModal(
         lg.info(f"[sim:delSels] {cnt} assets selected")
 
         if cnt > 0:
-            if db.dto.mrg:
+            if db.dto.mrg.on:
                 errs = immich.validateKeepPaths(assKeep)
                 if errs:
                     nfy.error(f"Cannot merge: {errs[0]}")
@@ -715,15 +715,15 @@ def sim_RunModal(
                 htm.B("This operation cannot be undone"),
             ]
 
-            if db.dto.mrg:
+            if db.dto.mrg.on:
                 mrgAttrs = []
-                if db.dto.mrg_Albums: mrgAttrs.append("Albums")
-                if db.dto.mrg_Favorites: mrgAttrs.append("Favorites")
-                if db.dto.mrg_Tags: mrgAttrs.append("Tags")
-                if db.dto.mrg_Rating: mrgAttrs.append("Rating")
-                if db.dto.mrg_Description: mrgAttrs.append("Description")
-                if db.dto.mrg_Location: mrgAttrs.append("Location")
-                if db.dto.mrg_Visibility: mrgAttrs.append("Visibility")
+                if db.dto.mrg.albums: mrgAttrs.append("Albums")
+                if db.dto.mrg.favs: mrgAttrs.append("Favorites")
+                if db.dto.mrg.tags: mrgAttrs.append("Tags")
+                if db.dto.mrg.rating: mrgAttrs.append("Rating")
+                if db.dto.mrg.desc: mrgAttrs.append("Description")
+                if db.dto.mrg.loc: mrgAttrs.append("Location")
+                if db.dto.mrg.vis: mrgAttrs.append("Visibility")
                 keepAids = [f"#{a.autoId}" for a in assKeep]
                 mdl.msg.extend([
                     htm.Br(), htm.Br(),
@@ -746,7 +746,7 @@ def sim_RunModal(
         lg.info(f"[sim:resolveSels] {cnt} assets selected")
 
         if cnt > 0:
-            if db.dto.mrg:
+            if db.dto.mrg.on:
                 errs = immich.validateKeepPaths(assSel)
                 if errs:
                     nfy.error(f"Cannot merge: {errs[0]}")
@@ -760,15 +760,15 @@ def sim_RunModal(
                 htm.B("This operation cannot be undone"),
             ]
 
-            if db.dto.mrg:
+            if db.dto.mrg.on:
                 mrgAttrs = []
-                if db.dto.mrg_Albums: mrgAttrs.append("Albums")
-                if db.dto.mrg_Favorites: mrgAttrs.append("Favorites")
-                if db.dto.mrg_Tags: mrgAttrs.append("Tags")
-                if db.dto.mrg_Rating: mrgAttrs.append("Rating")
-                if db.dto.mrg_Description: mrgAttrs.append("Description")
-                if db.dto.mrg_Location: mrgAttrs.append("Location")
-                if db.dto.mrg_Visibility: mrgAttrs.append("Visibility")
+                if db.dto.mrg.albums: mrgAttrs.append("Albums")
+                if db.dto.mrg.favs: mrgAttrs.append("Favorites")
+                if db.dto.mrg.tags: mrgAttrs.append("Tags")
+                if db.dto.mrg.rating: mrgAttrs.append("Rating")
+                if db.dto.mrg.desc: mrgAttrs.append("Description")
+                if db.dto.mrg.loc: mrgAttrs.append("Location")
+                if db.dto.mrg.vis: mrgAttrs.append("Visibility")
                 keepAids = [f"#{a.autoId}" for a in assSel]
                 mdl.msg.extend([
                     htm.Br(), htm.Br(),
@@ -975,8 +975,8 @@ def sim_FindSimilar(doReport: IFnProg, sto: models.ITaskStore):
         doReport(100, f"Completed finding {len(grps)} similar photo group(s)")
 
         # Generate completion message
-        if db.dto.muod:
-            mxGrp = db.dto.muod_Size
+        if db.dto.muod.on:
+            mxGrp = db.dto.muod.sz
 
             msg = [f"Found {len(grps)} similar photo group(s) with {len(assets)} total photos"]
             if len(grps) >= mxGrp: msg.append(f"Reached maximum group limit ({mxGrp} groups).")
@@ -1089,15 +1089,15 @@ def sim_SelectedDelete(doReport: IFnProg, sto: models.ITaskStore):
 
         with psql.mkConn() as conn:
             with conn.cursor() as cur:
-                if db.dto.mrg:
+                if db.dto.mrg.on:
                     opts = immich.MergeOpts(
-                        albums=db.dto.mrg_Albums,
-                        favorites=db.dto.mrg_Favorites,
-                        tags=db.dto.mrg_Tags,
-                        rating=db.dto.mrg_Rating,
-                        description=db.dto.mrg_Description,
-                        location=db.dto.mrg_Location,
-                        visibility=db.dto.mrg_Visibility
+                        albums=db.dto.mrg.albums,
+                        favorites=db.dto.mrg.favs,
+                        tags=db.dto.mrg.tags,
+                        rating=db.dto.mrg.rating,
+                        description=db.dto.mrg.desc,
+                        location=db.dto.mrg.loc,
+                        visibility=db.dto.mrg.vis
                     )
                     result = immich.mergeMetadata(assLefts, assSels, opts, cur)
                     xmpInfos = result.get('xmpInfos', [])
@@ -1150,15 +1150,15 @@ def sim_SelectedResolve(doReport: IFnProg, sto: models.ITaskStore):
 
         with psql.mkConn() as conn:
             with conn.cursor() as cur:
-                if db.dto.mrg:
+                if db.dto.mrg.on:
                     opts = immich.MergeOpts(
-                        albums=db.dto.mrg_Albums,
-                        favorites=db.dto.mrg_Favorites,
-                        tags=db.dto.mrg_Tags,
-                        rating=db.dto.mrg_Rating,
-                        description=db.dto.mrg_Description,
-                        location=db.dto.mrg_Location,
-                        visibility=db.dto.mrg_Visibility
+                        albums=db.dto.mrg.albums,
+                        favorites=db.dto.mrg.favs,
+                        tags=db.dto.mrg.tags,
+                        rating=db.dto.mrg.rating,
+                        description=db.dto.mrg.desc,
+                        location=db.dto.mrg.loc,
+                        visibility=db.dto.mrg.vis
                     )
                     result = immich.mergeMetadata(assSels, assOthers, opts, cur)
                     xmpInfos = result.get('xmpInfos', [])

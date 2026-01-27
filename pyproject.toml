@@ -1,8 +1,7 @@
 [project]
 name = "immich-deduper"
-version = "0.2.1"
+version = "0.2.2"
 
 [tool.pyright]
 include = ["src"]
 pythonVersion = "3.12"
-pythonPath = "/opt/homebrew/Caskroom/miniconda/base/envs/py3/bin/python"

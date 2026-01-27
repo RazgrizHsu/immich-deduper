@@ -1,7 +1,8 @@
 import json
 from dash.dependencies import ALL
-from dsh import htm, dcc, dbc, inp, out, ste, cbk, ccbk, cbkFn, noUpd, ctx
+from dsh import htm, dcc, dbc, inp, out, ste, cbk, ccbk, cbkFn, noUpd, ctx, toOpts
 
+from dto import *
 from util import log
 
 
@@ -20,56 +21,18 @@ class k:
     simMaxItems = "simMaxItems"
     pathFilter = "pathFilter"
 
-    exclEnable = "exclEnable"
-    exclFndLess = "exclFndLess"
-    exclFndOver = "exclFndOver"
-    exclFilName = "exclFilName"
-
-    muodEnable = "muodEnable"
-    muodEqDate = "muodEqDate"
-    muodEqWidth = "muodEqWidth"
-    muodEqHeight = "muodEqHeight"
-    muodEqSize = "muodEqSize"
-    muodMaxGroups = "muodMaxGroups"
-
-    muodAuSel = "muodAuSel"
-
-    auSelEnable = "autoSelEnable"
-    auSelSkipLowSim = "autoSelSkipLowSim"
-    auSelAllLivePhoto = "auSelAllLivePhoto"
-
-    auSelEarlier = "autoSelEarlier"
-    auSelLater = "autoSelLater"
-    auSelExifRicher = "autoSelExifRicher"
-    auSelExifPoorer = "autoSelExifPoorer"
-    auSelBiggerSize = "autoSelBiggerSize"
-    auSelSmallerSize = "autoSelSmallerSize"
-    auSelBiggerDimensions = "autoSelBiggerDimensions"
-    auSelSmallerDimensions = "autoSelSmallerDimensions"
-    auSelNameLonger = "autoSelNameLonger"
-    auSelNameShorter = "autoSelNameShorter"
-    auSelTypeJpg = "autoSelTypeJpg"
-    auSelTypePng = "autoSelTypePng"
-    auSelTypeHeic = "autoSelTypeHeic"
-    auSelFav = "autoSelFav"
-    auSelInAlb = "autoSelInAlb"
-    auSelUsrPri = "autoSelUsrPri"
-    auSelUsrWgt = "autoSelUsrWgt"
+    muodOn = "muodOn"
+    muodMx = "muodMx"
+    gpskEqD = "gpskEqD"
+    gpskEqW = "gpskEqW"
+    gpskEqH = "gpskEqH"
+    gpskEqFsz = "gpskEqFsz"
 
     gpuAutoMode = "gpuAutoMode"
     gpuBatchSize = "gpuBatchSize"
 
     cpuAutoMode = "cpuAutoMode"
     cpuWorkers = "cpuWorkers"
-
-    mrgEnable = "mrgEnable"
-    mrgAlbums = "mrgAlbums"
-    mrgFavorites = "mrgFavorites"
-    mrgTags = "mrgTags"
-    mrgRating = "mrgRating"
-    mrgDescription = "mrgDescription"
-    mrgLocation = "mrgLocation"
-    mrgVisibility = "mrgVisibility"
 
     libPathsData = "libPathsData"
     libPathsContainer = "libPathsContainer"
@@ -85,6 +48,15 @@ class k:
 
     @staticmethod
     def libPathChk(idx): return {"type": "libPathChk", "idx": idx}
+
+    @staticmethod
+    def ausl(field): return {"type": "ausl", "field": field}
+
+    @staticmethod
+    def mrg(field): return {"type": "mrg", "field": field}
+
+    @staticmethod
+    def excl(field): return {"type": "excl", "field": field}
 
 
 optThresholdMin = 0.5
@@ -113,7 +85,7 @@ def _getUsrOpts():
     return opts
 
 def _parseUsrPri():
-    val = db.dto.asul_Usr or ''
+    val = db.dto.ausl.usr or ''
     if ':' in val:
         parts = val.split(':')
         return parts[0], int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
@@ -127,7 +99,7 @@ def _getUsrWgtVal():
     _, wgt = _parseUsrPri()
     return wgt
 
-optExclLess = [ {"label": "--", "value": 0} ]
+optExclLess = [{"label": "--", "value": 0}]
 for i in range(1,6): optExclLess.append({"label": f" < {i}", "value": i})
 
 optExclOver = [ {"label": "--", "value": 0} ]
@@ -160,6 +132,8 @@ def renderThreshold():
     ], className="ifns mb-1")
 
 def renderMerge():
+    m = db.dto.mrg
+    dis = not m.on
     return dbc.Card([
         dbc.CardHeader([
             "Metadata Merge ",
@@ -169,7 +143,7 @@ def renderMerge():
             htm.Div([
 
                 htm.Div([
-                    dbc.Checkbox(id=k.id(k.mrgEnable), label="Enable", value=db.dto.mrg),
+                    dbc.Checkbox(id=k.mrg("on"), label="Enable", value=m.on),
                     htm.Div([
                         htm.Div([htm.B("WARN!")," Writes directly to Immich"], className="text-warning"),
                         htm.Div(["Failed when original path can't access"], className="text-muted"),
@@ -180,13 +154,13 @@ def renderMerge():
                 htm.Hr(),
 
                 htm.Div([
-                    dbc.Checkbox(id=k.id(k.mrgAlbums), label="Albums", value=db.dto.mrg_Albums, disabled=not db.dto.mrg),
-                    dbc.Checkbox(id=k.id(k.mrgFavorites), label="Favorites", value=db.dto.mrg_Favorites, disabled=not db.dto.mrg),
-                    dbc.Checkbox(id=k.id(k.mrgTags), label="Tags", value=db.dto.mrg_Tags, disabled=not db.dto.mrg),
-                    dbc.Checkbox(id=k.id(k.mrgRating), label="Rating", value=db.dto.mrg_Rating, disabled=not db.dto.mrg),
-                    dbc.Checkbox(id=k.id(k.mrgDescription), label="Description", value=db.dto.mrg_Description, disabled=not db.dto.mrg),
-                    dbc.Checkbox(id=k.id(k.mrgLocation), label="Location", value=db.dto.mrg_Location, disabled=not db.dto.mrg),
-                    dbc.Checkbox(id=k.id(k.mrgVisibility), label="Visibility", value=db.dto.mrg_Visibility, disabled=not db.dto.mrg),
+                    dbc.Checkbox(id=k.mrg("albums"), label="Albums", value=m.albums, disabled=dis),
+                    dbc.Checkbox(id=k.mrg("favs"), label="Favorites", value=m.favs, disabled=dis),
+                    dbc.Checkbox(id=k.mrg("tags"), label="Tags", value=m.tags, disabled=dis),
+                    dbc.Checkbox(id=k.mrg("rating"), label="Rating", value=m.rating, disabled=dis),
+                    dbc.Checkbox(id=k.mrg("desc"), label="Description", value=m.desc, disabled=dis),
+                    dbc.Checkbox(id=k.mrg("loc"), label="Location", value=m.loc, disabled=dis),
+                    dbc.Checkbox(id=k.mrg("vis"), label="Visibility", value=m.vis, disabled=dis),
                 ], className="icbxs"),
             ], className="mb-1 igrid txt-sm"),
         ])
@@ -194,88 +168,89 @@ def renderMerge():
 
 
 def renderAutoSelect():
+    a = db.dto.ausl
+    dis = not a.on
     return dbc.Card([
         dbc.CardHeader(["Auto Selection",htm.Small("selects top point in group") ]),
         dbc.CardBody([
             htm.Div([
                 # Main enable switch
                 htm.Div([
-                    dbc.Checkbox(id=k.id(k.auSelEnable), label="Enable", value=db.dto.ausl),
+                    dbc.Checkbox(id=k.ausl("on"), label="Enable", value=a.on),
                     htm.Div([
                         htm.Span([htm.B("Points: "),"0=Ignore, 1=Low, 2=High priority"], className="text-muted")
                     ]),
                 ], className="icbxs single"),
 
-                dbc.Checkbox(id=k.id(k.auSelSkipLowSim), label="Skip has sim(<0.96) group", value=db.dto.ausl_SkipLow, disabled=not db.dto.ausl),
-
-                dbc.Checkbox(id=k.id(k.auSelAllLivePhoto), label="All LivePhotos (ignore criteria)", value=db.dto.ausl_AllLive, disabled=not db.dto.ausl), htm.Br(),
+                dbc.Checkbox(id=k.ausl("skipLow"), label="Skip has sim(<0.96) group", value=a.skipLow, disabled=dis),
+                dbc.Checkbox(id=k.ausl("allLive"), label="All LivePhotos (ignore criteria)", value=a.allLive, disabled=dis), htm.Br(),
 
                 htm.Hr(),
 
                 htm.Div([
-                    htm.Span( htm.Span("DateTime", className="tag txt-smx me-1")),
+                    htm.Span(htm.Span("DateTime", className="tag txt-smx me-1")),
                     htm.Label("Earlier", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelEarlier), options=optWeights, value=db.dto.ausl_Earlier, disabled=not db.dto.ausl, size="sm", className="me-1"), #type:ignore
+                    dbc.Select(id=k.ausl("earlier"), options=toOpts(optWeights), value=a.earlier, disabled=dis, size="sm", className="me-1"),
                     htm.Label("Later", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelLater), options=optWeights, value=db.dto.ausl_Later, disabled=not db.dto.ausl, size="sm"), #type:ignore
+                    dbc.Select(id=k.ausl("later"), options=toOpts(optWeights), value=a.later, disabled=dis, size="sm"),
                 ], className="icriteria"),
 
                 htm.Div([
                     htm.Span(htm.Span("Exif", className="tag txt-smx me-1")),
                     htm.Label("Richer", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelExifRicher), options=optWeights, value=db.dto.ausl_ExRich, disabled=not db.dto.ausl, size="sm", className="me-1"), #type:ignore
+                    dbc.Select(id=k.ausl("exRich"), options=toOpts(optWeights), value=a.exRich, disabled=dis, size="sm", className="me-1"),
                     htm.Label("Poorer", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelExifPoorer), options=optWeights, value=db.dto.ausl_ExPoor, disabled=not db.dto.ausl, size="sm"), #type:ignore
+                    dbc.Select(id=k.ausl("exPoor"), options=toOpts(optWeights), value=a.exPoor, disabled=dis, size="sm"),
                 ], className="icriteria"),
 
                 htm.Div([
                     htm.Span(htm.Span("Name Length", className="tag txt-smx me-1")),
                     htm.Label("Longer", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelNameLonger), options=optWeights, value=db.dto.ausl_NamLon, disabled=not db.dto.ausl, size="sm", className="me-1"), #type:ignore
+                    dbc.Select(id=k.ausl("namLon"), options=toOpts(optWeights), value=a.namLon, disabled=dis, size="sm", className="me-1"),
                     htm.Label("Shorter", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelNameShorter), options=optWeights, value=db.dto.ausl_NamSht, disabled=not db.dto.ausl, size="sm"), #type:ignore
+                    dbc.Select(id=k.ausl("namSht"), options=toOpts(optWeights), value=a.namSht, disabled=dis, size="sm"),
                 ], className="icriteria"),
 
                 htm.Div([
                     htm.Span(htm.Span("FileSize", className="tag txt-smx me-1")),
                     htm.Label("Bigger", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelBiggerSize), options=optWeights, value=db.dto.ausl_OfsBig, disabled=not db.dto.ausl, size="sm", className="me-1"), #type:ignore
+                    dbc.Select(id=k.ausl("ofsBig"), options=toOpts(optWeights), value=a.ofsBig, disabled=dis, size="sm", className="me-1"),
                     htm.Label("Smaller", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelSmallerSize), options=optWeights, value=db.dto.ausl_OfsSml, disabled=not db.dto.ausl, size="sm"), #type:ignore
+                    dbc.Select(id=k.ausl("ofsSml"), options=toOpts(optWeights), value=a.ofsSml, disabled=dis, size="sm"),
                 ], className="icriteria"),
 
                 htm.Div([
                     htm.Span(htm.Span("Dimensions", className="tag txt-smx me-1")),
                     htm.Label("Bigger", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelBiggerDimensions), options=optWeights, value=db.dto.ausl_DimBig, disabled=not db.dto.ausl, size="sm", className="me-1"), #type:ignore
+                    dbc.Select(id=k.ausl("dimBig"), options=toOpts(optWeights), value=a.dimBig, disabled=dis, size="sm", className="me-1"),
                     htm.Label("Smaller", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelSmallerDimensions), options=optWeights, value=db.dto.ausl_DimSml, disabled=not db.dto.ausl, size="sm"), #type:ignore
+                    dbc.Select(id=k.ausl("dimSml"), options=toOpts(optWeights), value=a.dimSml, disabled=dis, size="sm"),
                 ], className="icriteria"),
 
                 htm.Div([
                     htm.Span(htm.Span("File Type", className="tag txt-smx me-1")),
                     htm.Label("Jpg", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelTypeJpg), options=optWeights, value=db.dto.ausl_TypJpg, disabled=not db.dto.ausl, size="sm", className="me-1"), #type:ignore
+                    dbc.Select(id=k.ausl("typJpg"), options=toOpts(optWeights), value=a.typJpg, disabled=dis, size="sm", className="me-1"),
                     htm.Label("Png", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelTypePng), options=optWeights, value=db.dto.ausl_TypPng, disabled=not db.dto.ausl, size="sm", className="me-1"), #type:ignore
+                    dbc.Select(id=k.ausl("typPng"), options=toOpts(optWeights), value=a.typPng, disabled=dis, size="sm", className="me-1"),
                     htm.Label("Heic", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelTypeHeic), options=optWeights, value=db.dto.ausl_TypHeic, disabled=not db.dto.ausl, size="sm"), #type:ignore
+                    dbc.Select(id=k.ausl("typHeic"), options=toOpts(optWeights), value=a.typHeic, disabled=dis, size="sm"),
                 ], className="icriteria icriteria-wrap"),
 
                 htm.Div([
                     htm.Span(htm.Span("Immich", className="tag txt-smx me-1")),
                     htm.Label("Favorited", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelFav), options=optWeights, value=db.dto.ausl_Fav, disabled=not db.dto.ausl, size="sm", className="me-1"), #type:ignore
+                    dbc.Select(id=k.ausl("fav"), options=toOpts(optWeights), value=a.fav, disabled=dis, size="sm", className="me-1"),
                     htm.Label("In Album", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelInAlb), options=optWeights, value=db.dto.ausl_InAlb, disabled=not db.dto.ausl, size="sm"), #type:ignore
+                    dbc.Select(id=k.ausl("inAlb"), options=toOpts(optWeights), value=a.inAlb, disabled=dis, size="sm"),
                 ], className="icriteria"),
 
                 htm.Div([
                     htm.Span(htm.Span("User", className="tag txt-smx me-1")),
                     htm.Label("name", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelUsrPri), options=_getUsrOpts(), value=_getUsrPriVal(), disabled=not db.dto.ausl, size="sm", className="me-1", style={"minWidth": "60px"}), #type:ignore
+                    dbc.Select(id=k.ausl("usrPri"), options=toOpts(_getUsrOpts()), value=_getUsrPriVal(), disabled=dis, size="sm", className="me-1", style={"minWidth": "60px"}),
                     htm.Label("Weight", className="me-2"),
-                    dbc.Select(id=k.id(k.auSelUsrWgt), options=optWeights, value=_getUsrWgtVal(), disabled=not db.dto.ausl, size="sm"), #type:ignore
+                    dbc.Select(id=k.ausl("usrWgt"), options=toOpts(optWeights), value=_getUsrWgtVal(), disabled=dis, size="sm"),
                 ], className="icriteria"),
 
             ], className="mb-2 igrid txt-sm"),
@@ -296,7 +271,7 @@ def renderCard():
 
                     htm.Div([
                         htm.Label("Max Items: "),
-                        dbc.Select(id=k.id(k.simMaxItems), options=optMaxItems, value=db.dto.rtreeMax, className="") #type:ignore
+                        dbc.Select(id=k.id(k.simMaxItems), options=toOpts(optMaxItems), value=db.dto.rtreeMax, className="")
                     ]),
                 ], className="icbxs"),
                 htm.Ul([
@@ -305,13 +280,16 @@ def renderCard():
             ], className="irow"),
 
             htm.Div([
-                htm.Label("Related Tree", className="txt-sm"),
+                htm.Label([
+				  "Related Tree",
+				   htm.Span("Expand similar-tree to include relateds. Keep/Delete affects all displayed images", className="txt-smx text-muted ms-3")
+ 			   ], className="txt-sm"),
                 htm.Div([
                     dbc.Checkbox(id=k.id(k.simRtree), label="Related Tree", value=db.dto.rtree),
 
                 ], className="icbxs"),
                 htm.Ul([
-                    htm.Li([htm.B("Related Tree: "), "Expand similar-tree to include relateds. Keep/Delete affects all displayed images"]),
+
                 ])
             ], className="irow"),
 
@@ -321,28 +299,31 @@ def renderCard():
                     htm.Span("Find multiple groups of similar photos (mutually exclusive with Related Tree)", className="txt-smx text-muted ms-3")
                 ], className="txt-sm"),
                 htm.Div([
-                    dbc.Checkbox(id=k.id(k.muodEnable), label="Enable", value=db.dto.muod),
+                    dbc.Checkbox(id=k.id(k.muodOn), label="Enable", value=db.dto.muod.on),
 
                     htm.Div([
                         htm.Label("Max Groups: "),
-                        dbc.Select(id=k.id(k.muodMaxGroups), options=optMaxGroups, value=db.dto.muod_Size, className="", disabled=True) #type:ignore
+                        dbc.Select(id=k.id(k.muodMx), options=toOpts(optMaxGroups), value=db.dto.muod.sz, className="", disabled=True)
                     ]),
-
-                    htm.Br(),
-
-                    dbc.Checkbox(id=k.id(k.muodEqDate), label="Same Date", value=db.dto.muod_EqDt, disabled=db.dto.muod),
-                    dbc.Checkbox(id=k.id(k.muodEqWidth), label="Same Width", value=db.dto.muod_EqW, disabled=db.dto.muod),
-                    dbc.Checkbox(id=k.id(k.muodEqHeight), label="Same Height", value=db.dto.muod_EqH, disabled=db.dto.muod),
-                    dbc.Checkbox(id=k.id(k.muodEqSize), label="Same File Size", value=db.dto.muod_EqFs, disabled=db.dto.muod),
-
-
                 ], className="icbxs"),
                 htm.Ul([
                     htm.Li([htm.B("Max Groups: "), "Maximum number of groups to return when grouping is enabled"]),
-                    htm.Li([
-                        htm.Span("", style={"color": "orange"}),
-                        "Auto-Resolve unmatched as resolved to prevent re-searching. Use Reset records to reset."
-                    ])
+                ])
+            ], className="irow"),
+
+            htm.Div([
+                htm.Label([
+                    "Group Conditions",
+                    htm.Span("Filter groups where all photos must match these criteria", className="txt-smx text-muted ms-3")
+                ], className="txt-sm"),
+                htm.Div([
+                    dbc.Checkbox(id=k.id(k.gpskEqD), label="Same Date", value=db.dto.gpsk.eqDt),
+                    dbc.Checkbox(id=k.id(k.gpskEqW), label="Same Width", value=db.dto.gpsk.eqW),
+                    dbc.Checkbox(id=k.id(k.gpskEqH), label="Same Height", value=db.dto.gpsk.eqH),
+                    dbc.Checkbox(id=k.id(k.gpskEqFsz), label="Same File Size", value=db.dto.gpsk.eqFsz),
+                ], className="icbxs"),
+                htm.Ul([
+                    htm.Li("Groups not matching conditions are auto-resolved")
                 ])
             ], className="irow"),
 
@@ -354,7 +335,7 @@ def renderCard():
                 ], className="icbxs"),
                 htm.Ul([
                     htm.Li("Only show groups with at least one asset matching this path pattern"),
-                    htm.Li("Groups without matching paths are auto-resolved. Use Reset Records to search again")
+                    htm.Li("Groups without matching paths are auto-resolved")
                 ])
             ], className="irow"),
 
@@ -364,25 +345,22 @@ def renderCard():
                     htm.Span("", className="txt-smx text-muted ms-3")
                 ], className="txt-sm"),
                 htm.Div([
-                    dbc.Checkbox(id=k.id(k.exclEnable), label="Enable", value=db.dto.excl, className="txt-sm"),
+                    dbc.Checkbox(id=k.excl("on"), label="Enable", value=db.dto.excl.on, className="txt-sm"),
 
                     htm.Div([
                         htm.Label("SimilarLess: ", className="txt-sm"),
-                        dbc.Select(id=k.id(k.exclFndLess), options=optExclLess, value=db.dto.excl_FndLes, className="txt-smx", disabled=not db.dto.excl, style={"maxWidth":"30px"}) #type:ignore
+                        dbc.Select(id=k.excl("fndLes"), options=toOpts(optExclLess), value=db.dto.excl.fndLes, className="txt-smx", disabled=not db.dto.excl.on, style={"maxWidth":"30px"})
                     ]),
 
                     htm.Div([
                         htm.Label("SimilarOver: ", className="txt-sm"),
-                        dbc.Select(id=k.id(k.exclFndOver), options=optExclOver, value=db.dto.excl_FndOvr, className="txt-smx", disabled=not db.dto.excl, style={"maxWidth":"30px"}) #type:ignore
+                        dbc.Select(id=k.excl("fndOvr"), options=toOpts(optExclOver), value=db.dto.excl.fndOvr, className="txt-smx", disabled=not db.dto.excl.on, style={"maxWidth":"30px"})
                     ]),
 
                     htm.Div([
                         htm.Label("NameFilter", className="txt-sm"),
-                        dbc.Input( id=k.id(k.exclFilName), maxlength=70, placeholder='separate by ","', value=db.dto.excl_FilNam, disabled=not db.dto.excl, className="txt-sm", style={"maxWidth": "80px"} )
+                        dbc.Input( id=k.excl("filNam"), maxlength=70, placeholder='separate by ","', value=db.dto.excl.filNam, disabled=not db.dto.excl.on, className="txt-sm", style={"maxWidth": "80px"} )
                     ]),
-
-                    # htm.Br(),
-                    # dbc.Checkbox(id=k.id(k.cndGrpSameDate), label="Same Date", value=db.dto.simCondSameDate, disabled=db.dto.simCondGrpMode),
 
                 ], className="icbxs"),
                 htm.Ul([
@@ -412,11 +390,7 @@ def renderCard():
 @cbk(
     [
         out(ks.sto.now, "data", allow_duplicate=True),
-        out(k.id(k.muodEqDate), "disabled"),
-        out(k.id(k.muodEqWidth), "disabled"),
-        out(k.id(k.muodEqHeight), "disabled"),
-        out(k.id(k.muodEqSize), "disabled"),
-        out(k.id(k.muodMaxGroups), "disabled"),
+        out(k.id(k.muodMx), "disabled"),
     ],
     inp(k.id(k.threshold), "value"),
     inp(k.id(k.autoNext), "value"),
@@ -424,16 +398,16 @@ def renderCard():
     inp(k.id(k.simRtree), "value"),
     inp(k.id(k.simMaxItems), "value"),
     inp(k.id(k.pathFilter), "value"),
-    inp(k.id(k.muodEnable), "value"),
-    inp(k.id(k.muodEqDate), "value"),
-    inp(k.id(k.muodEqWidth), "value"),
-    inp(k.id(k.muodEqHeight), "value"),
-    inp(k.id(k.muodEqSize), "value"),
-    inp(k.id(k.muodMaxGroups), "value"),
+    inp(k.id(k.muodOn), "value"),
+    inp(k.id(k.muodMx), "value"),
+    inp(k.id(k.gpskEqD), "value"),
+    inp(k.id(k.gpskEqW), "value"),
+    inp(k.id(k.gpskEqH), "value"),
+    inp(k.id(k.gpskEqFsz), "value"),
     ste(ks.sto.now, "data"),
     prevent_initial_call=True
 )
-def settings_OnUpd(th, auNxt, shGdInfo, rtree,  maxItems, pathFilter, muodEnable, muodDate, muodWidth, muodHeight, muodSize, maxGroups, dta_now):
+def settings_OnUpd(th, auNxt, shGdInfo, rtree,  maxItems, pathFilter, muodOn,muodMxGs, gDt, gW, gH, gFsz, dta_now):
     retNow = noUpd
 
     now = models.Now.fromDic(dta_now)
@@ -444,24 +418,16 @@ def settings_OnUpd(th, auNxt, shGdInfo, rtree,  maxItems, pathFilter, muodEnable
     db.dto.rtreeMax = maxItems
     db.dto.pathFilter = pathFilter or ''
 
-    db.dto.muod = muodEnable
-    db.dto.muod_EqDt = muodDate
-    db.dto.muod_EqW = muodWidth
-    db.dto.muod_EqH = muodHeight
-    db.dto.muod_EqFs = muodSize
-    db.dto.muod_Size = maxGroups
+    db.dto.muod = Muod(muodOn, muodMxGs)
+    db.dto.gpsk = Gpsk(gDt,gW,gH,gFsz)
 
-    # Control muod enable/disable states
-    muodDisabled = not muodEnable
-    maxGroupsDisabled = not muodEnable
+    maxGroupsDisabled = not muodOn
 
     def reloadAssets():
         nonlocal retNow, now
-        lg.info(f"[sets:OnUpd] reload, rtree[{db.dto.rtree}] muodMode[{db.dto.muod}]")
-        now.sim.assCur = db.pics.getSimAssets(now.sim.assAid, db.dto.rtree if not db.dto.muod else False )
+        lg.info(f"[sets:OnUpd] reload, rtree[{db.dto.rtree}] muodMode[{db.dto.muod.on}]")
+        now.sim.assCur = db.pics.getSimAssets(now.sim.assAid, db.dto.rtree if not db.dto.muod.on else False )
         retNow = now
-
-    #now.sim.assCur = db.pics.getSimAssets(assId, db.dto.simRtree)
 
     if db.dto.showGridInfo != shGdInfo:
         db.dto.showGridInfo = shGdInfo
@@ -470,110 +436,55 @@ def settings_OnUpd(th, auNxt, shGdInfo, rtree,  maxItems, pathFilter, muodEnable
         db.dto.rtree = rtree
         if retNow == noUpd: reloadAssets()
 
-    # lg.info(f"[settings] changed: {ths}, {auNxt}, {shGdInfo}")
-
-    return [retNow, muodDisabled, muodDisabled, muodDisabled, muodDisabled, maxGroupsDisabled]
+    return [retNow, maxGroupsDisabled]
 
 
 @cbk(
-    [
-        out(k.id(k.auSelSkipLowSim), "disabled"),
-        out(k.id(k.auSelAllLivePhoto), "disabled"),
-        out(k.id(k.auSelEarlier), "disabled"),
-        out(k.id(k.auSelLater), "disabled"),
-        out(k.id(k.auSelExifRicher), "disabled"),
-        out(k.id(k.auSelExifPoorer), "disabled"),
-        out(k.id(k.auSelBiggerSize), "disabled"),
-        out(k.id(k.auSelSmallerSize), "disabled"),
-        out(k.id(k.auSelBiggerDimensions), "disabled"),
-        out(k.id(k.auSelSmallerDimensions), "disabled"),
-        out(k.id(k.auSelNameLonger), "disabled"),
-        out(k.id(k.auSelNameShorter), "disabled"),
-        out(k.id(k.auSelTypeJpg), "disabled"),
-        out(k.id(k.auSelTypePng), "disabled"),
-        out(k.id(k.auSelTypeHeic), "disabled"),
-        out(k.id(k.auSelFav), "disabled"),
-        out(k.id(k.auSelInAlb), "disabled"),
-        out(k.id(k.auSelUsrPri), "disabled"),
-        out(k.id(k.auSelUsrWgt), "disabled"),
-    ],
-    inp(k.id(k.auSelEnable), "value"),
-    inp(k.id(k.auSelSkipLowSim), "value"),
-    inp(k.id(k.auSelAllLivePhoto), "value"),
-    inp(k.id(k.auSelEarlier), "value"),
-    inp(k.id(k.auSelLater), "value"),
-    inp(k.id(k.auSelExifRicher), "value"),
-    inp(k.id(k.auSelExifPoorer), "value"),
-    inp(k.id(k.auSelBiggerSize), "value"),
-    inp(k.id(k.auSelSmallerSize), "value"),
-    inp(k.id(k.auSelBiggerDimensions), "value"),
-    inp(k.id(k.auSelSmallerDimensions), "value"),
-    inp(k.id(k.auSelNameLonger), "value"),
-    inp(k.id(k.auSelNameShorter), "value"),
-    inp(k.id(k.auSelTypeJpg), "value"),
-    inp(k.id(k.auSelTypePng), "value"),
-    inp(k.id(k.auSelTypeHeic), "value"),
-    inp(k.id(k.auSelFav), "value"),
-    inp(k.id(k.auSelInAlb), "value"),
-    inp(k.id(k.auSelUsrPri), "value"),
-    inp(k.id(k.auSelUsrWgt), "value"),
+    out({"type": "ausl", "field": ALL}, "disabled"),
+    inp({"type": "ausl", "field": ALL}, "value"),
     prevent_initial_call=True
 )
-def autoSelect_OnUpd(enable, skipLo, onlyLive, earl, late, exRich, exPoor, szBig, szSml, dimBig, dimSml, namLn, namSt, tJpg, tPng, tHeic, fav, inAlb, usrPri, usrWgt):
-    db.dto.ausl = enable
-    db.dto.ausl_SkipLow = skipLo
-    db.dto.ausl_AllLive = onlyLive
-    db.dto.ausl_Earlier = earl
-    db.dto.ausl_Later = late
-    db.dto.ausl_ExRich = exRich
-    db.dto.ausl_ExPoor = exPoor
-    db.dto.ausl_OfsBig = szBig
-    db.dto.ausl_OfsSml = szSml
-    db.dto.ausl_DimBig = dimBig
-    db.dto.ausl_DimSml = dimSml
-    db.dto.ausl_NamLon = namLn
-    db.dto.ausl_NamSht = namSt
-    db.dto.ausl_TypJpg = tJpg
-    db.dto.ausl_TypPng = tPng
-    db.dto.ausl_TypHeic = tHeic
-    db.dto.ausl_Fav = fav
-    db.dto.ausl_InAlb = inAlb
+def ausl_OnUpd(values):
+    a = db.dto.ausl
+    usrPri, usrWgt = None, None
 
-    if usrPri and usrWgt:
-        db.dto.asul_Usr = f"{usrPri}:{usrWgt}"
-    else:
-        db.dto.asul_Usr = ''
+    # ctx.inputs_list[0] 格式: [{'id': {'field': 'on', 'type': 'ausl'}, 'value': True}, ...]
+    fields = []
+    for item in ctx.inputs_list[0]:
+        fld = item['id']['field']
+        val = item['value']
+        fields.append(fld)
 
-    lg.info(f"[autoSel:OnUpd] Enable[{enable}] HighSim[{skipLo}] AlwaysPickLivePhoto[{onlyLive}] Earlier[{earl}] Later[{late}] ExifRich[{exRich}] ExifPoor[{exPoor}] BigSize[{szBig}] SmallSize[{szSml}] BigDim[{dimBig}] SmallDim[{dimSml}] namLn[{namLn}] namSt[{namSt}] jpg[{tJpg}] png[{tPng}] heic[{tHeic}] fav[{fav}] inAlb[{inAlb}] usrPri[{usrPri}:{usrWgt}]")
+        if fld == 'usrPri': usrPri = val
+        elif fld == 'usrWgt': usrWgt = val
+        else: setattr(a, fld, val)
 
-    # Control enable/disable states
-    dis = not enable
+    if usrPri and usrWgt: a.usr = f"{usrPri}:{usrWgt}"
+    else: a.usr = ''
 
-    return [dis] * 19
+    lg.info(f"[ausl:OnUpd] {a}")
+
+    # on 開關永遠不 disable，其他根據 a.on 決定
+    return [False if f == 'on' else not a.on for f in fields]
 
 
 @cbk(
-    [
-        out(k.id(k.exclFndLess), "disabled"),
-        out(k.id(k.exclFndOver), "disabled"),
-        out(k.id(k.exclFilName), "disabled"),
-    ],
-    inp(k.id(k.exclEnable), "value"),
-    inp(k.id(k.exclFndLess), "value"),
-    inp(k.id(k.exclFndOver), "value"),
-    inp(k.id(k.exclFilName), "value"),
+    out({"type": "excl", "field": ALL}, "disabled"),
+    inp({"type": "excl", "field": ALL}, "value"),
     prevent_initial_call=True
 )
-def excludeSettings_OnUpd(enable, fndLess, fndOver, filName):
-    db.dto.excl = enable
-    db.dto.excl_FndLes = fndLess
-    db.dto.excl_FndOvr = fndOver
-    db.dto.excl_FilNam = filName
+def excl_OnUpd(values):
+    e = db.dto.excl
 
-    lg.info(f"[exclSets:OnUpd] Enable[{enable}] FndLess[{fndLess}] FndOver[{fndOver}] FilName[{filName}]")
+    fields = []
+    for item in ctx.inputs_list[0]:
+        fld = item['id']['field']
+        val = item['value']
+        fields.append(fld)
+        setattr(e, fld, val)
 
-    dis = not enable
-    return [dis] * 3
+    lg.info(f"[excl:OnUpd] {e}")
+    return [False if f == 'on' else not e.on for f in fields]
 
 
 def renderGpuSettings():
@@ -683,39 +594,22 @@ def cpuSettings_OnUpd(autoMode, workers):
 
 
 @cbk(
-    [
-        out(k.id(k.mrgAlbums), "disabled"),
-        out(k.id(k.mrgFavorites), "disabled"),
-        out(k.id(k.mrgTags), "disabled"),
-        out(k.id(k.mrgRating), "disabled"),
-        out(k.id(k.mrgDescription), "disabled"),
-        out(k.id(k.mrgLocation), "disabled"),
-        out(k.id(k.mrgVisibility), "disabled"),
-    ],
-    inp(k.id(k.mrgEnable), "value"),
-    inp(k.id(k.mrgAlbums), "value"),
-    inp(k.id(k.mrgFavorites), "value"),
-    inp(k.id(k.mrgTags), "value"),
-    inp(k.id(k.mrgRating), "value"),
-    inp(k.id(k.mrgDescription), "value"),
-    inp(k.id(k.mrgLocation), "value"),
-    inp(k.id(k.mrgVisibility), "value"),
+    out({"type": "mrg", "field": ALL}, "disabled"),
+    inp({"type": "mrg", "field": ALL}, "value"),
     prevent_initial_call=True
 )
-def merge_OnUpd(enable, albums, favorites, tags, rating, description, location, visibility):
-    db.dto.mrg = enable
-    db.dto.mrg_Albums = albums
-    db.dto.mrg_Favorites = favorites
-    db.dto.mrg_Tags = tags
-    db.dto.mrg_Rating = rating
-    db.dto.mrg_Description = description
-    db.dto.mrg_Location = location
-    db.dto.mrg_Visibility = visibility
+def mrg_OnUpd(values):
+    m = db.dto.mrg
 
-    lg.info(f"[mrgSets:OnUpd] Enable[{enable}] Albums[{albums}] Favorites[{favorites}] Tags[{tags}] Rating[{rating}] Description[{description}] Location[{location}] Visibility[{visibility}]")
+    fields = []
+    for item in ctx.inputs_list[0]:
+        fld = item['id']['field']
+        val = item['value']
+        fields.append(fld)
+        setattr(m, fld, val)
 
-    dis = not enable
-    return [dis] * 7
+    lg.info(f"[mrg:OnUpd] {m}")
+    return [False if f == 'on' else not m.on for f in fields]
 
 
 def _chkPathIcon(localPth):
