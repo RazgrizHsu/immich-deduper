@@ -403,7 +403,7 @@ For custom environments and development needs.
 1. **Install Qdrant Server**
    ```bash
    # Install Qdrant using Docker
-   docker run -p 6333:6333 qdrant/qdrant
+   docker run -p 6333:6333 qdrant/qdrant:v1.16.3
    ```
 
 2. **Clone Source Code**

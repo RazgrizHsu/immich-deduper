@@ -11,7 +11,7 @@ pillow-heif~=0.22.0
 torch~=2.7.0+cu121
 torchvision~=0.22.0+cu121
 
-qdrant-client~=1.14.2
+qdrant-client~=1.16.2
 psycopg[binary]~=3.2.3
 python-dotenv~=1.1.0
 psutil~=6.1.0
