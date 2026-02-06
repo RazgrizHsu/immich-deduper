@@ -586,9 +586,11 @@ button { text-decoration: none; }
 
 .icbxs.single > div:last-child li { margin-left: 8px; }
 
-.ifns .card-header { display: flex; justify-content: space-between; align-items: baseline; }
+.ifns .card-header { display: flex; justify-content: space-between; align-items: center; }
 
-.ifns .card-header small { font-size: 11px; color: #bbb; }
+.ifns .card-header span { font-size: 15px; vertical-align: text-bottom; }
+
+.ifns .card-header small { font-size: 11px; color: #bbb; text-align: right; line-height: 1.4; }
 
 .gv .hr { grid-column: 1 / -1; width: 100%; padding: 0.5rem 0; border-bottom: #999999 1px dashed; }
 

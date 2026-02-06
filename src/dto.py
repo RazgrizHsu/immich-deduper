@@ -4,6 +4,8 @@ from typing import Any, Callable, cast, Generic, TypeVar, overload
 from conf import ks, Optional
 from util import log
 
+from dtom import Ausl, Muod, Gpsk, Excl, Mrg
+
 lg = log.get(__name__)
 
 T = TypeVar('T')
@@ -47,8 +49,8 @@ def cstd(dc):
     return dc
 
 
-class DcProxy:
-    def __init__(self, dc: Any, field: 'AutoDbField[Any]', owner: Any):
+class DcProxy(Generic[T]):
+    def __init__(self, dc: T, field: 'AutoDbField[Any]', owner: Any):
         object.__setattr__(self, '_dc', dc)
         object.__setattr__(self, '_field', field)
         object.__setattr__(self, '_owner', owner)
@@ -73,6 +75,9 @@ class DcProxy:
 
     def __str__(self) -> str: return str(object.__getattribute__(self, '_dc'))
     def __repr__(self) -> str: return repr(object.__getattribute__(self, '_dc'))
+
+    def raw(self) -> T:
+        return object.__getattribute__(self, '_dc')
 
 
 class AutoDbField(Generic[T]):
@@ -134,63 +139,6 @@ class AutoDbField(Generic[T]):
         elif is_dataclass(value): sets.save(self.key, json.dumps(asdict(cast(Any, value)), ensure_ascii=False))
         else: sets.save(self.key, str(value))
 
-@dataclass
-class PairKv:
-    k:str = ''
-    v:int = 0
-
-@dataclass
-class Muod:
-    on:bool = False
-    sz:int = 10
-
-@dataclass
-class Gpsk:
-    eqDt:bool = False
-    eqW:bool = False
-    eqH:bool = False
-    eqFsz:bool = False
-
-@dataclass
-class Ausl:
-    on:bool = True
-    skipLow:bool = True
-    allLive:bool = False
-    earlier:int = 2
-    later:int = 0
-    exRich:int = 1
-    exPoor:int = 0
-    ofsBig:int = 2
-    ofsSml:int = 0
-    dimBig:int = 2
-    dimSml:int = 0
-    namLon:int = 1
-    namSht:int = 0
-    typJpg:int = 0
-    typPng:int = 0
-    typHeic:int = 0
-    fav:int = 0
-    inAlb:int = 0
-    usr:PairKv = field(default_factory=PairKv)
-    pth:PairKv = field(default_factory=PairKv)
-
-@dataclass
-class Mrg:
-    on:bool = False
-    albums:bool = False
-    favs:bool = False
-    tags:bool = False
-    rating:bool = False
-    desc:bool = False
-    loc:bool = False
-    vis:bool = False
-
-@dataclass
-class Excl:
-    on:bool = True
-    fndLes:int = 0
-    fndOvr:int = 0
-    filNam:str = ''
 
 class DtoSets:
     tskFloat = AutoDbField('tskFloat', bool, False)

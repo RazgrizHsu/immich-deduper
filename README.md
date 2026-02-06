@@ -172,6 +172,46 @@ When deleting duplicates, Metadata Merge can transfer metadata from deleted phot
 
 ---
 
+### Auto Selection
+
+Automatically select the best photo in each duplicate group based on configurable criteria.
+
+<p align="center">
+<img src="docs/autoQ.jpg" alt="Auto Selection showing selection reason tooltip" />
+</p>
+
+**How It Works:**
+- Each criterion has a weight (0-5). Score = weight × 10
+- The photo with the highest total score in each group gets selected
+- Selected photos show an "Auto-Selected ？" badge with hover tooltip showing the scoring breakdown (e.g., "Earlier+20, Path+30")
+- Settings changes trigger automatic recalculation
+
+**Selection Criteria:**
+
+| Category | Criterion | Description |
+|----------|-----------|-------------|
+| **Options** | Skip Low Similarity | Skip groups containing photos with similarity < 0.96 |
+| | All LivePhotos | Select all LivePhoto assets in group (ignores other criteria) |
+| **DateTime** | Earlier / Later | Prefer photos taken earlier or later |
+| **EXIF** | Rich / Poor | Prefer photos with more or fewer EXIF fields |
+| **Filename** | Longer / Shorter | Prefer longer or shorter filenames |
+| **FileSize** | Bigger / Smaller | Prefer larger or smaller file sizes |
+| **Dimension** | Bigger / Smaller | Prefer higher or lower resolution |
+| **FileType** | JPG / PNG / HEIC | Prefer specific file formats |
+| **Immich** | Favorite / In Album | Prefer photos marked as favorite or added to albums |
+| **User** | Priority User | Prefer photos owned by a specific Immich user |
+| **Path** | Contains | Prefer photos whose path contains a specific string |
+
+**Tips:**
+- Use "Earlier" + high weight when you want to keep original captures over edited versions
+- Use "Path Contains" to prioritize photos from a specific folder (e.g., `/library/keep/`)
+- Combine multiple criteria: FileSize+3, Earlier+2 gives preference to larger files, with date as tiebreaker
+- Toggle Enable off/on to clear and re-run auto-selection
+
+
+
+---
+
 ### Advanced Strategies
 
 - **Progressive cleaning approach**
@@ -185,9 +225,10 @@ When deleting duplicates, Metadata Merge can transfer metadata from deleted phot
   - Before changing your threshold settings, use `Reset Records` to wipe all similarity data
   - This lets you rescan all photos with new thresholds and avoid missing anything or getting false matches
 
-- **Auto Selection optimization**
-  - Configure selection criteria: FileSize +3 for higher quality, Name Longer +3 for descriptive filenames
-  - Review auto-selected results before batch processing
+- **Auto Selection workflow**
+  - See [Auto Selection](#auto-selection) for detailed criteria configuration
+  - Recommended: Set criteria first, then run Find Similar to see pre-selected results
+  - Always review auto-selected photos before using batch actions
 
 - **Large collection tips**
   - For 8000+ photos: Enable Multi Mode with appropriate Max Group settings

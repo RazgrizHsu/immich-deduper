@@ -32,6 +32,8 @@ def render():
     cnt: models.Cnt = models.Cnt()
     ste: models.Ste = models.Ste()
     sys: models.Sys = models.Sys()
+    sets: models.Sets = models.Sets()
+    sets.ausl = dto.ausl.raw()
 
     cnt.refreshFromDB()
 
@@ -53,6 +55,7 @@ def render():
     mk(ks.sto.cnt, cnt)
     mk(ks.sto.ste, ste)
     mk(ks.sto.sys, sys)
+    mk(ks.sto.sets, sets)
 
 
     items.append(htm.Div(id=ks.sto.init, children='init'))

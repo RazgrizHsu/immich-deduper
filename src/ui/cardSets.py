@@ -156,7 +156,7 @@ def renderAutoSelect():
     a = db.dto.ausl
     dis = not a.on
     return dbc.Card([
-        dbc.CardHeader(["Auto Selection",htm.Small("selects top point in group")]),
+        dbc.CardHeader([htm.Span("Auto Selection"),htm.Small(["selects top point in group",htm.Br(),"auto-updates on change"])]),
         dbc.CardBody([
             htm.Div([
                 # Main enable switch
@@ -241,7 +241,7 @@ def renderAutoSelect():
                 htm.Div([
                     htm.Span(htm.Span("Path", className="tag txt-smx me-1")),
                     htm.Label("Contains", className="me-2"),
-                    dbc.Input(id=k.ausl("pthVal"), value=a.pth.k, disabled=dis, className="me-1 txt-smx", style={"maxWidth": "80%"}, placeholder="e.g. /library/clean"),
+                    dbc.Input(id=k.ausl("pthVal"), value=a.pth.k, disabled=dis, className="me-1 txt-smx", style={"maxWidth": "80%"}, placeholder="e.g. /library/clean", debounce=1000),
                     htm.Label("Weight", className="me-2"),
                     dbc.Select(id=k.ausl("pthWgt"), options=toOpts(optWeights), value=a.pth.v, disabled=dis, size="sm"),
                 ], className="icriteria"),
@@ -432,12 +432,16 @@ def settings_OnUpd(th, auNxt, shGdInfo, rtree,  maxItems, pathFilter, muodOn,muo
 
 
 @cbk(
-    out({"type": "ausl", "field": ALL}, "disabled"),
+    [
+        out({"type": "ausl", "field": ALL}, "disabled"),
+        out(ks.sto.sets, "data", allow_duplicate=True),
+    ],
     inp({"type": "ausl", "field": ALL}, "value"),
     prevent_initial_call=True
 )
 def ausl_OnUpd(values):
-    from dto import PairKv
+    from dtom import PairKv
+    from dataclasses import asdict
     a = db.dto.ausl
     usrPri, usrWgt = None, None
     pthVal, pthWgt = None, None
@@ -461,7 +465,9 @@ def ausl_OnUpd(values):
     lg.info(f"[ausl:OnUpd] {a}")
 
     # on 開關永遠不 disable，其他根據 a.on 決定
-    return [False if f == 'on' else not a.on for f in fields]
+    disabledStates = [False if f == 'on' else not a.on for f in fields]
+    setsData = {'ausl': asdict(a.raw())}
+    return disabledStates, setsData
 
 
 @cbk(

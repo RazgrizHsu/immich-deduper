@@ -678,9 +678,11 @@
 	.card-header {
 		display: flex;
 		justify-content: space-between;
-		align-items: baseline;
+		align-items: center;
 
-		small { font-size:11px; color:#bbb; }
+		span { font-size:15px; vertical-align:text-bottom }
+
+		small { font-size:11px; color:#bbb; text-align:right; line-height:1.4; }
 	}
 }
 
