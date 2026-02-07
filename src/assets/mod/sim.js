@@ -91,8 +91,8 @@ function _selectBestAsset(grpAssets, ausl){
 		return {pts: 0, reason: null}
 	}
 
-	let bestAid = null, bestScr = -1, bestReasons = []
 	const allScores = {} // { aid: { score, reasons } }
+	const scores = [] // collect all scores to check for ties
 
 	for ( let i = 0; i < grpAssets.length; i++ ){
 		let scr = 0
@@ -175,18 +175,22 @@ function _selectBestAsset(grpAssets, ausl){
 		}
 
 		allScores[m.aid] = {score: scr, reasons}
+		scores.push({aid: m.aid, scr, reasons})
 		console.log(`[ausl] #${m.aid}: score[${scr}] (${reasons.length ? reasons.join(', ') : 'no matches'})`)
-
-		if (scr > bestScr) {
-			bestScr = scr
-			bestAid = m.aid
-			bestReasons = reasons
-		}
 	}
 
-	if (bestAid) console.log(`[ausl] Winner: #${bestAid} score[${bestScr}] (${bestReasons.join(', ')})`)
+	const maxScr = Math.max(...scores.map(s => s.scr))
+	const topScorers = scores.filter(s => s.scr === maxScr)
 
-	return {aid: bestAid, score: bestScr, reasons: bestReasons, allScores}
+	if (topScorers.length > 1) {
+		console.log(`[ausl] No winner: ${topScorers.length} assets tied at score ${maxScr}`)
+		return {aid: null, score: maxScr, reasons: [], allScores}
+	}
+
+	const winner = topScorers[0]
+	console.log(`[ausl] Winner: #${winner.aid} score[${winner.scr}] (${winner.reasons.join(', ')})`)
+
+	return {aid: winner.aid, score: winner.scr, reasons: winner.reasons, allScores}
 }
 
 window.autoSelectReasons = {}

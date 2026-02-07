@@ -160,6 +160,7 @@ def buildAll(tag, upload, gpuOnly):
 
 def publish(tag, scriptDir):
 	print("Publishing release to GitHub...")
+	run("git fetch --prune --prune-tags")
 	gitTag = f"v{tag}"
 	title = f"Release {tag}"
 
