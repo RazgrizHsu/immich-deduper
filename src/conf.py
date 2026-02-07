@@ -255,7 +255,7 @@ def pathFromRoot(path):
 # envs
 #------------------------------------------------------------------------
 class envs:
-    version='0.2.6'
+    version='0.2.7'
     isDev = False if isDock else bool(os.getenv('IsDev', False))
     isDevUI = False if isDock else bool(os.getenv('IsDevUI', False))
     isDock = False if not isDock else True

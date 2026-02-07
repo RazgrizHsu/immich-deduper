@@ -97,7 +97,7 @@ def mkGrdGrps(assets: List[models.Asset], minW=250, maxW=300, onEmpty=None):
 
 
         rows.append(htm.Div([
-            htm.Label(f"Group {grpId} ( {grpCount} items )", className="me-3"),
+            htm.Label(f"Group {grpId} ( {grpCount} items )"),
 
             dbc.Button( [ htm.Span( className="fake-checkbox checked" ), "select this group all"], size="sm", color="secondary", id=f"cbx-sel-grp-all-{grpId}", className="txt-sm me-1" ),
             dbc.Button( [ htm.Span( className="fake-checkbox" ),"deselect this group All"], size="sm", color="secondary", id=f"cbx-sel-grp-non-{grpId}", className="txt-sm" ),

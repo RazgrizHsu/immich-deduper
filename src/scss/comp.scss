@@ -1,3 +1,27 @@
+@import "base";
+
+.gv {
+	.hr {
+		grid-column: 1 / -1;
+		width: 100%;
+		padding: 0.5rem 0;
+		border-bottom: #999999 1px dashed;
+
+		label {
+			@include bg-gradient(#6daa2b);
+			border-radius: 6px;
+			border: #6daa2b;
+			padding: 5px 12px 7px 12px;
+			text-shadow: 0 0 3px #4a4a4a;
+			box-shadow: 0 0 3px #6daa2b;
+		}
+
+		&:has(.ausl-log-btn) .ausl-log-btn { margin: auto 10px; }
+		&:not(:has(.ausl-log-btn)) button:first-of-type { margin-left: 12px; }
+	}
+}
+
+
 
 /*======================== Auto-Select Tooltip ========================*/
 .card-header .row > div:first-child:has(.ausl-tip) {
@@ -66,6 +90,78 @@
 	&:hover::before {
 		opacity: 1;
 		visibility: visible;
+	}
+}
+
+/*======================== Auto-Select Log Button ========================*/
+.ausl-log-btn {
+	padding: 2px 6px;
+	border-radius: 4px;
+	border: none;
+	cursor: pointer;
+	font-size: 11px;
+	background: #4595ae!important;
+	color: white;
+	opacity: 0.8;
+	&:hover { opacity: 1; }
+}
+
+/*======================== Auto-Select Log Modal ========================*/
+.ausl-log {
+	$rad: 12px;
+
+	&-modal {
+		position: fixed;
+		top: 0; left: 0;
+		width: 100%; height: 100%;
+		background: rgba(0,0,0,0.6);
+		z-index: 9999;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	&-content {
+		border-radius: $rad;
+		box-shadow: 0 0 12px 5px rgba(255, 255, 255, 0.3);
+		background-color: #3a3a3a;
+		border: 1px solid #5db1ff99;
+		min-width: 400px;
+		max-width: 600px;
+		max-height: 80vh;
+		overflow: auto;
+	}
+	&-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 12px 16px;
+		background-color: #212121;
+		border-bottom: 1px solid #333333;
+		border-top-left-radius: $rad;
+		border-top-right-radius: $rad;
+		font-weight: bold;
+		color: #e0e0e0;
+	}
+	&-close {
+		background: none;
+		border: none;
+		color: #999;
+		font-size: 20px;
+		cursor: pointer;
+		&:hover { color: #fff; }
+	}
+	&-body { padding: 16px; color: #e0e0e0; }
+	&-reason { color: #aaa; margin-bottom: 12px; font-size: 13px; }
+	&-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 12px;
+		th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #333; }
+		th { background: #212121; color: #888; }
+		tr.winner {
+			background: rgba(120, 194, 41, 0.15);
+			td:first-child { font-weight: bold; color: #78c229; }
+		}
 	}
 }
 

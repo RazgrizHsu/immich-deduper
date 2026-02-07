@@ -1,3 +1,387 @@
+:root { --bs-border-width:1px; --bs-border-style:solid; --bs-border-color:#737373; --bs-border-color-translucent:rgba(255, 255, 255, 0.15); --bs-border-radius:0.375rem; --bs-border-radius-sm:0.25rem; --bs-border-radius-lg:0.5rem; --bs-border-radius-xl:1rem; --bs-border-radius-xxl:2rem; --bs-border-radius-pill:50rem; --bs-light-border-subtle:#495057; --bs-dark-border-subtle:#333333; --main-bs:#446E9B; --main-dk:#385A7F; --main-dkr:#2D4A69; --main-lig:#5E86B0; --bs-primary-border-subtle:#7CAAD9; --sec-bs:#777777; --sec-dk:#5D5D5D; --sec-dkr:#444444; --sec-lig:#999999; --bs-secondary-border-subtle:#5C5C5C; --succ-bs:#78C22A; --succ-dk:#2E921A; --succ-dkr:#227213; --succ-lig:#4FCC33; --bs-success-border-subtle:#246D14; --dang-bs:#CD0200; --dang-dk:#A90200; --dang-dkr:#8A0100; --dang-lig:#F41310; --bs-danger-border-subtle:#7B0100; --warn-bs:#FEB204; --warn-dk:#FF8503; --warn-dkr:#D53600; --warn-lig:#FFBF00; --bs-warning-border-subtle:#C78500; --info-bs:#3399F3; --info-dk:#117BE0; --info-dkr:#0B66BC; --info-lig:#5DB1FF; --bs-info-border-subtle:#1F5C92; --light-bs:#EEEEEE; --light-dk:#DDDDDD; --light-dkr:#CCCCCC; --light-lig:#F8F9FA; --dark-bs:#333333; --dark-dk:#2D2D2D; --dark-dkr:#222222; --dark-lig:#555555; --nav-bs:#0F79A1; --nav-hov:#1A95C3; --nav-act:#085C7C; --nav-acc:#57C3EE; --btn-borderW:1px; --btn-shadow:0 1px 3px rgba(0, 0, 0, 0.15); --btn-shadowHov:0 3px 6px rgba(0, 0, 0, 0.2); --bs-pagination-bg:#1A2332; --bs-pagination-border-color:#2D3748; --bs-pagination-color:#E2E8F0; --bs-pagination-hover-bg:#2D3748; --bs-pagination-hover-border-color:#4A5568; --bs-pagination-hover-color:#FFFFFF; --bs-pagination-active-bg:#3182CE; --bs-pagination-active-border-color:#3182CE; --bs-pagination-active-color:#FFFFFF; --bs-pagination-disabled-bg:#1A2332; --bs-pagination-disabled-border-color:#2D3748; --bs-pagination-disabled-color:#718096; --bs-pagination-focus-box-shadow:0 0 0 0.2rem rgba(49, 130, 206, 0.25); --shadow-box-white:0 0px 2px rgba(255, 255, 255, 0.67); }
+
+.txt-c { text-align: center; }
+
+.w-10 { width: 10%; }
+
+.tag.w-10 { width: 10% !important; overflow: hidden !important; }
+
+.w-11 { width: 11%; }
+
+.tag.w-11 { width: 11% !important; overflow: hidden !important; }
+
+.w-12 { width: 12%; }
+
+.tag.w-12 { width: 12% !important; overflow: hidden !important; }
+
+.w-13 { width: 13%; }
+
+.tag.w-13 { width: 13% !important; overflow: hidden !important; }
+
+.w-14 { width: 14%; }
+
+.tag.w-14 { width: 14% !important; overflow: hidden !important; }
+
+.w-15 { width: 15%; }
+
+.tag.w-15 { width: 15% !important; overflow: hidden !important; }
+
+.w-16 { width: 16%; }
+
+.tag.w-16 { width: 16% !important; overflow: hidden !important; }
+
+.w-17 { width: 17%; }
+
+.tag.w-17 { width: 17% !important; overflow: hidden !important; }
+
+.w-18 { width: 18%; }
+
+.tag.w-18 { width: 18% !important; overflow: hidden !important; }
+
+.w-19 { width: 19%; }
+
+.tag.w-19 { width: 19% !important; overflow: hidden !important; }
+
+.w-20 { width: 20%; }
+
+.tag.w-20 { width: 20% !important; overflow: hidden !important; }
+
+.w-21 { width: 21%; }
+
+.tag.w-21 { width: 21% !important; overflow: hidden !important; }
+
+.w-22 { width: 22%; }
+
+.tag.w-22 { width: 22% !important; overflow: hidden !important; }
+
+.w-23 { width: 23%; }
+
+.tag.w-23 { width: 23% !important; overflow: hidden !important; }
+
+.w-24 { width: 24%; }
+
+.tag.w-24 { width: 24% !important; overflow: hidden !important; }
+
+.w-25 { width: 25%; }
+
+.tag.w-25 { width: 25% !important; overflow: hidden !important; }
+
+.w-26 { width: 26%; }
+
+.tag.w-26 { width: 26% !important; overflow: hidden !important; }
+
+.w-27 { width: 27%; }
+
+.tag.w-27 { width: 27% !important; overflow: hidden !important; }
+
+.w-28 { width: 28%; }
+
+.tag.w-28 { width: 28% !important; overflow: hidden !important; }
+
+.w-29 { width: 29%; }
+
+.tag.w-29 { width: 29% !important; overflow: hidden !important; }
+
+.w-30 { width: 30%; }
+
+.tag.w-30 { width: 30% !important; overflow: hidden !important; }
+
+.w-31 { width: 31%; }
+
+.tag.w-31 { width: 31% !important; overflow: hidden !important; }
+
+.w-32 { width: 32%; }
+
+.tag.w-32 { width: 32% !important; overflow: hidden !important; }
+
+.w-33 { width: 33%; }
+
+.tag.w-33 { width: 33% !important; overflow: hidden !important; }
+
+.w-34 { width: 34%; }
+
+.tag.w-34 { width: 34% !important; overflow: hidden !important; }
+
+.w-35 { width: 35%; }
+
+.tag.w-35 { width: 35% !important; overflow: hidden !important; }
+
+.w-36 { width: 36%; }
+
+.tag.w-36 { width: 36% !important; overflow: hidden !important; }
+
+.w-37 { width: 37%; }
+
+.tag.w-37 { width: 37% !important; overflow: hidden !important; }
+
+.w-38 { width: 38%; }
+
+.tag.w-38 { width: 38% !important; overflow: hidden !important; }
+
+.w-39 { width: 39%; }
+
+.tag.w-39 { width: 39% !important; overflow: hidden !important; }
+
+.w-40 { width: 40%; }
+
+.tag.w-40 { width: 40% !important; overflow: hidden !important; }
+
+.w-41 { width: 41%; }
+
+.tag.w-41 { width: 41% !important; overflow: hidden !important; }
+
+.w-42 { width: 42%; }
+
+.tag.w-42 { width: 42% !important; overflow: hidden !important; }
+
+.w-43 { width: 43%; }
+
+.tag.w-43 { width: 43% !important; overflow: hidden !important; }
+
+.w-44 { width: 44%; }
+
+.tag.w-44 { width: 44% !important; overflow: hidden !important; }
+
+.w-45 { width: 45%; }
+
+.tag.w-45 { width: 45% !important; overflow: hidden !important; }
+
+.w-46 { width: 46%; }
+
+.tag.w-46 { width: 46% !important; overflow: hidden !important; }
+
+.w-47 { width: 47%; }
+
+.tag.w-47 { width: 47% !important; overflow: hidden !important; }
+
+.w-48 { width: 48%; }
+
+.tag.w-48 { width: 48% !important; overflow: hidden !important; }
+
+.w-49 { width: 49%; }
+
+.tag.w-49 { width: 49% !important; overflow: hidden !important; }
+
+.w-50 { width: 50%; }
+
+.tag.w-50 { width: 50% !important; overflow: hidden !important; }
+
+.w-51 { width: 51%; }
+
+.tag.w-51 { width: 51% !important; overflow: hidden !important; }
+
+.w-52 { width: 52%; }
+
+.tag.w-52 { width: 52% !important; overflow: hidden !important; }
+
+.w-53 { width: 53%; }
+
+.tag.w-53 { width: 53% !important; overflow: hidden !important; }
+
+.w-54 { width: 54%; }
+
+.tag.w-54 { width: 54% !important; overflow: hidden !important; }
+
+.w-55 { width: 55%; }
+
+.tag.w-55 { width: 55% !important; overflow: hidden !important; }
+
+.w-56 { width: 56%; }
+
+.tag.w-56 { width: 56% !important; overflow: hidden !important; }
+
+.w-57 { width: 57%; }
+
+.tag.w-57 { width: 57% !important; overflow: hidden !important; }
+
+.w-58 { width: 58%; }
+
+.tag.w-58 { width: 58% !important; overflow: hidden !important; }
+
+.w-59 { width: 59%; }
+
+.tag.w-59 { width: 59% !important; overflow: hidden !important; }
+
+.w-60 { width: 60%; }
+
+.tag.w-60 { width: 60% !important; overflow: hidden !important; }
+
+.w-61 { width: 61%; }
+
+.tag.w-61 { width: 61% !important; overflow: hidden !important; }
+
+.w-62 { width: 62%; }
+
+.tag.w-62 { width: 62% !important; overflow: hidden !important; }
+
+.w-63 { width: 63%; }
+
+.tag.w-63 { width: 63% !important; overflow: hidden !important; }
+
+.w-64 { width: 64%; }
+
+.tag.w-64 { width: 64% !important; overflow: hidden !important; }
+
+.w-65 { width: 65%; }
+
+.tag.w-65 { width: 65% !important; overflow: hidden !important; }
+
+.w-66 { width: 66%; }
+
+.tag.w-66 { width: 66% !important; overflow: hidden !important; }
+
+.w-67 { width: 67%; }
+
+.tag.w-67 { width: 67% !important; overflow: hidden !important; }
+
+.w-68 { width: 68%; }
+
+.tag.w-68 { width: 68% !important; overflow: hidden !important; }
+
+.w-69 { width: 69%; }
+
+.tag.w-69 { width: 69% !important; overflow: hidden !important; }
+
+.w-70 { width: 70%; }
+
+.tag.w-70 { width: 70% !important; overflow: hidden !important; }
+
+.w-71 { width: 71%; }
+
+.tag.w-71 { width: 71% !important; overflow: hidden !important; }
+
+.w-72 { width: 72%; }
+
+.tag.w-72 { width: 72% !important; overflow: hidden !important; }
+
+.w-73 { width: 73%; }
+
+.tag.w-73 { width: 73% !important; overflow: hidden !important; }
+
+.w-74 { width: 74%; }
+
+.tag.w-74 { width: 74% !important; overflow: hidden !important; }
+
+.w-75 { width: 75%; }
+
+.tag.w-75 { width: 75% !important; overflow: hidden !important; }
+
+.w-76 { width: 76%; }
+
+.tag.w-76 { width: 76% !important; overflow: hidden !important; }
+
+.w-77 { width: 77%; }
+
+.tag.w-77 { width: 77% !important; overflow: hidden !important; }
+
+.w-78 { width: 78%; }
+
+.tag.w-78 { width: 78% !important; overflow: hidden !important; }
+
+.w-79 { width: 79%; }
+
+.tag.w-79 { width: 79% !important; overflow: hidden !important; }
+
+.w-80 { width: 80%; }
+
+.tag.w-80 { width: 80% !important; overflow: hidden !important; }
+
+.w-81 { width: 81%; }
+
+.tag.w-81 { width: 81% !important; overflow: hidden !important; }
+
+.w-82 { width: 82%; }
+
+.tag.w-82 { width: 82% !important; overflow: hidden !important; }
+
+.w-83 { width: 83%; }
+
+.tag.w-83 { width: 83% !important; overflow: hidden !important; }
+
+.w-84 { width: 84%; }
+
+.tag.w-84 { width: 84% !important; overflow: hidden !important; }
+
+.w-85 { width: 85%; }
+
+.tag.w-85 { width: 85% !important; overflow: hidden !important; }
+
+.w-86 { width: 86%; }
+
+.tag.w-86 { width: 86% !important; overflow: hidden !important; }
+
+.w-87 { width: 87%; }
+
+.tag.w-87 { width: 87% !important; overflow: hidden !important; }
+
+.w-88 { width: 88%; }
+
+.tag.w-88 { width: 88% !important; overflow: hidden !important; }
+
+.w-89 { width: 89%; }
+
+.tag.w-89 { width: 89% !important; overflow: hidden !important; }
+
+.w-90 { width: 90%; }
+
+.tag.w-90 { width: 90% !important; overflow: hidden !important; }
+
+.w-91 { width: 91%; }
+
+.tag.w-91 { width: 91% !important; overflow: hidden !important; }
+
+.w-92 { width: 92%; }
+
+.tag.w-92 { width: 92% !important; overflow: hidden !important; }
+
+.w-93 { width: 93%; }
+
+.tag.w-93 { width: 93% !important; overflow: hidden !important; }
+
+.w-94 { width: 94%; }
+
+.tag.w-94 { width: 94% !important; overflow: hidden !important; }
+
+.w-95 { width: 95%; }
+
+.tag.w-95 { width: 95% !important; overflow: hidden !important; }
+
+.w-96 { width: 96%; }
+
+.tag.w-96 { width: 96% !important; overflow: hidden !important; }
+
+.w-97 { width: 97%; }
+
+.tag.w-97 { width: 97% !important; overflow: hidden !important; }
+
+.w-98 { width: 98%; }
+
+.tag.w-98 { width: 98% !important; overflow: hidden !important; }
+
+.w-99 { width: 99%; }
+
+.tag.w-99 { width: 99% !important; overflow: hidden !important; }
+
+.w-100 { width: 100%; }
+
+.tag.w-100 { width: 100% !important; overflow: hidden !important; }
+
+ul { margin-bottom: 0; padding-left: 1rem; }
+
+div .inline { display: inline-block; }
+
+div .txt-AL { text-align: left; }
+
+button { text-decoration: none; }
+
+.gv .hr { grid-column: 1 / -1; width: 100%; padding: 0.5rem 0; border-bottom: #999999 1px dashed; }
+
+.gv .hr label { background: #6daa2b; border-radius: 6px; border: #6daa2b; padding: 5px 12px 7px 12px; text-shadow: 0 0 3px #4a4a4a; box-shadow: 0 0 3px #6daa2b; }
+
+.gv .hr:has(.ausl-log-btn) .ausl-log-btn { margin: auto 10px; }
+
+.gv .hr:not(:has(.ausl-log-btn)) button:first-of-type { margin-left: 12px; }
+
 /*======================== Auto-Select Tooltip ========================*/
 .card-header .row > div:first-child:has(.ausl-tip) { overflow: visible !important; }
 
@@ -13,6 +397,36 @@
 .ausl-tip::before { content: ''; position: absolute; left: 50%; bottom: calc(100% + 2px); transform: translateX(-50%); border: 6px solid transparent; border-top-color: #1a1a1a; opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0.2s; z-index: 1001; }
 
 .ausl-tip:hover::after, .ausl-tip:hover::before { opacity: 1; visibility: visible; }
+
+/*======================== Auto-Select Log Button ========================*/
+.ausl-log-btn { padding: 2px 6px; border-radius: 4px; border: none; cursor: pointer; font-size: 11px; background: #4595ae !important; color: white; opacity: 0.8; }
+
+.ausl-log-btn:hover { opacity: 1; }
+
+/*======================== Auto-Select Log Modal ========================*/
+.ausl-log-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+
+.ausl-log-content { border-radius: 12px; box-shadow: 0 0 12px 5px rgba(255, 255, 255, 0.3); background-color: #3a3a3a; border: 1px solid #5db1ff99; min-width: 400px; max-width: 600px; max-height: 80vh; overflow: auto; }
+
+.ausl-log-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background-color: #212121; border-bottom: 1px solid #333333; border-top-left-radius: 12px; border-top-right-radius: 12px; font-weight: bold; color: #e0e0e0; }
+
+.ausl-log-close { background: none; border: none; color: #999; font-size: 20px; cursor: pointer; }
+
+.ausl-log-close:hover { color: #fff; }
+
+.ausl-log-body { padding: 16px; color: #e0e0e0; }
+
+.ausl-log-reason { color: #aaa; margin-bottom: 12px; font-size: 13px; }
+
+.ausl-log-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+
+.ausl-log-table th, .ausl-log-table td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #333; }
+
+.ausl-log-table th { background: #212121; color: #888; }
+
+.ausl-log-table tr.winner { background: rgba(120, 194, 41, 0.15); }
+
+.ausl-log-table tr.winner td:first-child { font-weight: bold; color: #78c229; }
 
 /*======================== Modal ========================*/
 .modal .modal-header { padding: 8px; }

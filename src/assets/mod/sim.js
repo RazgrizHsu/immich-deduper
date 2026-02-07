@@ -22,12 +22,13 @@ function _checkLivePhoto(grpAssets, ausl){
 }
 
 function _shouldSkipLowSim(grpAssets, ausl){
-	if (!ausl?.skipLow) return false
-	for ( const ass of grpAssets){
+	if (!ausl?.skipLow) return { skip: false, lowScoreAssets: [] }
+	const lowScoreAssets = []
+	for ( const ass of grpAssets ){
 		const scr = ass.vw?.score
-		if (scr && scr !== 0 && scr <= 0.96) return true
+		if (scr && scr !== 0 && scr <= 0.96) lowScoreAssets.push({ aid: ass.autoId, score: scr })
 	}
-	return false
+	return { skip: lowScoreAssets.length > 0, lowScoreAssets }
 }
 
 function _countExif(exif){
@@ -189,6 +190,7 @@ function _selectBestAsset(grpAssets, ausl){
 }
 
 window.autoSelectReasons = {}
+window.autoSelectGroupLogs = {}
 
 let _lastAutoSelSig = null
 function getAutoSelSig(assets, ausl){
@@ -202,6 +204,7 @@ function getAutoSelectAuids(assets, ausl){
 	console.log(`[ausl] Weights: Earlier[${ausl?.earlier}] Later[${ausl?.later}] ExifRich[${ausl?.exRich}] ExifPoor[${ausl?.exPoor}] BigSize[${ausl?.ofsBig}] SmallSize[${ausl?.ofsSml}] BigDim[${ausl?.dimBig}] SmallDim[${ausl?.dimSml}] SkipLow[${ausl?.skipLow}] AllLive[${ausl?.allLive}] JPG[${ausl?.typJpg}] PNG[${ausl?.typPng}] HEIC[${ausl?.typHeic}] Fav[${ausl?.fav}] InAlb[${ausl?.inAlb}] User[${ausl?.usr?.k}:${ausl?.usr?.v}] Path[${ausl?.pth?.k}:${ausl?.pth?.v}]`)
 
 	window.autoSelectReasons = {}
+	window.autoSelectGroupLogs = {}
 
 	if (!ausl?.on || !assets?.length) return []
 
@@ -224,12 +227,16 @@ function getAutoSelectAuids(assets, ausl){
 		if (liveIds.length) {
 			console.log(`[ausl] Group ${gid}: Selected ALL LivePhoto assets [${liveIds.join(', ')}]`)
 			for ( const lid of liveIds ) window.autoSelectReasons[lid] = ['LivePhoto']
+			window.autoSelectGroupLogs[gid] = { status: 'livephoto', selectedAids: liveIds, reason: 'All LivePhotos selected', details: [] }
 			selIds.push(...liveIds)
 			continue
 		}
 
-		if (_shouldSkipLowSim(grpAss, ausl)) {
-			console.log(`[ausl] Group ${gid}: SKIPPING due to low similarity`)
+		const skipResult = _shouldSkipLowSim(grpAss, ausl)
+		if (skipResult.skip) {
+			const lowList = skipResult.lowScoreAssets.map(a => `#${a.aid}(${a.score.toFixed(4)})`).join(', ')
+			console.log(`[ausl] Group ${gid}: SKIPPING due to low similarity: ${lowList}`)
+			window.autoSelectGroupLogs[gid] = { status: 'skipped', selectedAids: [], reason: `Skipped: low similarity (<0.96)`, details: skipResult.lowScoreAssets.map(a => ({ aid: a.aid, score: a.score, reasons: ['Low similarity'] })) }
 			continue
 		}
 
@@ -237,7 +244,10 @@ function getAutoSelectAuids(assets, ausl){
 		if (result?.aid) {
 			selIds.push(result.aid)
 			window.autoSelectReasons[result.aid] = result.reasons
+			window.autoSelectGroupLogs[gid] = { status: 'selected', selectedAids: [result.aid], reason: `Selected #${result.aid} (score: ${result.score})`, details: Object.entries(result.allScores).map(([aid, d]) => ({ aid: parseInt(aid), score: d.score, reasons: d.reasons })) }
 			console.log(`[ausl] Group ${gid}: Selected best asset #${result.aid}`)
+		} else {
+			window.autoSelectGroupLogs[gid] = { status: 'no_winner', selectedAids: [], reason: 'No winner: all scores are 0', details: result?.allScores ? Object.entries(result.allScores).map(([aid, d]) => ({ aid: parseInt(aid), score: d.score, reasons: d.reasons })) : [] }
 		}
 	}
 
@@ -249,7 +259,6 @@ function getAutoSelectAuids(assets, ausl){
 // Auto-Select Tooltip UI
 //========================================================================
 function updateAutoSelectTips(){
-	// Remove existing tips
 	document.querySelectorAll('.ausl-tip').forEach(el => el.remove())
 
 	const reasons = window.autoSelectReasons || {}
@@ -262,7 +271,6 @@ function updateAutoSelectTips(){
 		const label = card.querySelector('label')
 		if (!label) continue
 
-		// Check if tip already exists
 		if (label.querySelector('.ausl-tip')) continue
 
 		const tipText = reasonList.join(', ')
@@ -274,6 +282,74 @@ function updateAutoSelectTips(){
 	}
 
 	console.log(`[ausl] Updated ${Object.keys(reasons).length} tooltip(s)`)
+}
+
+//========================================================================
+// Auto-Select Group Log Buttons
+//========================================================================
+function insertAutoSelectLogBtns(){
+	document.querySelectorAll('.ausl-log-btn').forEach(el => el.remove())
+
+	const logs = window.autoSelectGroupLogs || {}
+	if (!Object.keys(logs).length) return
+
+	const hrDivs = document.querySelectorAll('.gv.fsp .hr')
+	hrDivs.forEach(hr => {
+		const label = hr.querySelector('label')
+		if (!label) return
+
+		const match = label.textContent.match(/Group\s+(\d+)/)
+		if (!match) return
+
+		const gid = match[1]
+		const log = logs[gid]
+		if (!log) return
+
+		const btn = document.createElement('button')
+		btn.className = 'ausl-log-btn btn btn-sm'
+		btn.setAttribute('data-gid', gid)
+		btn.textContent = 'auto select log'
+		btn.onclick = () => showAutoSelectLogModal(gid)
+		label.after(btn)
+	})
+
+	console.log(`[ausl] Inserted ${hrDivs.length} log button(s)`)
+}
+
+function showAutoSelectLogModal(gid){
+	const log = window.autoSelectGroupLogs?.[gid]
+	if (!log) return
+
+	let existing = document.getElementById('ausl-log-modal')
+	if (existing) existing.remove()
+
+	let detailsHtml = ''
+	if (log.details?.length) {
+		detailsHtml = '<table class="ausl-log-table"><thead><tr><th>#ID</th><th>Score</th><th>Reasons</th></tr></thead><tbody>'
+		for (const d of log.details) {
+			const isWinner = log.selectedAids?.includes(d.aid)
+			detailsHtml += `<tr class="${isWinner ? 'winner' : ''}"><td>#${d.aid}</td><td>${d.score}</td><td>${d.reasons?.join(', ') || '-'}</td></tr>`
+		}
+		detailsHtml += '</tbody></table>'
+	}
+
+	const modal = document.createElement('div')
+	modal.id = 'ausl-log-modal'
+	modal.className = 'ausl-log-modal'
+	modal.innerHTML = `
+		<div class="ausl-log-content">
+			<div class="ausl-log-header">
+				<span>Group ${gid} - Auto Selection Log</span>
+				<button class="ausl-log-close" onclick="document.getElementById('ausl-log-modal').remove()">×</button>
+			</div>
+			<div class="ausl-log-body">
+				<div class="ausl-log-reason">${log.reason}</div>
+				${detailsHtml}
+			</div>
+		</div>
+	`
+	modal.onclick = (e) => { if (e.target === modal) modal.remove() }
+	document.body.appendChild(modal)
 }
 
 //========================================================================
@@ -364,6 +440,7 @@ window.dash_clientside.similar = {
 						Ste.updAllCss()
 						Ste.updBtns()
 						updateAutoSelectTips()
+						insertAutoSelectLogBtns()
 						dsh.syncSte(Ste.cntTotal, Ste.selectedIds)
 						if (autoSelectedIds.length > 0) notify(`[Auto Selection] selected ${autoSelectedIds.length} items`, 'success')
 						console.log(`[Ste] Auto-selected ${autoSelectedIds.length} items`)
@@ -373,6 +450,7 @@ window.dash_clientside.similar = {
 							Ste.updAllCss()
 							Ste.updBtns()
 							updateAutoSelectTips()
+							insertAutoSelectLogBtns()
 							dsh.syncSte(Ste.cntTotal, Ste.selectedIds)
 							console.log(`[Ste] Retry: auto-selected ${autoSelectedIds.length} items`)
 						}, 200)

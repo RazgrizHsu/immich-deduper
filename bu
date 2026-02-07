@@ -163,17 +163,26 @@ def publish(tag, scriptDir):
 	gitTag = f"v{tag}"
 	title = f"Release {tag}"
 
-	latestTag = run("git describe --tags --abbrev=0")
-	rng = f"{latestTag}..HEAD" if latestTag else "HEAD~10..HEAD"
+	prevTag = run(f"git tag --sort=-v:refname | grep -v 'v{tag}' | head -1")
+	rng = f"{prevTag}..HEAD" if prevTag else "HEAD~10..HEAD"
 
 	rawCommits = run(f"git log --oneline --no-merges {rng}")
-	kept = ("break", "fix", "feat", "mod", "upd")
+	kept = ("break", "fix", "feat", "mod", "upd", "refactor")
+	print(f"  Range: {rng}")
 	if not rawCommits:
+		print("  No commits found")
 		changelog = "- No new commits"
 	else:
 		msg = lambda l: l.split(" ", 1)[-1]
-		breaking = [l for l in rawCommits.splitlines() if msg(l).startswith("break")]
-		others = [l for l in rawCommits.splitlines() if any(msg(l).startswith(p) for p in kept[1:])]
+		allLines = rawCommits.splitlines()
+		breaking = [l for l in allLines if msg(l).startswith("break")]
+		others = [l for l in allLines if any(msg(l).startswith(p) for p in kept[1:])]
+		skipped = [l for l in allLines if l not in breaking and l not in others]
+		print(f"  Found {len(allLines)} commits:")
+		for l in breaking + others:
+			print(f"    ✓ {l}")
+		for l in skipped:
+			print(f"    ✗ {l}")
 		parts = []
 		if breaking:
 			parts.append("**Breaking Changes**")

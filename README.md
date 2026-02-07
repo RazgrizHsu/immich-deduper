@@ -177,13 +177,13 @@ When deleting duplicates, Metadata Merge can transfer metadata from deleted phot
 Automatically select the best photo in each duplicate group based on configurable criteria.
 
 <p align="center">
-<img src="docs/autoQ.jpg" alt="Auto Selection showing selection reason tooltip" />
+<img src="docs/ausl.png" alt="Auto Selection showing selection reason tooltip" />
 </p>
 
-**How It Works:**
 - Each criterion has a weight (0-5). Score = weight × 10
 - The photo with the highest total score in each group gets selected
-- Selected photos show an "Auto-Selected ？" badge with hover tooltip showing the scoring breakdown (e.g., "Earlier+20, Path+30")
+- Selected photos show an "Auto-Selected ？" badge, Hover to see the scoring breakdown
+- Each group header has an "auto select log" button, Click to view detailed scoring for all photos
 - Settings changes trigger automatic recalculation
 
 **Selection Criteria:**
@@ -201,6 +201,7 @@ Automatically select the best photo in each duplicate group based on configurabl
 | **Immich** | Favorite / In Album | Prefer photos marked as favorite or added to albums |
 | **User** | Priority User | Prefer photos owned by a specific Immich user |
 | **Path** | Contains | Prefer photos whose path contains a specific string |
+
 
 **Tips:**
 - Use "Earlier" + high weight when you want to keep original captures over edited versions

@@ -688,25 +688,6 @@
 
 
 
-.gv {
-	.hr {
-		grid-column: 1 / -1;
-		width: 100%;
-		padding: 0.5rem 0;
-		border-bottom: #999999 1px dashed;
-
-		label {
-			//color: #6DAA2B;
-			@include bg-gradient(#6daa2b);
-			border-radius: 6px;
-			border: #6daa2b;
-			padding: 5px 12px 7px 12px;
-			text-shadow: 0 0 3px #4a4a4a;
-			box-shadow: 0 0 3px #6daa2b;
-		}
-	}
-}
-
 .card.sim {
 	$show-borders: false;
 	@mixin optional-border($color, $width, $style) {
