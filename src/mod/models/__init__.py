@@ -8,7 +8,7 @@ from typing import Dict, List, Any, Optional, Callable, Tuple, Union
 from .base import BaseDictModel, Json
 from .core import IFnProg, IFnCancel, TskStatus, Gws
 from .mods import Pager, Nfy, Tsk, Mdl, MdlImg, ProcessInfo
-from .shared import Sys, Cnt, Ste
+from .shared import Sys, Cnt, Ste, Sets
 from .data import SimInfo, Usr, Asset, AssetExif, AssetExInfo
 from .data import Album, AssetFace, Tags, Library
 from .page import PgSim, Now

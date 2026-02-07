@@ -195,6 +195,7 @@ class ks:
         cnt = 'store-count'
         ste = 'store-state'
         sys = 'store-sys'
+        sets = 'store-sets'
 
         pgSim = 'sto-pg-sim'
 
@@ -254,7 +255,7 @@ def pathFromRoot(path):
 # envs
 #------------------------------------------------------------------------
 class envs:
-    version='0.2.3'
+    version='0.2.7'
     isDev = False if isDock else bool(os.getenv('IsDev', False))
     isDevUI = False if isDock else bool(os.getenv('IsDevUI', False))
     isDock = False if not isDock else True

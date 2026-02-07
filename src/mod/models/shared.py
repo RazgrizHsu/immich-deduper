@@ -7,6 +7,7 @@ from typing import Dict, List, Any, Optional, Callable, Tuple, Union
 from dsh import htm
 from conf import ks, envs, co
 from util import log
+from dtom import Ausl
 from .core import IFnCancel
 from .base import BaseDictModel
 from .data import Asset
@@ -59,4 +60,9 @@ class Ste(BaseDictModel):
 
     def getSelected(self, allAssets: List[Asset]) -> List[Asset]:
         return [a for a in allAssets if a.autoId in self.selectedIds]
+
+
+@dataclass
+class Sets(BaseDictModel):
+    ausl: Ausl = field(default_factory=Ausl)
 

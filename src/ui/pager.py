@@ -232,7 +232,7 @@ def _buildUI(pgrId: str, idx: int, page: int, size: int, total: int, btnSize: in
         )
 
     if showSizer:
-        lg.info(f'[buildUI] create sizer value[{size}]')
+        # lg.info(f'[buildUI] create sizer value[{size}]')
         components.append(
             htm.Div([
                 dbc.Select(

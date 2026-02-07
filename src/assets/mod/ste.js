@@ -117,7 +117,7 @@ const Ste = window.Ste = {
 	updAllCss()
 	{
 		const cards = document.querySelectorAll( '[id*="card-select"]' )
-		console.log( `[Ste] updAllCss cards[ ${ cards.length } ]` )
+		// console.log( `[Ste] updAllCss cards[ ${ cards.length } ]` )
 		cards.forEach( card => {
 			const assetId = this.extractAssetIdBy( card )
 			if ( assetId ) this.updCss( assetId )

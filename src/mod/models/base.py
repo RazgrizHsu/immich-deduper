@@ -287,13 +287,13 @@ class BaseDictModel:
         try:
             if not row: raise ValueError(f"row is empty")
 
-            curid = id(cursor)
-            cols = cls._cheDbCols.get(curid)
+            if cursor.description is None:
+                raise TypeError("cursor.description is None")
+            ck = tuple(desc[0] for desc in cursor.description)
+            cols = cls._cheDbCols.get(ck)
             if cols is None:
-                if cursor.description is None:
-                    raise TypeError("cursor.description is None")
-                cols = [desc[0] for desc in cursor.description]
-                cls._cheDbCols[curid] = cols
+                cols = list(ck)
+                cls._cheDbCols[ck] = cols
 
             data = dict(zip(cols, row))
             typs = cls._getTypeHints()

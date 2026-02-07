@@ -454,7 +454,7 @@ select:disabled { opacity: 0.6; box-shadow: none !important; border: #CCC 1px da
 
 .btn-link { text-decoration: none; }
 
-.btn { position: relative; border-radius: 6px; font-size: 1.3vw; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: all 0.3s ease, background-image 0.8s ease, background-color 0.8s ease; border: var(--btn-borderW) solid 1px; z-index: 1; box-shadow: var(--btn-shadow); color: var(--btn-text-color); }
+.btn { position: relative; border-radius: 6px; font-size: 17px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: all 0.3s ease, background-image 0.8s ease, background-color 0.8s ease; border: var(--btn-borderW) solid 1px; z-index: 1; box-shadow: var(--btn-shadow); color: var(--btn-text-color); }
 
 .btn:hover { box-shadow: var(--btn-shadowHov); filter: brightness(115%); transition: all 0.2s ease-out, background-image 0.5s ease-in-out, background-color 0.5s ease-in-out; }
 

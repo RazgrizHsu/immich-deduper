@@ -460,7 +460,6 @@ def sim_Load(dta_now, dta_cnt):
 #------------------------------------------------------------------------
 # Update status counters - Using CLIENT-SIDE callbacks for performance
 #------------------------------------------------------------------------
-
 ccbk(
     cbkFn( "similar", "onCardSelectClicked" ),
     out(ks.sto.ste, "data"),
@@ -473,10 +472,11 @@ ccbk(
 # Initialize client-side selection state when assets load
 #------------------------------------------------------------------------
 ccbk(
-    cbkFn( "similar", "onNowSyncToDummyInit" ),
+    cbkFn( "similar", "onSimJs" ),
     out({"type": "dummy-output", "id": "init-selection"}, "children"),
     inp(ks.sto.now, "data"),
     inp(ks.sto.ste, "data"),
+    inp(ks.sto.sets, "data"),
     prevent_initial_call="initial_duplicate"
 )
 
@@ -994,17 +994,9 @@ def sim_FindSimilar(doReport: IFnProg, sto: models.ITaskStore):
             if cntAll >= maxItems:
                 msg.append(f"Reached maximum search limit ({maxItems} items).")
 
-        # Auto-select assets if enabled
-        lg.info(f"[sim:fs] Starting auto-selection check, enable={db.dto.ausl}")
+        # Clear selection state, auto-select is now calculated on client side
         sto.ste.clear()
-        autoSelectedIds = sim.getAutoSelectAuids(now.sim.assCur) if now.sim.assCur else []
-        if autoSelectedIds:
-            lg.info(f"[sim:fs] Auto-selected {len(autoSelectedIds)} assets: {autoSelectedIds}")
-            sto.ste.selectedIds = autoSelectedIds
-            sto.ste.cntTotal = len(now.sim.assCur)
-            lg.info(f"[sim:fs] Updated ste store: selectedIds={sto.ste.selectedIds}, cntTotal={sto.ste.cntTotal}")
-        else:
-            lg.info(f"[sim:fs] No assets auto-selected")
+        sto.ste.cntTotal = len(now.sim.assCur) if now.sim.assCur else 0
 
         nfy.success(msg)
         return sto, msg

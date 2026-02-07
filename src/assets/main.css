@@ -544,13 +544,17 @@ button { text-decoration: none; }
 
 .card .igrid.divRows > div > *:nth-child(2n) { justify-self: start; }
 
-.card .igrid .icriteria { display: grid; grid-template-columns: 28% repeat(4, 1fr); }
+.card .igrid .icriteria { margin-bottom: 2px !important; display: grid; grid-template-columns: 1fr 18% 1fr 18% 10%; }
+
+.card .igrid .icriteria > *:nth-child(4) { margin-left: 6px; }
+
+.card .igrid .icriteria .tag { font-size: 11px !important; }
 
 .card .igrid .icriteria span { overflow: hidden; text-wrap: balance; }
 
-.card .igrid .icriteria.icriteria-wrap > *:nth-child(6) { grid-column-start: 2; }
+.card .igrid .icriteria.wrap > *:nth-child(6) { grid-column-start: 2; }
 
-.card .igrid .icriteria.icriteria-user > *:nth-child(2) { grid-column: span 2; }
+.card .igrid .icriteria input { padding: 1px 3px 1px 3px !important; }
 
 .card .irow { font-size: 14px; margin: 0; }
 
@@ -582,13 +586,11 @@ button { text-decoration: none; }
 
 .icbxs.single > div:last-child li { margin-left: 8px; }
 
-.ifns .card-header { display: flex; justify-content: space-between; align-items: baseline; }
+.ifns .card-header { display: flex; justify-content: space-between; align-items: center; }
 
-.ifns .card-header small { font-size: 11px; color: #bbb; }
+.ifns .card-header span { font-size: 15px; vertical-align: text-bottom; }
 
-.gv .hr { grid-column: 1 / -1; width: 100%; padding: 0.5rem 0; border-bottom: #999999 1px dashed; }
-
-.gv .hr label { background: #6daa2b; border-radius: 6px; border: #6daa2b; padding: 5px 12px 7px 12px; text-shadow: 0 0 3px #4a4a4a; box-shadow: 0 0 3px #6daa2b; }
+.ifns .card-header small { font-size: 11px; color: #bbb; text-align: right; line-height: 1.4; }
 
 .card.sim { border: #555555 solid 3px; }
 
