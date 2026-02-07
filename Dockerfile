@@ -1,32 +1,39 @@
 # syntax = docker/dockerfile:1.5
 
 # Build argument for device selection
-ARG DEVICE=cpu
+ARG DEVICE=cuda
 
-FROM python:3.12
+FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
+ARG DEVICE
 ARG DEDUP_PORT=8086
 ENV PORT=${DEDUP_PORT}
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-RUN apt-get update && apt-get install -y curl libimage-exiftool-perl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libimage-exiftool-perl && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy appropriate requirements file based on device
 COPY requirements*.txt ./
 
 # Install dependencies based on device type
 RUN --mount=type=cache,target=/root/.cache \
-    if [ "$DEVICE" = "cuda" ]; then \
-        pip install -r requirements-cuda.txt; \
+    if [ "$DEVICE" = "cpu" ]; then \
+        pip install --no-cache-dir -r requirements-cpu.txt; \
+    elif [ "$DEVICE" = "cuda" ] || [ "$DEVICE" = "all" ]; then \
+        pip install --no-cache-dir -r requirements-cuda.txt; \
     else \
-        pip install -r requirements.txt; \
-    fi && \
-    pip cache purge
+        echo "Unsupported DEVICE=$DEVICE (expected: cpu, cuda, all)" >&2; exit 1; \
+    fi
 
 COPY src/ ./src/
 
 EXPOSE ${PORT}
-HEALTHCHECK CMD curl -f http://127.0.0.1:${PORT} || exit 1
+HEALTHCHECK CMD python -c "import os, urllib.request; urllib.request.urlopen(f'http://127.0.0.1:{os.environ[\"PORT\"]}', timeout=3)" || exit 1
 
 CMD ["python", "-m", "src.app"]

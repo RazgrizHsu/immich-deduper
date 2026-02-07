@@ -1,0 +1,9 @@
+# Deduper CPU dependencies
+# Uses CPU-only PyTorch wheels to keep image size small
+
+--index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://pypi.org/simple
+torch~=2.7.0
+torchvision~=0.22.0
+
+-r requirements-base.txt
