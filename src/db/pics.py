@@ -58,6 +58,7 @@ _SCHEMAS = {
         jsonExif         TEXT Default '{}',
         isVectored       INTEGER Default 0,
         simOk            INTEGER Default 0,
+        simCnt           INTEGER Default 0,
         simInfos         TEXT Default '[]',
         simGIDs          TEXT Default '[]'
     ''',
@@ -102,6 +103,14 @@ def init():
             c.execute('''CREATE INDEX IF NOT EXISTS idx_assets_isVectored ON assets(isVectored)''')
             c.execute('''CREATE INDEX IF NOT EXISTS idx_assets_simOk ON assets(simOk)''')
             c.execute('''CREATE INDEX IF NOT EXISTS idx_assets_id ON assets(id)''')
+            c.execute('''CREATE INDEX IF NOT EXISTS idx_assets_simCnt ON assets(simCnt)''')
+
+            # migrate simCnt from simInfos
+            c.execute("SELECT COUNT(*) FROM assets WHERE simCnt = 0 AND simInfos != '[]'")
+            if c.fetchone()[0] > 0:
+                lg.info("[pics:migration] migrating simCnt from simInfos...")
+                c.execute("UPDATE assets SET simCnt = json_array_length(simInfos) WHERE simCnt = 0 AND simInfos != '[]'")
+                lg.info(f"[pics:migration] migrated {c.rowcount} rows")
 
             conn.commit()
 
@@ -497,10 +506,12 @@ def saveBy(asset: dict, c: Cursor) -> int:  #, onExist:Callable[[models.Asset],N
 #========================================================================
 
 def getAnyNonSim(exclAids=[]) -> Optional[models.Asset]:
+    import time
+    t0 = time.time()
     try:
         with mkConn() as conn:
             c = conn.cursor()
-            sql = "Select * From assets Where isVectored = 1 AND simOk!=1 AND json_array_length(simINfos) = 0"
+            sql = "Select * From assets Where isVectored = 1 AND simOk!=1 AND simCnt = 0"
             params = []
 
             if exclAids:
@@ -515,7 +526,9 @@ def getAnyNonSim(exclAids=[]) -> Optional[models.Asset]:
                 asset = models.Asset.fromDB(c, row)
 
                 import db
-                if not db.dto.checkIsExclude(asset): return asset
+                if not db.dto.checkIsExclude(asset):
+                    lg.info(f"[pics:ans] #{asset.autoId} took {time.time()-t0:.3f}s")
+                    return asset
 
     except Exception as e:
         raise mkErr("Failed to get non-sim asset", e)
@@ -569,8 +582,8 @@ def setSimInfos(autoId: int, infos: List[models.SimInfo], isOk=0):
                 dictSimInfos = [sim.toDict() for sim in infos] if infos else []
 
                 c.execute(
-                    "UPDATE assets SET simOk = ?, simInfos = ? WHERE autoId = ?",
-                    (isOk, json.dumps(dictSimInfos), autoId)
+                    "UPDATE assets SET simOk = ?, simCnt = ?, simInfos = ? WHERE autoId = ?",
+                    (isOk, len(dictSimInfos), json.dumps(dictSimInfos), autoId)
                 )
 
                 if not c.rowcount:
@@ -635,7 +648,7 @@ def deleteBy(assets: List[models.Asset]):
                                 )
                             else:  # If no GIDs left, clear the state
                                 c.execute(
-                                    "UPDATE assets SET simInfos = '[]', simGIDs = '[]' WHERE id = ?",
+                                    "UPDATE assets SET simCnt = 0, simInfos = '[]', simGIDs = '[]' WHERE id = ?",
                                     (assId,)
                                 )
 
@@ -660,13 +673,13 @@ def deleteBy(assets: List[models.Asset]):
                     # If only self remains, mark as resolved
                     if len(infos) <= 1:
                         c.execute(
-                            "UPDATE assets SET simOk = 1, simInfos = '[]', simGIDs = '[]' WHERE autoId = ?",
+                            "UPDATE assets SET simOk = 1, simCnt = 0, simInfos = '[]', simGIDs = '[]' WHERE autoId = ?",
                             (aId,)
                         )
                     else:
                         c.execute(
-                            "UPDATE assets SET simInfos = ? WHERE autoId = ?",
-                            (json.dumps(infos), aId)
+                            "UPDATE assets SET simCnt = ?, simInfos = ? WHERE autoId = ?",
+                            (len(infos), json.dumps(infos), aId)
                         )
 
             conn.commit()
@@ -688,7 +701,7 @@ def setResolveBy(assets: List[models.Asset]):
             cnt = len(autoIds)
 
             qargs = ','.join(['?' for _ in autoIds])
-            c.execute(f"UPDATE assets SET simOk = 1, simGIDs = '[]', simInfos = '[]' WHERE autoId IN ({qargs})", autoIds)
+            c.execute(f"UPDATE assets SET simOk = 1, simCnt = 0, simGIDs = '[]', simInfos = '[]' WHERE autoId IN ({qargs})", autoIds)
             count = c.rowcount
             if count != cnt: raise RuntimeError(f"effect[{count}] not match assets[{cnt}] ids[{qargs}]")
             conn.commit()
@@ -704,10 +717,10 @@ def clearAllSimIds(keepSimOk=False):
         with mkConn() as conn:
             c = conn.cursor()
             if keepSimOk:
-                c.execute("UPDATE assets SET simInfos = '[]', simGIDs = '[]' WHERE simOk = 0")
+                c.execute("UPDATE assets SET simCnt = 0, simInfos = '[]', simGIDs = '[]' WHERE simOk = 0")
                 lg.info(f"Cleared similarity search results but kept resolved items")
             else:
-                c.execute("UPDATE assets SET simOk = 0, simInfos = '[]', simGIDs = '[]'")
+                c.execute("UPDATE assets SET simOk = 0, simCnt = 0, simInfos = '[]', simGIDs = '[]'")
                 lg.info(f"Cleared all similarity results")
             conn.commit()
             count = c.rowcount
@@ -723,7 +736,7 @@ def countHasSimIds(isOk=0):
             c = conn.cursor()
             sql = '''
                 SELECT COUNT(*) FROM assets
-                WHERE simOk = ? AND json_array_length(simInfos) > 0
+                WHERE simOk = ? AND simCnt > 0
             '''
             c.execute(sql, (isOk,))
             row = c.fetchone()
@@ -742,7 +755,7 @@ def getAnySimPending() -> Optional[models.Asset]:
             c.execute("""
                 SELECT * FROM assets
                 WHERE
-                    simOk = 0 AND json_array_length(simInfos) > 1
+                    simOk = 0 AND simCnt > 1
                 LIMIT 1
             """)
             row = c.fetchone()
@@ -758,7 +771,7 @@ def getAllSimOks(isOk=0) -> List[models.Asset]:
             c.execute("""
                 SELECT * FROM assets
                 WHERE
-                    simOk = ? AND json_array_length(simInfos) > 1
+                    simOk = ? AND simCnt > 1
                 ORDER BY autoId
             """, (isOk,))
             rows = c.fetchall()
@@ -789,7 +802,7 @@ def setSimAutoMark():
                 UPDATE assets
                 SET simOk = 1
                 WHERE
-                    simOk = 0 AND json_array_length(simInfos) = 1
+                    simOk = 0 AND simCnt = 1
                     AND EXISTS
                     (
                         SELECT 1 FROM json_each(simInfos) si
@@ -810,8 +823,8 @@ def getAssetsByGID(gid: int) -> list[models.Asset]:
                 WHERE EXISTS (
                     SELECT 1 FROM json_each(simGIDs)
                     WHERE value = ?
-                ) AND json_array_length(simInfos) > 1
-                ORDER BY json_array_length(simInfos) DESC, autoId
+                ) AND simCnt > 1
+                ORDER BY simCnt DESC, autoId
             """, (gid,))
             rows = c.fetchall()
             if not rows: return []
@@ -989,11 +1002,11 @@ def countSimPending():
                     SELECT DISTINCT gid.value as gid
                     FROM assets a
                     CROSS JOIN json_each(a.simGIDs) gid
-                    WHERE a.simOk = 0 AND json_array_length(a.simInfos) > 1
+                    WHERE a.simOk = 0 AND a.simCnt > 1
                 )
                 SELECT COUNT(*) FROM assets a
                 INNER JOIN allGIDs g ON a.autoId = g.gid
-                WHERE a.simOk = 0 AND json_array_length(a.simInfos) > 1
+                WHERE a.simOk = 0 AND a.simCnt > 1
             """)
             cnt = c.fetchone()[0]
             return cnt
@@ -1013,7 +1026,7 @@ def getPagedPending(page=1, size=20) -> list[models.Asset]:
                     SELECT DISTINCT gid.value as gid
                     FROM assets a
                     CROSS JOIN json_each(a.simGIDs) gid
-                    WHERE a.simOk = 0 AND json_array_length(a.simInfos) > 1
+                    WHERE a.simOk = 0 AND a.simCnt > 1
                 ),
                 gidCounts AS (
                     SELECT
@@ -1021,7 +1034,7 @@ def getPagedPending(page=1, size=20) -> list[models.Asset]:
                         COUNT(*) as cntRelats
                     FROM assets a
                     CROSS JOIN json_each(a.simGIDs) gid
-                    WHERE a.simOk = 0 AND json_array_length(a.simInfos) > 1
+                    WHERE a.simOk = 0 AND a.simCnt > 1
                       AND a.autoId != gid.value
                     GROUP BY gid.value
                 )
@@ -1031,8 +1044,8 @@ def getPagedPending(page=1, size=20) -> list[models.Asset]:
                 FROM assets a
                 INNER JOIN allGIDs g ON a.autoId = g.gid
                 LEFT JOIN gidCounts gc ON a.autoId = gc.gid
-                WHERE a.simOk = 0 AND json_array_length(a.simInfos) > 1
-                ORDER BY json_array_length(a.simInfos) DESC, a.autoId
+                WHERE a.simOk = 0 AND a.simCnt > 1
+                ORDER BY a.simCnt DESC, a.autoId
                 LIMIT ? OFFSET ?
             """, (size, offset))
 

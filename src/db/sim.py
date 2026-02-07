@@ -98,6 +98,7 @@ def searchBy(src: Optional[models.Asset], doRep: IFnProg, isCancel: IFnCancel, f
         if isCancel():
             lg.info(f"[sim:sh] user cancelled")
             break
+        lg.info(f"[sim:sh] looping gis[{len(gis)}] < sizeMax[{sizeMax}]")
 
         if not ass:
             nextAss = db.pics.getAnyNonSim(skipAids)
@@ -152,7 +153,6 @@ def findGroupBy(asset: models.Asset, doReport: IFnProg, grpId: int, fromUrl=Fals
     result = SearchInfo()
     result.asset = asset
 
-    time.sleep(0.1)
     thMin = db.dto.thMin
 
     bseVec, bseInfos = db.vecs.findSimiliar(asset.autoId, thMin)
