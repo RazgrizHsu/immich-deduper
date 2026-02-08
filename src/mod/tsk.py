@@ -88,10 +88,13 @@ def tsk_PanelStatus(dta_tsk, css):
 
     hasTsk = tsk.name is not None
 
+
     if hasTsk:
         css = css.replace(" hide", "").strip()
     else:
         if "hide" not in css: css += " hide"
+
+    #lg.info( f'[tsk] hasTsk[{hasTsk}] name[{tsk.name}] css[{css}]' )
 
     #style = style_show if tsk.name else style_none
 
@@ -240,7 +243,7 @@ def tsk_UpdUI(gwsmsg, dta_tsk, rstChs):
 
     gws = models.Gws.fromDic(gwsmsg)
 
-    # lg.info(f"[tws:uui] received: {wmsg}, tsk: {dta_tsk}")
+    # lg.info(f"[tws:uui] received: {gwsmsg}, tsk: {dta_tsk}")
     try:
         # Direct message string from custom WebSocket
         tsk = models.Tsk.fromDic(dta_tsk)

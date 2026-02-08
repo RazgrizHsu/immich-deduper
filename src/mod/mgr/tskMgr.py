@@ -87,22 +87,27 @@ class TskMgr:
         self.startupId = str(uuid.uuid4())
 
     def _sendCurrentTaskStatus(self, client_id: str):
+        if not self.sio: return
+
         try:
-            tsks = [(tsn, ti) for tsn, ti in self.infos.items() if ti.status in [TskStatus.RUNNING, TskStatus.PENDING]]
+            now = time.time()
+            RECENT_THRESHOLD = 10
 
-            if not tsks: return
-
-            for tsn, ti in tsks:
-                lg.info(f"[tskMgr] Sending current task status to new client: {ti.name} - {ti.status.value}")
-
-                if self.sio:
+            for tsn, ti in self.infos.items():
+                if ti.status in [TskStatus.RUNNING, TskStatus.PENDING]:
+                    lg.info(f"[tskMgr] Sending current task to new client: {ti.name} - {ti.status.value}")
                     self.sio.emit('task_message', ti.gws('start').toDict(), room=client_id)
-
                     if ti.status == TskStatus.RUNNING:
-                        msg = ti.gws('prog')
-                        self.sio.emit('task_message', msg.toDict(), room=client_id)
+                        self.sio.emit('task_message', ti.gws('progress').toDict(), room=client_id)
+                    return
 
-                break  # Only one task should be running at a time
+            for tsn, ti in self.infos.items():
+                if ti.status in [TskStatus.COMPLETED, TskStatus.FAILED, TskStatus.CANCELLED]:
+                    if ti.dte and (now - ti.dte) < RECENT_THRESHOLD:
+                        lg.info(f"[tskMgr] Sending recent complete to new client: {ti.name}")
+                        self.sio.emit('task_message', ti.gws('complete').toDict(), room=client_id)
+                        return
+
         except Exception as e:
             lg.error(f"[tskMgr] Error sending current task status: {e}")
 

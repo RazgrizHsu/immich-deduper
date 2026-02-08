@@ -27,7 +27,7 @@ def renderHeader():
         dbc.Container([
             htm.A(
                 dbc.Row([
-                    dbc.Col(htm.Img(src="assets/logo.png", height="38px"), width="auto", className="px-1"),
+                    dbc.Col(htm.Img(src="/assets/logo.png", height="38px"), width="auto", className="px-1"),
                     dbc.Col(dbc.NavbarBrand(f"{ks.title}", className="ms-2")),
                 ],
                     align="center", className="g-0",

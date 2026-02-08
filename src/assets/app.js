@@ -18,6 +18,10 @@ window.dash_clientside = window.dash_clientside || {}
 				return
 			}
 		}
+		if(msg.includes('Callback error updating')){
+			console.debug(`[dash] hot reload...`)
+			return
+		}
 		origErr.apply(console, args)
 	}
 })()
@@ -186,10 +190,13 @@ function onFetchedChk(loading, data){
 
 document.addEventListener('DOMContentLoaded', function(){
 
-	let ld = notify.load('Please wait, system checking...').run()
-	fetch('/api/chk').then(rep => rep.json())
-		.then(data =>onFetchedChk(ld, data))
-		.catch(error =>notify(`[wst] Failed to get System Check Status, ${error}`, 'warn'))
+	ui.mob.waitFor('#div-notify', cbx =>{
+
+		let ld = notify.load('Please wait, system checking...').run()
+		fetch('/api/chk').then(rep => rep.json())
+			.then(data =>onFetchedChk(ld, data))
+			.catch(error =>notify(`[wst] Failed to get System Check Status, ${error}`, 'warn'))
+	})
 
 })
 

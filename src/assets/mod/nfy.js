@@ -110,7 +110,6 @@ document.addEventListener('DOMContentLoaded', () => {
 	}
 
 	ui.mob.waitFor('#div-notify', (container) => {
-		console.log('[aurm] container found, setting up auto-remove')
 
 		setAuRm()
 
@@ -119,9 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
 			setAuRm()
 		})
 
-		observer.observe(container, {
-			childList: true
-		})
-		console.log('[aurm] observer started')
+		observer.observe(container, { childList: true })
 	}, '[nfy]')
 })

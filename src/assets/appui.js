@@ -5,6 +5,8 @@ const ui = window.ui = {
 			const dst = document.querySelector(selector)
 			const log = typeof logPrefix == 'string' && logPrefix.length > 0
 
+			if(!logPrefix) logPrefix = selector
+
 			if (dst) {
 				if (log) console.log(`${logPrefix} Found element:`, dst)
 				callback(dst)

@@ -337,7 +337,12 @@ def sim_SyncUrlAssetToNow(dta_ass, dta_now):
 
     ass = models.Asset.fromDic(dta_ass)
 
-    lg.info(f"[sim:sync] asset from url: #{ass.autoId} id[{ass.id}]")
+    lg.info(f"[sim:sync] asset from url: #{ass.autoId} id[{ass.id}] simOk[{ass.simOk}]")
+
+    if ass.simOk == 1:
+        lg.info(f'[sim:sync] ignore searched #{ass.autoId}')
+        return noUpd.by(2)
+
 
     now.sim.assFromUrl = ass
     now.sim.assAid = ass.autoId
@@ -416,7 +421,8 @@ def sim_Load(dta_now, dta_cnt):
     lg.info(f"[sim:load] trig[{trgId}] muod[{db.dto.muod}] cntNo[{cntNo}] cntOk[{cntOk}] cntPn[{cntPn}]({oldPn}) assCur[{len(now.sim.assCur)}] assAid[{now.sim.assAid}]")
 
     # Load pending data - reload if count changed or no data
-    needReload = False
+    isInitial = not trgId
+    needReload = isInitial
     if cntPn > 0:
         if not now.sim.assPend or len(now.sim.assPend) == 0:
             needReload = True

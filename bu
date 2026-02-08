@@ -162,12 +162,13 @@ def publish(tag, scriptDir):
 	print("Publishing release to GitHub...")
 	run("git fetch --prune --prune-tags")
 	gitTag = f"v{tag}"
-	title = f"Release {tag}"
+	title = gitTag
 
 	prevTag = run(f"git tag --sort=-v:refname | grep -v 'v{tag}' | head -1")
 	rng = f"{prevTag}..HEAD" if prevTag else "HEAD~10..HEAD"
 
 	rawCommits = run(f"git log --oneline --no-merges {rng}")
+	merges = run(f"git log --oneline --merges {rng}")
 	kept = ("break", "fix", "feat", "mod", "upd", "refactor")
 	print(f"  Range: {rng}")
 	if not rawCommits:
@@ -190,6 +191,19 @@ def publish(tag, scriptDir):
 			parts += [f"- {l}" for l in breaking]
 			if others: parts.append("")
 		parts += [f"- {l}" for l in others]
+		if merges:
+			contribs = []
+			for line in merges.splitlines():
+				m = re.search(r'Merge pull request #(\d+) from ([^/]+)/', line)
+				if m:
+					prNum, author = m.groups()
+					prTitle = run(f"gh pr view {prNum} --json title --jq .title") or ""
+					contribs.append((prNum, author, prTitle))
+			if contribs:
+				parts.append("")
+				parts.append("## Contributors")
+				for prNum, author, prTitle in contribs:
+					parts.append(f"- @{author}: {prTitle} (#{prNum})")
 		changelog = "\n".join(parts) if parts else "- No notable changes"
 
 	notes = f"""Release {tag}
@@ -215,6 +229,22 @@ def publish(tag, scriptDir):
 	if not assets:
 		shutil.rmtree(assetDir)
 		err("No assets found in docker/ directories")
+
+	print("\n" + "="*50)
+	print(f"Release Preview: {gitTag}")
+	print("="*50)
+	print(notes)
+	print("\n" + "-"*50)
+	print("Assets:")
+	for a in assets:
+		print(f"  - {Path(a).name}")
+	print("-"*50)
+
+	confirm = input("\nProceed with release? [y/N]: ").strip().lower()
+	if confirm != 'y':
+		shutil.rmtree(assetDir)
+		print("Release cancelled.")
+		sys.exit(0)
 
 	# delete existing tag/release
 	check = subprocess.run(["git", "rev-parse", gitTag], capture_output=True, text=True)
