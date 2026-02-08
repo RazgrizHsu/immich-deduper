@@ -1,0 +1,167 @@
+name: Docker Image Build
+
+on:
+  pull_request:
+    # Intentionally scoped to container/build infra changes only.
+    # App code changes (e.g. src/**) will be validated by other test workflows.
+    paths:
+      - "Dockerfile"
+      - "requirements*.txt"
+      - ".dockerignore"
+      - "scripts/ci/verify-image-type.py"
+      - ".github/workflows/docker-image-ci.yml"
+  push:
+    branches:
+      - main
+    # Same infra-only trigger scope as pull_request above.
+    paths:
+      - "Dockerfile"
+      - "requirements*.txt"
+      - ".dockerignore"
+      - "scripts/ci/verify-image-type.py"
+      - ".github/workflows/docker-image-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Cancel stale in-progress runs on the same PR/branch to avoid wasting CI minutes.
+concurrency:
+  group: docker-image-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-verify:
+    name: Build + Verify (${{ matrix.device }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        device: [cpu, cuda]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Build image (${{ matrix.device }})
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: ./Dockerfile
+          tags: immich-deduper:ci-${{ matrix.device }}
+          build-args: |
+            DEVICE=${{ matrix.device }}
+          load: true
+          push: false
+          cache-from: |
+            type=gha,scope=immich-deduper-${{ matrix.device }}
+            type=gha,scope=immich-deduper-${{ matrix.device }}-main
+          # Keep per-run cache export lightweight; full cache is refreshed on main below.
+          cache-to: type=gha,scope=immich-deduper-${{ matrix.device }},mode=min
+
+      - name: Verify runtime dependencies (${{ matrix.device }})
+        env:
+          DEVICE: ${{ matrix.device }}
+          IMG: immich-deduper:ci-${{ matrix.device }}
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            -e DEVICE="$DEVICE" \
+            -v "$PWD/scripts/ci:/ci:ro" \
+            "$IMG" \
+            python /ci/verify-image-type.py
+
+      - name: Capture image size (${{ matrix.device }})
+        env:
+          DEVICE: ${{ matrix.device }}
+          IMG: immich-deduper:ci-${{ matrix.device }}
+        run: |
+          set -euo pipefail
+          bytes="$(docker image inspect "$IMG" --format '{{.Size}}')"
+          mib="$(python - "$bytes" <<'PY'
+          import sys
+          size = int(sys.argv[1])
+          print(f"{size / 1024 / 1024:.2f}")
+          PY
+          )"
+          echo "Image size (${DEVICE}): ${mib} MiB (${bytes} bytes)"
+          printf "%s\t%s\t%s\n" "$DEVICE" "$bytes" "$mib" > "size-${DEVICE}.tsv"
+
+      - name: Upload size artifact (${{ matrix.device }})
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: image-size-${{ matrix.device }}
+          path: size-${{ matrix.device }}.tsv
+          if-no-files-found: error
+
+      - name: Refresh main cache scope
+        if: github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: ./Dockerfile
+          tags: immich-deduper:ci-${{ matrix.device }}-cache-refresh
+          build-args: |
+            DEVICE=${{ matrix.device }}
+          load: false
+          push: false
+          cache-from: type=gha,scope=immich-deduper-${{ matrix.device }}
+          cache-to: type=gha,scope=immich-deduper-${{ matrix.device }}-main,mode=max
+
+  summarize:
+    name: Size Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build-and-verify
+    steps:
+      - name: Download size artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          pattern: image-size-*
+          path: size-artifacts
+          merge-multiple: true
+
+      - name: Print summary
+        run: |
+          set -euo pipefail
+          echo "### Docker image sizes" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Device | Size (bytes) | Size (MiB) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---:|---:|" >> "$GITHUB_STEP_SUMMARY"
+          echo "Downloaded size files:"
+          find size-artifacts -maxdepth 2 -type f -name 'size-*.tsv' -print | sort
+
+          cpu_file="size-artifacts/size-cpu.tsv"
+          cuda_file="size-artifacts/size-cuda.tsv"
+          if [ ! -f "$cpu_file" ] || [ ! -f "$cuda_file" ]; then
+            echo "Missing expected size artifact files in size-artifacts/" >&2
+            exit 1
+          fi
+
+          cpu_bytes="$(awk -F '\t' 'NR==1{print $2}' "$cpu_file")"
+          cpu_mib="$(awk -F '\t' 'NR==1{print $3}' "$cpu_file")"
+          cuda_bytes="$(awk -F '\t' 'NR==1{print $2}' "$cuda_file")"
+          cuda_mib="$(awk -F '\t' 'NR==1{print $3}' "$cuda_file")"
+
+          if [ -z "$cpu_bytes" ] || [ -z "$cpu_mib" ] || [ -z "$cuda_bytes" ] || [ -z "$cuda_mib" ]; then
+            echo "Failed to parse size values from TSV artifacts" >&2
+            echo "CPU file contents:" >&2
+            cat "$cpu_file" >&2
+            echo "CUDA file contents:" >&2
+            cat "$cuda_file" >&2
+            exit 1
+          fi
+
+          echo "Parsed CPU size: ${cpu_mib} MiB (${cpu_bytes} bytes)"
+          echo "Parsed CUDA size: ${cuda_mib} MiB (${cuda_bytes} bytes)"
+          echo "| cpu | ${cpu_bytes} | ${cpu_mib} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| cuda | ${cuda_bytes} | ${cuda_mib} |" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$cpu_bytes" -ge "$cuda_bytes" ]; then
+            echo "Expected CPU image to be smaller than CUDA image (${cpu_bytes} >= ${cuda_bytes})" >&2
+            exit 1
+          fi

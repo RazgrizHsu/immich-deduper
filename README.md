@@ -281,13 +281,13 @@ Choose the installation method that suits your needs:
 
 | Installation Method | Use Case | Advantages | Disadvantages |
 |---------------------|----------|------------|---------------|
-| **Docker Compose (CPU)** | Quick trial, most users | One-click install, auto Qdrant setup | CPU processing only |
+| **Docker Compose (CPU)** | Non-GPU hosts, smaller image | One-click install, auto Qdrant setup, smaller image size | CPU processing only |
 | **Docker Compose (GPU)** | Linux users with NVIDIA GPU | One-click install, auto Qdrant setup, GPU acceleration | Linux + NVIDIA GPU only |
 | **Source Installation** | Custom environment, development | Multi-platform GPU support (CUDA/MPS), customizable | Manual Qdrant and dependency setup |
 
 **Recommended Choice:**
-- **Most users**: Use Docker Compose (CPU version)
-- **Linux users with NVIDIA GPU**: Use Docker Compose (GPU version)
+- **Linux users with NVIDIA GPU**: Use Docker Compose (GPU version, default image tag)
+- **Non-GPU hosts or smaller image needs**: Use Docker Compose (CPU version)
 - **macOS users needing GPU**: Use source installation (MPS support)
 - **Custom development or specific requirements**: Use source installation
 
@@ -365,6 +365,7 @@ Using Docker Compose is the easiest installation method, automatically including
    - `IMMICH_PATH`: Path to your Immich upload directory
    - `IMMICH_THUMB`: (Optional) Path for separate thumbnail directory (requires additional volume mount)
    - `DEDUP_DATA`: Directory for Deduper data storage
+   - `DEDUP_IMAGE`: Deduper image tag to run (`latest` default CPU, `latest-cuda`, or `latest-cpu`)
    - `QDRANT_URL`: (Optional) Custom Qdrant database URL for non-Docker environments or custom container setups
    - `OFFLINE`: (Optional) Set to `true` for air-gapped environments (see [Offline Mode](#offline-mode))
 
@@ -381,25 +382,22 @@ Using Docker Compose is the easiest installation method, automatically including
    - **Same-host**: Add networks configuration to enable communication
    - **Different-host**: Expose PostgreSQL port for external access
 
-5. **Choose CPU or GPU Version**
+5. **Choose Image Tag**
 
-   **CPU Version (Default):**
-   The default configuration uses the CPU-only image:
-   ```yaml
-   image: razgrizhsu/immich-deduper:latest
-   ```
-   No additional configuration needed.
+   Set `DEDUP_IMAGE` in your `.env`:
 
-   **GPU Version (Linux + NVIDIA GPU only):**
-   
-   To use NVIDIA GPU acceleration, edit your `docker-compose.yml`:
-   
-   a. Change the image to the CUDA version:
-   ```yaml
-   image: razgrizhsu/immich-deduper:latest-cuda
+   ```env
+   # Default (CPU)
+   DEDUP_IMAGE=razgrizhsu/immich-deduper:latest
    ```
-   
-   b. Uncomment the deploy configuration:
+
+   ```env
+   # Much smaller image size (CPU only)
+   DEDUP_IMAGE=razgrizhsu/immich-deduper:latest-cpu
+   ```
+
+   If using a GPU image (`latest-cuda`), add (or uncomment) GPU device reservation in `docker-compose.yml`:
+
    ```yaml
    deploy:
      resources:
@@ -409,12 +407,12 @@ Using Docker Compose is the easiest installation method, automatically including
              count: 1
              capabilities: [gpu]
    ```
-   
-   **Prerequisites for GPU:**
+
+   **Prerequisites for CUDA image:**
    - NVIDIA GPU with CUDA support
-   - NVIDIA Docker runtime installed
+   - NVIDIA Container Toolkit / Docker GPU runtime installed
    - Linux host system
-   
+
    **Note:** Docker GPU support is Linux + NVIDIA only. For macOS MPS or Windows GPU acceleration, use source installation.
 
 6. **Start Services**
@@ -430,6 +428,28 @@ Using Docker Compose is the easiest installation method, automatically including
    ```bash
    docker compose down && docker compose pull && docker compose up -d
    ```
+
+   To switch between tags (for example CPU -> CUDA), update `DEDUP_IMAGE` in `.env` and then run:
+   ```bash
+   docker compose down && docker compose pull && docker compose up -d
+   ```
+
+### Docker Image Tags
+
+- `latest`: default CPU image tag (compose default)
+- `latest-cuda`: explicit CUDA-enabled image for Linux + NVIDIA GPU
+- `latest-cpu`: CPU-only image, much smaller than CUDA
+
+If you build locally, you can create equivalent tags:
+
+```bash
+# CPU
+docker build -t immich-deduper:latest-cpu --build-arg DEVICE=cpu .
+
+# CUDA
+docker build -t immich-deduper:latest-cuda --build-arg DEVICE=cuda .
+
+```
 
 
 ### Option 2: Source Installation
@@ -459,7 +479,7 @@ For custom environments and development needs.
 
 4. **Install Python Dependencies**
    
-   **CPU version (default):**
+   **CPU/macOS-compatible version (default):**
    ```bash
    pip install -r requirements.txt
    ```
@@ -470,7 +490,7 @@ For custom environments and development needs.
    pip install -r requirements-cuda.txt
    
    # macOS with Apple Silicon (MPS)
-   pip install -r requirements.txt  # PyTorch auto-detects MPS support
+   pip install -r requirements.txt
    
    # Windows with NVIDIA GPU
    pip install -r requirements-cuda.txt

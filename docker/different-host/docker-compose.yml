@@ -3,7 +3,7 @@ services:
   immich-deduper:
     container_name: immich-deduper
     hostname: immich-deduper
-    image: razgrizhsu/immich-deduper:latest
+    image: ${DEDUP_IMAGE:-razgrizhsu/immich-deduper:latest}
     restart: unless-stopped
     ports:
       - ${DEDUP_PORT:-8086}:${DEDUP_PORT:-8086}
@@ -15,11 +15,7 @@ services:
       # - ${IMMICH_THUMB}:/thumbs:ro
     env_file:
       - .env
-
-    # GPU Support (Linux + NVIDIA GPU only)
-    # To enable NVIDIA GPU acceleration:
-    # 1. Change image tag to razgrizhsu/immich-deduper:latest-cuda
-    # 2. Uncomment the deploy configuration below
+    # GPU devices (Linux + NVIDIA only). Uncomment to reserve GPU explicitly.
     # deploy:
     #   resources:
     #     reservations:
