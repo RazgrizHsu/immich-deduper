@@ -193,8 +193,8 @@ function _selectBestAsset(grpAssets, ausl){
 	return {aid: winner.aid, score: winner.scr, reasons: winner.reasons, allScores}
 }
 
-window.autoSelectReasons = {}
-window.autoSelectGroupLogs = {}
+window.auslLogs = {}
+window.auslReasons = {}
 
 let _lastAutoSelSig = null
 let _auslObserver = null
@@ -206,7 +206,7 @@ function getAutoSelSig(assets, ausl){
 	return `${assSig}|${auslSig}`
 }
 
-function cleanupAutoSelect(){
+function cleanup(){
 	if (_auslObserver) {
 		_auslObserver.disconnect()
 		_auslObserver = null
@@ -217,55 +217,64 @@ function cleanupAutoSelect(){
 	}
 }
 
-function waitForCardsAndUpdate(autoSelectedIds){
-	cleanupAutoSelect()
+function waitForCardsAndUpdate(ids){
+	cleanup()
 
-	function doUpdate(){
-		cleanupAutoSelect()
-		Ste.updAllCss()
+	async function doUpdate(){
+		cleanup()
+		const realCnt = await Ste.updAllCss()
 		Ste.updBtns()
-		updateAutoSelectTips()
-		insertAutoSelectLogBtns()
+		await updAuslTips()
+		updAuslLog()
 		dsh.syncSte(Ste.cntTotal, Ste.selectedIds)
-		if (autoSelectedIds.length > 0) notify(`[Auto Selection] selected ${autoSelectedIds.length} items`, 'success')
-		console.log(`[Ste] Auto-selected ${autoSelectedIds.length} items`)
+		if (ids.length > 0) notify(`[Auto Selection] selected ${realCnt} items`, 'success')
+		console.log(`[Ste] Auto-selected ${realCnt}/${ids.length} items`)
 	}
 
-	if (!autoSelectedIds.length) {
+	if (!ids.length) {
 		console.log('[Ste] No auto-selection needed')
 		Ste.updBtns()
-		insertAutoSelectLogBtns()
+		Ste.updAllCss()
+		updAuslLog()
+		document.querySelectorAll('.ausl-tip').forEach(el => el.remove())
 		dsh.syncSte(Ste.cntTotal, Ste.selectedIds)
 		return
 	}
 
-	const cards = document.querySelectorAll(`[id*='"type":"card-select"']`)
-	if (cards.length > 0) {
+	function isReady(){
+		const gv = document.querySelector('#sim-gvSim')
+		return gv && gv.querySelector('.hr') && gv.querySelector('.card-meta')
+	}
+
+	if (isReady()) {
 		doUpdate()
 		return
 	}
 
-	const container = document.querySelector('.gv') || document.body
-	_auslObserver = new MutationObserver(() =>{
-		const cards = document.querySelectorAll(`[id*='"type":"card-select"']`)
-		if (cards.length > 0) doUpdate()
-	})
-	_auslObserver.observe(container, {childList: true, subtree: true})
+	const gv = document.querySelector('#sim-gvSim')
+	if (!gv) {
+		console.error('[Ste] #sim-gvSim not found')
+		return
+	}
 
+	_auslObserver = new MutationObserver(() =>{
+		if (isReady() ) doUpdate()
+	})
 	_auslTimeout = setTimeout(() =>{
 		if (_auslObserver) {
 			console.warn('[Ste] Timeout waiting for cards')
-			cleanupAutoSelect()
+			cleanup()
 		}
 	}, 6000)
+	_auslObserver.observe(gv, {childList: true, subtree: true})
 }
 
 function getAutoSelectAuids(assets, ausl){
 	console.log(`[ausl] Starting auto-selection, ausl.on[${ausl?.on}], assets count=${assets?.length || 0}`)
 	console.log(`[ausl] Weights: Earlier[${ausl?.earlier}] Later[${ausl?.later}] ExifRich[${ausl?.exRich}] ExifPoor[${ausl?.exPoor}] BigSize[${ausl?.ofsBig}] SmallSize[${ausl?.ofsSml}] BigDim[${ausl?.dimBig}] SmallDim[${ausl?.dimSml}] SkipLow[${ausl?.skipLow}] AllLive[${ausl?.allLive}] JPG[${ausl?.typJpg}] PNG[${ausl?.typPng}] HEIC[${ausl?.typHeic}] Fav[${ausl?.fav}] InAlb[${ausl?.inAlb}] User[${ausl?.usr?.k}:${ausl?.usr?.v}] Path[${ausl?.pth?.k}:${ausl?.pth?.v}]`)
 
-	window.autoSelectReasons = {}
-	window.autoSelectGroupLogs = {}
+	window.auslReasons = {}
+	window.auslLogs = {}
 
 	if (!ausl?.on || !assets?.length) return []
 
@@ -287,8 +296,8 @@ function getAutoSelectAuids(assets, ausl){
 		const liveIds = _checkLivePhoto(grpAss, ausl)
 		if (liveIds.length) {
 			console.log(`[ausl] Group ${gid}: Selected ALL LivePhoto assets [${liveIds.join(', ')}]`)
-			for ( const lid of liveIds ) window.autoSelectReasons[lid] = ['LivePhoto']
-			window.autoSelectGroupLogs[gid] = {status: 'livephoto', selectedAids: liveIds, reason: 'All LivePhotos selected', details: []}
+			for ( const lid of liveIds ) window.auslReasons[lid] = ['LivePhoto']
+			window.auslLogs[gid] = {status: 'livephoto', selectedAids: liveIds, reason: 'All LivePhotos selected', details: []}
 			selIds.push(...liveIds)
 			continue
 		}
@@ -297,18 +306,18 @@ function getAutoSelectAuids(assets, ausl){
 		if (skipResult.skip) {
 			const lowList = skipResult.lowScoreAssets.map(a => `#${a.aid}(${a.score.toFixed(4)})`).join(', ')
 			console.log(`[ausl] Group ${gid}: SKIPPING due to low similarity: ${lowList}`)
-			window.autoSelectGroupLogs[gid] = {status: 'skipped', selectedAids: [], reason: `Skipped: low similarity (<0.96)`, details: skipResult.lowScoreAssets.map(a => ({aid: a.aid, score: a.score, reasons: ['Low similarity']}))}
+			window.auslLogs[gid] = {status: 'skipped', selectedAids: [], reason: `Skipped: low similarity (<0.96)`, details: skipResult.lowScoreAssets.map(a => ({aid: a.aid, score: a.score, reasons: ['Low similarity']}))}
 			continue
 		}
 
 		const result = _selectBestAsset(grpAss, ausl)
 		if (result?.aid) {
 			selIds.push(result.aid)
-			window.autoSelectReasons[result.aid] = result.reasons
-			window.autoSelectGroupLogs[gid] = {status: 'selected', selectedAids: [result.aid], reason: `Selected #${result.aid} (score: ${result.score})`, details: Object.entries(result.allScores).map(([aid, d]) => ({aid: parseInt(aid), score: d.score, reasons: d.reasons}))}
+			window.auslReasons[result.aid] = result.reasons
+			window.auslLogs[gid] = {status: 'selected', selectedAids: [result.aid], reason: `Selected #${result.aid} (score: ${result.score})`, details: Object.entries(result.allScores).map(([aid, d]) => ({aid: parseInt(aid), score: d.score, reasons: d.reasons}))}
 			console.log(`[ausl] Group ${gid}: Selected best asset #${result.aid}`)
 		} else {
-			window.autoSelectGroupLogs[gid] = {status: 'no_winner', selectedAids: [], reason: 'No winner: all scores are 0', details: result?.allScores ? Object.entries(result.allScores).map(([aid, d]) => ({aid: parseInt(aid), score: d.score, reasons: d.reasons})) : []}
+			window.auslLogs[gid] = {status: 'no_winner', selectedAids: [], reason: 'No winner: all scores are 0', details: result?.allScores ? Object.entries(result.allScores).map(([aid, d]) => ({aid: parseInt(aid), score: d.score, reasons: d.reasons})) : []}
 		}
 	}
 
@@ -319,15 +328,28 @@ function getAutoSelectAuids(assets, ausl){
 //========================================================================
 // Auto-Select Tooltip UI
 //========================================================================
-function updateAutoSelectTips(){
+async function updAuslTips(){
 	document.querySelectorAll('.ausl-tip').forEach(el => el.remove())
 
-	const reasons = window.autoSelectReasons || {}
+	const reasons = window.auslReasons || {}
 	if (!Object.keys(reasons).length) return
 
-	for ( const [aid, reasonList] of Object.entries(reasons) ){
-		const card = getCardById(aid)
+	let selCnt = 0
+	for (const [aid, reasonList] of Object.entries(reasons)){
+		const card = await getCardById(aid)
 		if (!card) continue
+
+		const cbx = card.querySelector('input[type="checkbox"]')
+		if (cbx) {
+			cbx.checked = true
+			selCnt++
+		}
+		else{
+			console.error( `item not found checkbox` )
+		}
+
+		const par = card.closest('.card')
+		if (par) par.classList.add('checked')
 
 		const label = card.querySelector('label')
 		if (!label) continue
@@ -342,43 +364,48 @@ function updateAutoSelectTips(){
 		label.appendChild(tip)
 	}
 
-	console.log(`[ausl] Updated ${Object.keys(reasons).length} tooltip(s)`)
+	console.log(`[ausl] Updated ${Object.keys(reasons).length} tooltip(s), checked ${selCnt} cbx`)
 }
 
 //========================================================================
 // Auto-Select Group Log Buttons
 //========================================================================
-function insertAutoSelectLogBtns(){
+function updAuslLog(){
 	document.querySelectorAll('.ausl-log-btn').forEach(el => el.remove())
 
-	const logs = window.autoSelectGroupLogs || {}
-	if (!Object.keys(logs).length) return
+	const logs = window.auslLogs || {}
+	if (!Object.keys(logs).length){
+		console.debug( `[ausl] no logs ...` )
+		return
+	}
 
-	const hrDivs = document.querySelectorAll('.gv.fsp .hr')
-	hrDivs.forEach(hr =>{
-		const label = hr.querySelector('label')
-		if (!label) return
+	ui.mob.waitAll('.gv.fsp .hr', divs => {
 
-		const match = label.textContent.match(/Group\s+(\d+)/)
-		if (!match) return
+		divs.forEach(hr =>{
+			const label = hr.querySelector('label')
+			if (!label) return
 
-		const gid = match[1]
-		const log = logs[gid]
-		if (!log) return
+			const match = label.textContent.match(/Group\s+(\d+)/)
+			if (!match) return
 
-		const btn = document.createElement('button')
-		btn.className = 'ausl-log-btn btn btn-sm'
-		btn.setAttribute('data-gid', gid)
-		btn.textContent = 'auto select log'
-		btn.onclick = () => showAutoSelectLogModal(gid)
-		label.after(btn)
+			const gid = match[1]
+			const log = logs[gid]
+			if (!log) return
+
+			const btn = document.createElement('button')
+			btn.className = 'ausl-log-btn btn btn-sm'
+			btn.setAttribute('data-gid', gid)
+			btn.textContent = 'auto select log'
+			btn.onclick = () => showAutoSelectLogModal(gid)
+			label.after(btn)
+		})
+
+		console.log(`[ausl] Inserted ${divs.length} log button(s)`)
 	})
-
-	console.log(`[ausl] Inserted ${hrDivs.length} log button(s)`)
 }
 
 function showAutoSelectLogModal(gid){
-	const log = window.autoSelectGroupLogs?.[gid]
+	const log = window.auslLogs?.[gid]
 	if (!log) return
 
 	let existing = document.getElementById('ausl-log-modal')
@@ -416,28 +443,45 @@ function showAutoSelectLogModal(gid){
 //========================================================================
 // Card helpers
 //========================================================================
-function getCardById(targetId){
-	const cards = document.querySelectorAll(`[id*='"type":"card-select"']`)
-	// console.log(`[getCardById] Looking for targetId: ${targetId} (type: ${typeof targetId}), found ${cards.length} cards`)
+function getCardById(targetId, timeout = 5000){
+	const searchId = parseInt(targetId)
 
-	for ( const cd of cards){
-		try{
-			const idAttr = JSON.parse(cd.id)
-			const cardId = parseInt(idAttr.id)
-			const searchId = parseInt(targetId)
-
-			// console.log(`[getCardById] Checking card: cardId=${cardId} (type: ${typeof cardId}), searchId=${searchId} (type: ${typeof searchId}), type=${idAttr.type}`)
-			if (cardId == searchId && idAttr.type == 'card-select') {
-				// console.log(`[getCardById] Found matching card for ID: ${targetId}`
-				return cd
-			}
+	function findCard(){
+		const cards = document.querySelectorAll(`[id*='"type":"card-select"']`)
+		for (const cd of cards){
+			try {
+				const idAttr = JSON.parse(cd.id)
+				if (parseInt(idAttr.id) === searchId && idAttr.type === 'card-select') return cd
+			} catch (e) {}
 		}
-		catch (e){
-			console.error('Error parsing ID attribute:', cd.id, e)
-		}
+		return null
 	}
-	console.warn(`[getCardById] No card found for targetId: ${targetId}`)
-	return null // Card not found
+
+	const card = findCard()
+	if (card) return Promise.resolve(card)
+
+	return new Promise((resolve) =>{
+		const container = document.querySelector('#sim-gvSim') || document.body
+		let obs = null
+		let tmr = null
+
+		function cleanup(){
+			if (obs) { obs.disconnect(); obs = null }
+			if (tmr) { clearTimeout(tmr); tmr = null }
+		}
+
+		obs = new MutationObserver(() =>{
+			const found = findCard()
+			if (found) { cleanup(); resolve(found) }
+		})
+		obs.observe(container, {childList: true, subtree: true})
+
+		tmr = setTimeout(() =>{
+			cleanup()
+			console.warn(`[getCardById] Timeout waiting for card: ${targetId}`)
+			resolve(null)
+		}, timeout)
+	})
 }
 
 
@@ -491,11 +535,11 @@ window.dash_clientside.similar = {
 				Ste.initSilent(assets.length)
 				Ste.selectedIds.clear()
 
-				const autoSelectedIds = getAutoSelectAuids(assets, ausl)
+				const ids = getAutoSelectAuids(assets, ausl)
 
-				for ( const autoId of autoSelectedIds ) Ste.selectedIds.add(autoId)
+				for ( const autoId of ids ) Ste.selectedIds.add(autoId)
 
-				waitForCardsAndUpdate(autoSelectedIds)
+				waitForCardsAndUpdate(ids)
 			}
 		}
 		return dash_clientside.no_update

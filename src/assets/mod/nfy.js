@@ -79,7 +79,7 @@ window.dash_clientside.notify = {
 
 document.addEventListener('DOMContentLoaded', () => {
 
-	const processedNotifications = new Set()
+	const dones = new Set()
 
 	const setAuRm = () => {
 		const container = document.getElementById('div-notify')
@@ -94,16 +94,16 @@ document.addEventListener('DOMContentLoaded', () => {
 		boxes.forEach(box => {
 			const timeout = parseInt(box.dataset.msgTimeout)
 			const msgId = box.dataset.msgId
-			const isProcessed = processedNotifications.has(msgId)
+			const isProcessed = dones.has(msgId)
 
 			// console.log(`[aurm] box: msgId=${msgId}, timeout=${timeout}, isProcessed=${isProcessed}`)
 
 			if (timeout && timeout > 0 && !isProcessed) {
-				processedNotifications.add(msgId)
+				dones.add(msgId)
 				// console.log(`[aurm] setting timeout for msgId=${msgId}, timeout=${timeout}ms`)
 				setTimeout(() => {
 					dsh.syncStore('hidden-auto-remove-trigger', msgId)
-					processedNotifications.delete(msgId)
+					dones.delete(msgId)
 				}, timeout)
 			}
 		})
@@ -114,7 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
 		setAuRm()
 
 		const observer = new MutationObserver(() => {
-			console.log('[aurm] DOM changed, running setAuRm')
 			setAuRm()
 		})
 

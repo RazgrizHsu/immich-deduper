@@ -20,5 +20,4 @@ flask-socketio~=5.6.0
 
 websockets>=16.0
 
-libsass~=0.23.0
 watchdog~=4.0.2

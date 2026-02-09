@@ -18,7 +18,7 @@ window.dash_clientside = window.dash_clientside || {}
 				return
 			}
 		}
-		if(msg.includes('Callback error updating')){
+		if(msg.includes('Callback error updating') || msg.includes('Uncaught (in promise) DOMException: The operation was aborted.')){
 			console.debug(`[dash] hot reload...`)
 			return
 		}
@@ -136,56 +136,59 @@ function onFetchedChk(loading, data){
 		}
 	}
 
-	TskWS.init(
-		() =>{
-			let sp = document.querySelector('#span-sys-chk')
-			if (!sp) {Nfy.error(`[chk] span-sys-chk not exist?`); return}
-			if (!errK) {
-				sp.innerText = `ok`
-				sp.classList.add('info')
-			}
-			else {
-				sp.innerText = `Failed: ${errK}`
-				sp.classList.add('red')
-			}
+	ui.mob.waitFor('#span-sys-chk', sp =>{
 
-			if (verItem && !verItem.ok) {
-				let msg = verItem.msg.join('\n')
-				let isNewVer = msg.includes('New version')
 
-				if (isNewVer) {
-					Nfy.warn(msg, 10000)
-				} else {
-					notify.load(msg, 'warn').run(30000)
+		TskWS.init(
+			() =>{
+				if (!sp) {Nfy.error(`[chk] span-sys-chk not exist?`); return}
+				if (!errK) {
+					sp.innerText = `ok`
+					sp.classList.add('info')
+				}
+				else {
+					sp.innerText = `Failed: ${errK}`
+					sp.classList.add('red')
 				}
 
-				sp.innerText = verItem.msg[0]
-				sp.classList.remove('info',`second`)
-				sp.classList.add('warn')
-			} else if (verItem) sp.innerText = `ver:${verItem.msg[0]}`
+				if (verItem && !verItem.ok) {
+					let msg = verItem.msg.join('\n')
+					let isNewVer = msg.includes('New version')
+
+					if (isNewVer) {
+						Nfy.warn(msg, 10000)
+					} else {
+						notify.load(msg, 'warn').run(30000)
+					}
+
+					sp.innerText = verItem.msg[0]
+					sp.classList.remove('info',`second`)
+					sp.classList.add('warn')
+				} else if (verItem) sp.innerText = `ver:${verItem.msg[0]}`
 
 
-			if (!errK) {
+				if (!errK) {
+					loading.close()
+
+					dsh.syncStore('store-sys', {ok: true})
+					Nfy.info(`system check ok!`)
+					return
+				}
+
 				loading.close()
+				notify.erro(`system check failed`)
+				Nfy.error(`[system] check ${errK} failed, please check your environment - ${fmtDate(Date.now())}`)
 
-				dsh.syncStore('store-sys', {ok: true})
-				Nfy.info(`system check ok!`)
-				return
+			},
+			(msg) =>{
+				if (!sp) {Nfy.error(`[chk] span-sys-chk not exist?`); return}
+				sp.innerText = msg ? `Failed: ${msg}` : `Failed`
+				sp.classList.add('red')
+				loading.closeNo(`system check failed, ${msg}`)
 			}
+		)
+	})
 
-			loading.close()
-			notify.erro(`system check failed`)
-			Nfy.error(`[system] check ${errK} failed, please check your environment - ${fmtDate(Date.now())}`)
-
-		},
-		(msg) =>{
-			let sp = document.querySelector('#span-sys-chk')
-			if (!sp) {Nfy.error(`[chk] span-sys-chk not exist?`); return}
-			sp.innerText = msg ? `Failed: ${msg}` : `Failed`
-			sp.classList.add('red')
-			loading.closeNo(`system check failed, ${msg}`)
-		}
-	)
 }
 
 document.addEventListener('DOMContentLoaded', function(){

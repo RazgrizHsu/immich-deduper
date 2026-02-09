@@ -64,9 +64,12 @@ def updateConfVer(scriptDir, ver):
 		print("Warning: src/conf.py not found, skipping version update")
 		return
 
-	print(f"Updating version in src/conf.py to {ver}...")
 	orig = confPy.read_text()
 	updated = re.sub(r"version='[^']*'", f"version='{ver}'", orig)
+	if orig == updated:
+		print(f"Version in src/conf.py already {ver}, skipping...")
+		return
+	print(f"Updating version in src/conf.py to {ver}...")
 	confPy.write_text(updated)
 
 	result = subprocess.run(
@@ -123,7 +126,10 @@ def buildImg(tag, device, tagSuffix, platforms, push=False):
 
 	if push:
 		latestTag = f"{IMAGE_NAME}:latest{tagSuffix}"
-		cmd += ["-t", latestTag, "--push"]
+		cmd += ["-t", latestTag]
+		if device == "cpu":
+			cmd += ["-t", f"{IMAGE_NAME}:latest-cpu"]
+		cmd += ["--push"]
 	else: cmd += ["--load"]
 
 	cmd += buildArgs

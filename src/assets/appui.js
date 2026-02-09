@@ -5,7 +5,7 @@ const ui = window.ui = {
 			const dst = document.querySelector(selector)
 			const log = typeof logPrefix == 'string' && logPrefix.length > 0
 
-			if(!logPrefix) logPrefix = selector
+			if (!logPrefix) logPrefix = selector
 
 			if (dst) {
 				if (log) console.log(`${logPrefix} Found element:`, dst)
@@ -23,7 +23,37 @@ const ui = window.ui = {
 				})
 				observer.observe(document.body, {childList: true, subtree: true})
 			}
+		},
+
+		waitAll(selector, callback, logPrefix, timeout = 9000){
+			const dsts = document.querySelectorAll(selector)
+			const log = typeof logPrefix == 'string' && logPrefix.length > 0
+			if (!logPrefix) logPrefix = selector
+
+			if (dsts.length > 0) {
+				if (log) console.log(`${logPrefix} Found ${dsts.length} elements`)
+				callback(dsts)
+			}
+			else {
+				if (log) console.log(`${logPrefix} No elements found, initializing observer`)
+				const observer = new MutationObserver(function(){
+					const dsts = document.querySelectorAll(selector)
+					if (dsts.length > 0) {
+						if (log) console.log(`${logPrefix} Found ${dsts.length} elements via observer`)
+						clearTimeout(tid)
+						observer.disconnect()
+						callback(dsts)
+					}
+				})
+				observer.observe(document.body, {childList: true, subtree: true})
+
+				const tid = setTimeout(() =>{
+					if (log) console.log(`${logPrefix} Timeout after ${timeout}ms`)
+					observer.disconnect()
+				}, timeout)
+			}
 		}
+
 	},
 
 	init(){
@@ -208,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () =>{
 			const textToCopy = span.textContent
 
 			if (navigator.clipboard && navigator.clipboard.writeText) {
-				try {
+				try{
 					await navigator.clipboard.writeText(textToCopy)
 					console.log('copy: ' + textToCopy)
 					notify(`copy! ${textToCopy}`)
@@ -223,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () =>{
 				tempInput.value = textToCopy
 				document.body.appendChild(tempInput)
 				tempInput.select()
-				try {
+				try{
 					document.execCommand('copy')
 
 					notify(`copy! ${textToCopy}`)
@@ -256,5 +286,5 @@ ui.mob.waitFor('#sets-showGridInfo', cbx =>{
 
 	if (inp.checked) document.body.classList.add('show-grid-info')
 
-	inp.addEventListener('change', () =>document.body.classList.toggle('show-grid-info', inp.checked))
+	inp.addEventListener('change', () => document.body.classList.toggle('show-grid-info', inp.checked))
 })

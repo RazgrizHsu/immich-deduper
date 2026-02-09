@@ -30,11 +30,11 @@ const Ste = window.Ste = {
 		this.updBtns()
 	},
 
-	updCss( aid )
+	async updCss( aid )
 	{
 		// console.log( `[Ste] updCss called for aid: ${aid} (type: ${typeof aid})` )
 
-		let card = getCardById( aid )
+		let card = await getCardById( aid )
 		if ( !card )
 		{
 			console.error( `[Ste] No cards found for ${ aid }` )
@@ -52,7 +52,7 @@ const Ste = window.Ste = {
 					console.log( `[Ste] Card ${ idx }: parse error for ${ c.id }` )
 				}
 			} )
-			return
+			return false
 		}
 
 		const par = card.closest( '.card' )
@@ -69,7 +69,11 @@ const Ste = window.Ste = {
 			// console.log( `[Ste:updCss] Updated card ${aid} visual state: ${isSelected ? 'checked' : 'unchecked'}` )
 		}
 
-		if ( cbx ) cbx.checked = isSelected
+		if ( cbx ) {
+			cbx.checked = isSelected
+			console.info( `[updCss] aid[${aid}] cbx.checked[${isSelected}]` )
+		}
+		return isSelected && !!cbx
 	},
 
 	updBtns()
@@ -92,36 +96,39 @@ const Ste = window.Ste = {
 		console.log( `[Ste] updBtns - selected[ ${ cntSel } / ${ cntAll } ]` )
 	},
 
-	selectAll()
+	async selectAll()
 	{
 		const cards = document.querySelectorAll( '[id*="card-select"]' )
 		cards.forEach( card => {
 			const assetId = this.extractAssetIdBy( card )
 			if ( assetId ) this.selectedIds.add( assetId )
 		} )
-		this.updAllCss()
+		await this.updAllCss()
 		this.updBtns()
 		console.log( `[Ste] Selected all ${ this.selectedIds.size } assets` )
 		dsh.syncSte( this.cntTotal, this.selectedIds )
 	},
 
-	clearAll()
+	async clearAll()
 	{
 		this.selectedIds.clear()
-		this.updAllCss()
+		await this.updAllCss()
 		this.updBtns()
 		console.log( `[Ste] Cleared all selections` )
 		dsh.syncSte( this.cntTotal, this.selectedIds )
 	},
 
-	updAllCss()
+	async updAllCss()
 	{
 		const cards = document.querySelectorAll( '[id*="card-select"]' )
 		// console.log( `[Ste] updAllCss cards[ ${ cards.length } ]` )
+		const proms = []
 		cards.forEach( card => {
 			const assetId = this.extractAssetIdBy( card )
-			if ( assetId ) this.updCss( assetId )
+			if ( assetId ) proms.push( this.updCss( assetId ) )
 		} )
+		const results = await Promise.all( proms )
+		return results.filter( r => r === true ).length
 	},
 
 	extractAssetIdBy( elem )
@@ -196,7 +203,7 @@ const Ste = window.Ste = {
 
 		grps.forEach( card => {
 			const assetId = this.extractAssetIdBy( card )
-			if ( assetId && !this.selectedIds.has( assetId ) )
+			if ( assetId )
 			{
 				this.selectedIds.add( assetId )
 				this.updCss( assetId )
@@ -216,7 +223,7 @@ const Ste = window.Ste = {
 
 		cards.forEach( card => {
 			const assetId = this.extractAssetIdBy( card )
-			if ( assetId && this.selectedIds.has( assetId ) )
+			if ( assetId )
 			{
 				this.selectedIds.delete( assetId )
 				this.updCss( assetId )
