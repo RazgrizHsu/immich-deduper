@@ -243,7 +243,7 @@ def findSimiliar(aid: int, thMin: float = 0.95, limit=100, logRow = False) -> Tu
         rst = rep.points
         infos: list[models.SimInfo] = []
 
-        lg.info(f"[vecs:find] #{aid}, threshold[{thMin}-1.0] limit[{limit}] found[{len(rst)}]")
+        # lg.info(f"[vecs:find] #{aid}, threshold[{thMin}-1.0] limit[{limit}] found[{len(rst)}]")
         for i, hit in enumerate(rst):
             hit_aid = int(hit.id)
             if logRow: lg.info(f"\tno.{i + 1}: AID[{hit_aid}], score[{hit.score:.6f}] self[{int(hit.id) == aid}]")
