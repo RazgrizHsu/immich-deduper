@@ -359,7 +359,7 @@ async function updAuslTips(){
 		const tipText = reasonList.join(', ')
 		const tip = document.createElement('span')
 		tip.className = 'ausl-tip'
-		tip.textContent = 'Auto-Selected ？ '
+		tip.textContent = 'Auto?'
 		tip.setAttribute('data-tip', tipText)
 		label.appendChild(tip)
 	}

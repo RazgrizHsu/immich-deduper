@@ -268,6 +268,27 @@ document.addEventListener( 'DOMContentLoaded', function(){
 		}
 
 		//------------------------------------------------------
+		// acts: disable buttons on direct task execution
+		//------------------------------------------------------
+		const btnMap = {
+			'sim-btn-fnd': null,
+			'sim-btn-RmSel': 'sim-cbx-NChk-RmSel',
+			'sim-btn-OkSel': 'sim-cbx-NChk-OkSel',
+			'sim-btn-OkAll': 'sim-cbx-NChk-OkAll',
+			'sim-btn-RmAll': 'sim-cbx-NChk-RmAll',
+		}
+		if (btnMap.hasOwnProperty(event.target.id)) {
+			const cbxId = btnMap[event.target.id]
+			const shouldDisable = !cbxId || document.getElementById(cbxId)?.checked
+			if (shouldDisable) {
+				Object.keys(btnMap).forEach(id => {
+					const btn = document.getElementById(id)
+					if (btn) btn.disabled = true
+				})
+			}
+		}
+
+		//------------------------------------------------------
 		// group selection
 		//------------------------------------------------------
 		if ( event.target.id && event.target.id.startsWith( 'cbx-sel-grp-all-' ) )
