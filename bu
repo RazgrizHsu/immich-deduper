@@ -175,7 +175,7 @@ def publish(tag, scriptDir):
 
 	rawCommits = run(f"git log --oneline --no-merges {rng}")
 	merges = run(f"git log --oneline --merges {rng}")
-	kept = ("break", "fix", "feat", "mod", "upd", "refactor", "db", "log", "performance")
+	kept = ("break", "fix", "feat", "mod", "upd", "refactor", "db", "log", "performance", "beta")
 	print(f"  Range: {rng}")
 	if not rawCommits:
 		print("  No commits found")

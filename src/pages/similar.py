@@ -16,6 +16,34 @@ from ui import pager, cardSets, gv
 
 lg = log.get(__name__)
 
+
+def _mkMrgMsg(keepAssets):
+    mrgOk, mrgErr = immich.isMergeAvailable()
+    if not mrgOk:
+        return [
+            htm.Br(), htm.Br(),
+            htm.Span("Metadata Merge Unavailable", className="text-danger fw-bold"), htm.Br(),
+            f"Error: {mrgErr}", htm.Br(),
+            "Please contact raz for support.",
+        ]
+
+    mrgAttrs = []
+    m = db.dto.mrg
+    if m.albums: mrgAttrs.append("Albums")
+    if m.favs: mrgAttrs.append("Favorites")
+    if m.tags: mrgAttrs.append("Tags")
+    if m.rating: mrgAttrs.append("Rating")
+    if m.desc: mrgAttrs.append("Description")
+    if m.loc: mrgAttrs.append("Location")
+    if m.vis: mrgAttrs.append("Visibility")
+    keepAids = [f"#{a.autoId}" for a in keepAssets]
+    return [
+        htm.Br(), htm.Br(),
+        htm.Span("Metadata Merge Enabled", className="text-warning fw-bold"), htm.Br(),
+        f"Attributes: {', '.join(mrgAttrs)}", htm.Br(),
+        f"Merge to: {', '.join(keepAids)}",
+    ]
+
 # Debug flag for verbose logging
 DEBUG = False
 
@@ -728,21 +756,7 @@ def sim_RunModal(
             ]
 
             if db.dto.mrg.on:
-                mrgAttrs = []
-                if db.dto.mrg.albums: mrgAttrs.append("Albums")
-                if db.dto.mrg.favs: mrgAttrs.append("Favorites")
-                if db.dto.mrg.tags: mrgAttrs.append("Tags")
-                if db.dto.mrg.rating: mrgAttrs.append("Rating")
-                if db.dto.mrg.desc: mrgAttrs.append("Description")
-                if db.dto.mrg.loc: mrgAttrs.append("Location")
-                if db.dto.mrg.vis: mrgAttrs.append("Visibility")
-                keepAids = [f"#{a.autoId}" for a in assKeep]
-                mdl.msg.extend([
-                    htm.Br(), htm.Br(),
-                    htm.Span("Metadata Merge Enabled", className="text-warning fw-bold"), htm.Br(),
-                    f"Attributes: {', '.join(mrgAttrs)}", htm.Br(),
-                    f"Merge to: {', '.join(keepAids)}",
-                ])
+                mdl.msg.extend(_mkMrgMsg(assKeep))
 
             if nchkRmSel:
                 retTsk = mdl.mkTsk()
@@ -773,21 +787,7 @@ def sim_RunModal(
             ]
 
             if db.dto.mrg.on:
-                mrgAttrs = []
-                if db.dto.mrg.albums: mrgAttrs.append("Albums")
-                if db.dto.mrg.favs: mrgAttrs.append("Favorites")
-                if db.dto.mrg.tags: mrgAttrs.append("Tags")
-                if db.dto.mrg.rating: mrgAttrs.append("Rating")
-                if db.dto.mrg.desc: mrgAttrs.append("Description")
-                if db.dto.mrg.loc: mrgAttrs.append("Location")
-                if db.dto.mrg.vis: mrgAttrs.append("Visibility")
-                keepAids = [f"#{a.autoId}" for a in assSel]
-                mdl.msg.extend([
-                    htm.Br(), htm.Br(),
-                    htm.Span("Metadata Merge Enabled", className="text-warning fw-bold"), htm.Br(),
-                    f"Attributes: {', '.join(mrgAttrs)}", htm.Br(),
-                    f"Merge to: {', '.join(keepAids)}",
-                ])
+                mdl.msg.extend(_mkMrgMsg(assSel))
 
             if ncRS:
                 retTsk = mdl.mkTsk()

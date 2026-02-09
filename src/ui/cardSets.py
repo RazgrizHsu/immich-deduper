@@ -117,22 +117,36 @@ def renderThreshold():
     ], className="ifns mb-1")
 
 def renderMerge():
+    import immich
     m = db.dto.mrg
-    dis = not m.on
+    mrgOk, mrgErr = immich.isMergeAvailable()
+
+    dis = not m.on or not mrgOk
+
+    if mrgOk:
+        tagEl = htm.Span("BETA", className="tag yellow text-dark ms-1 no")
+        warnEl = htm.Div([
+            htm.Div([htm.B("WARN!")," Writes directly to Immich"], className="text-warning"),
+            htm.Div(["Failed when original path can't access"], className="text-muted"),
+        ])
+    else:
+        tagEl = htm.Span("ERROR", className="tag bg-danger text-light ms-1 no")
+        warnEl = htm.Div([
+            htm.Div([htm.B("Schema Error: "), mrgErr or "Unknown"], className="text-danger"),
+            htm.Div(["Immich DB structure incompatible"], className="text-muted"),
+        ])
+
     return dbc.Card([
         dbc.CardHeader([
             "Metadata Merge ",
-            htm.Small(["from deleted to kept photos",htm.Span("BETA", className="tag yellow text-dark ms-1 no")]),
+            htm.Small(["from deleted to kept photos", tagEl]),
         ]),
         dbc.CardBody([
             htm.Div([
 
                 htm.Div([
-                    dbc.Checkbox(id=k.mrg("on"), label="Enable", value=m.on),
-                    htm.Div([
-                        htm.Div([htm.B("WARN!")," Writes directly to Immich"], className="text-warning"),
-                        htm.Div(["Failed when original path can't access"], className="text-muted"),
-                    ]),
+                    dbc.Checkbox(id=k.mrg("on"), label="Enable", value=m.on if mrgOk else False, disabled=not mrgOk),
+                    warnEl,
                 ], className="icbxs single"),
 
 
@@ -466,6 +480,9 @@ def ausl_OnUpd(values):
 
     # on 開關永遠不 disable，其他根據 a.on 決定
     disabledStates = [False if f == 'on' else not a.on for f in fields]
+    from dto import DcProxy
+    if not isinstance(a, DcProxy):
+        raise RuntimeError(f"Expected DcProxy, got {type(a)}")
     setsData = {'ausl': asdict(a.raw())}
     return disabledStates, setsData
 

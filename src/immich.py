@@ -23,18 +23,17 @@ def getGithubRaw(url):
         rep = requests.get(url)
         rep.raise_for_status()
         return rep.text
-    except requests.exceptions.RequestException as e:
-        raise RuntimeError(f"request url[{url}] failed: {e}")
+    except requests.exceptions.RequestException as e: raise RuntimeError(f"request url[{url}] failed: {e}")
 
 def checkCodeBy(src, target_code):
-    if not src: ValueError( f"src[{src}]" )
+    if not src: ValueError(f"src[{src}]")
 
     clean_src = re.sub(r'\s+', '', src).lower()
     clean_code = re.sub(r'\s+', '', target_code).lower()
 
     ok = clean_code in clean_src
 
-    if not ok: lg.error( f"[checkCode] expect `{clean_code}` not in target: {clean_src}" )
+    if not ok: lg.error(f"[checkCode] expect `{clean_code}` not in target: {clean_src}")
 
     return ok
 
@@ -66,16 +65,62 @@ def checkBy(url, code):
 
     return ok
 
-def checkLogicDelete():
-    return checkBy(url_delete, code_deleteAll)
+def checkLogicDelete(): return checkBy(url_delete, code_deleteAll)
 
-def checkLogicRestore():
-    return checkBy(url_restore, code_Restore)
-
+def checkLogicRestore(): return checkBy(url_restore, code_Restore)
 
 
 
 from db import psql
+
+#------------------------------------------------------------------------
+# Merge Schema Check
+# - Check if Immich DB has asset_file table with correct structure for merge
+#------------------------------------------------------------------------
+_mergeOk = None
+_mergeEx = None
+
+def checkMergeSchema():
+    global _mergeOk, _mergeEx
+
+    if _mergeOk is not None: return _mergeOk, _mergeEx
+
+    try:
+        sch = psql.getSchema()
+        with psql.mkConn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(psql.Q(f"""
+                    SELECT column_name FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                    AND table_name = '{sch.assetFile}'
+                    AND column_name IN ('assetId', 'type', 'path')
+                """))
+                cols = {row[0] for row in cur.fetchall()}
+                required = {'assetId', 'type', 'path'}
+                missing = required - cols
+
+                if missing:
+                    _mergeOk = False
+                    _mergeEx = f"asset_file missing columns: {missing}"
+                    lg.error(f"[merge:schema] {_mergeEx}")
+                    return _mergeOk, _mergeEx
+
+                _mergeOk = True
+                _mergeEx = None
+                lg.info(f"[merge:schema] OK - asset_file has required columns")
+                return _mergeOk, _mergeEx
+    except Exception as e:
+        _mergeOk = False
+        _mergeEx = str(e)
+        lg.error(f"[merge:schema] Check failed: {_mergeEx}")
+        return _mergeOk, _mergeEx
+
+
+def isMergeAvailable():
+    if _mergeOk is None: checkMergeSchema()
+    return _mergeOk, _mergeEx
+
+
 #------------------------------------------------------------------------
 # delete
 #
@@ -85,8 +130,7 @@ from db import psql
 # https://github.com/immich-app/immich/blob/main/server/src/services/asset.service.ts#L231
 #------------------------------------------------------------------------
 def trashBy(assetIds: List[str], cur):
-    if not assetIds or len(assetIds) <= 0:
-        raise RuntimeError(f"trashBy: assetIds is empty")
+    if not assetIds or len(assetIds) <= 0: raise RuntimeError(f"trashBy: assetIds is empty")
 
     sql = """
     Update "asset"
@@ -152,14 +196,12 @@ def mergeMetadata(keepAssets: List[models.Asset], trashAssets: List[models.Asset
     newEx = models.AssetExInfo()
 
     if opts.albums:
-        for ex in origExInfos.values():
-            newEx.albs.extend([a for a in ex.albs if a.id not in [x.id for x in newEx.albs]])
+        for ex in origExInfos.values(): newEx.albs.extend([a for a in ex.albs if a.id not in [x.id for x in newEx.albs]])
 
     newFav = any(a.isFavorite for a in allAssets) if opts.favorites else False
 
     if opts.tags:
-        for ex in origExInfos.values():
-            newEx.tags.extend([t for t in ex.tags if t.id not in [x.id for x in newEx.tags]])
+        for ex in origExInfos.values(): newEx.tags.extend([t for t in ex.tags if t.id not in [x.id for x in newEx.tags]])
 
     if opts.rating:
         for ex in origExInfos.values():
@@ -190,8 +232,7 @@ def mergeMetadata(keepAssets: List[models.Asset], trashAssets: List[models.Asset
         for asset in allAssets:
             ex = origExInfos.get(asset.id)
             vis = ex.visibility if ex else 'timeline'
-            if visOrder.get(vis, 3) < visOrder.get(newEx.visibility, 3):
-                newEx.visibility = vis
+            if visOrder.get(vis, 3) < visOrder.get(newEx.visibility, 3): newEx.visibility = vis
 
     lg.info(f"[merge] ----- NEW VALUES -----")
     lg.info(f"[merge] albums={[a.id for a in newEx.albs]} tags={[t.id for t in newEx.tags]}")
@@ -205,13 +246,11 @@ def mergeMetadata(keepAssets: List[models.Asset], trashAssets: List[models.Asset
     xmpInfos = []  # [(asset, localPath, xmpPath, isNewXmp, bakPath)]
     for asset in keepAssets:
         localPath = rtm.pth.full(asset.originalPath)
-        if not os.path.exists(localPath):
-            raise FileNotFoundError(f"Merge failed: file not found - {localPath}")
+        if not os.path.exists(localPath): raise FileNotFoundError(f"Merge failed: file not found - {localPath}")
 
         xmpPath = localPath + '.xmp'
         xmpDir = os.path.dirname(xmpPath)
-        if not os.access(xmpDir, os.W_OK):
-            raise PermissionError(f"Merge failed: no write permission - {xmpDir}")
+        if not os.access(xmpDir, os.W_OK): raise PermissionError(f"Merge failed: no write permission - {xmpDir}")
 
         isNewXmp = not os.path.exists(xmpPath)
         bakPath = xmpPath + '.bak' if not isNewXmp else None
@@ -292,19 +331,16 @@ def mergeMetadata(keepAssets: List[models.Asset], trashAssets: List[models.Asset
         if opts.description and newEx.description:
             xmpTags['Description'] = newEx.description
             xmpTags['ImageDescription'] = newEx.description
-        if opts.rating and newEx.rating > 0:
-            xmpTags['Rating'] = newEx.rating
+        if opts.rating and newEx.rating > 0: xmpTags['Rating'] = newEx.rating
         if opts.location and newEx.latitude is not None:
             xmpTags['GPSLatitude'] = newEx.latitude
             xmpTags['GPSLongitude'] = newEx.longitude
-        if opts.tags and newEx.tags:
-            xmpTags['TagsList'] = [t.value for t in newEx.tags]
+        if opts.tags and newEx.tags: xmpTags['TagsList'] = [t.value for t in newEx.tags]
 
         if xmpTags:
             lg.info(f"[merge] xmpTags to write: {xmpTags}")
             for asset, localPath, xmpPath, isNewXmp, bakPath in xmpInfos:
-                if not bsh.write(xmpPath, xmpTags):
-                    raise IOError(f"Merge failed: xmp write error - {xmpPath}")
+                if not bsh.write(xmpPath, xmpTags): raise IOError(f"Merge failed: xmp write error - {xmpPath}")
 
                 lg.info(f"[merge] xmp written: {xmpPath}")
 
@@ -312,21 +348,19 @@ def mergeMetadata(keepAssets: List[models.Asset], trashAssets: List[models.Asset
                 if isNewXmp:
                     dbXmpPath = asset.originalPath + '.xmp'
                     cur.execute(psql.Q(f'''
-                        UPDATE {sch.asset} SET "sidecarPath" = %s
-                        WHERE id = %s
-                    '''), (dbXmpPath, asset.id))
+                        INSERT INTO {sch.assetFile} ("assetId", "type", "path")
+                        VALUES (%s, 'sidecar', %s)
+                        ON CONFLICT ("assetId", "type") DO UPDATE SET "path" = EXCLUDED."path"
+                    '''), (asset.id, dbXmpPath))
                     lg.info(f"[merge] sidecarPath updated: {asset.id}")
 
         lg.info(f"[merge] ========== DB READY: {result} ==========")
         result['xmpInfos'] = xmpInfos
-
     except Exception as e:
         # Restore .bak files on rollback
         for asset, localPath, xmpPath, isNewXmp, bakPath in xmpInfos:
-            if bakPath and os.path.exists(bakPath):
-                shutil.move(bakPath, xmpPath)
-            elif isNewXmp and os.path.exists(xmpPath):
-                os.remove(xmpPath)
+            if bakPath and os.path.exists(bakPath): shutil.move(bakPath, xmpPath)
+            elif isNewXmp and os.path.exists(xmpPath): os.remove(xmpPath)
         lg.error(f"[merge] ========== ROLLBACK: {e} ==========")
         raise
 
@@ -335,17 +369,14 @@ def mergeMetadata(keepAssets: List[models.Asset], trashAssets: List[models.Asset
 
 def cleanupXmpBak(xmpInfos):
     for asset, localPath, xmpPath, isNewXmp, bakPath in xmpInfos:
-        if bakPath and os.path.exists(bakPath):
-            os.remove(bakPath)
+        if bakPath and os.path.exists(bakPath): os.remove(bakPath)
     lg.info(f"[merge] ========== CLEANUP .bak DONE ==========")
 
 
 def restoreXmpBak(xmpInfos):
     for asset, localPath, xmpPath, isNewXmp, bakPath in xmpInfos:
-        if bakPath and os.path.exists(bakPath):
-            shutil.move(bakPath, xmpPath)
-        elif isNewXmp and os.path.exists(xmpPath):
-            os.remove(xmpPath)
+        if bakPath and os.path.exists(bakPath): shutil.move(bakPath, xmpPath)
+        elif isNewXmp and os.path.exists(xmpPath): os.remove(xmpPath)
     lg.info(f"[merge] ========== RESTORE .bak DONE ==========")
 
 
@@ -365,12 +396,9 @@ def validateKeepPaths(assets: List[models.Asset]) -> List[str]:
         dirPath = os.path.dirname(localPath)
 
         if not os.path.exists(localPath):
-            if asset.libId:
-                libNotFound.append((f"#{asset.autoId}", dirPath))
-            else:
-                immichNotFound.append((f"#{asset.autoId}", dirPath))
-        elif not os.access(dirPath, os.W_OK):
-            noPermission.append((f"#{asset.autoId}", dirPath))
+            if asset.libId: libNotFound.append((f"#{asset.autoId}", dirPath))
+            else: immichNotFound.append((f"#{asset.autoId}", dirPath))
+        elif not os.access(dirPath, os.W_OK): noPermission.append((f"#{asset.autoId}", dirPath))
 
     if libNotFound:
         items = [f"{aid} ({d})" for aid, d in libNotFound]
