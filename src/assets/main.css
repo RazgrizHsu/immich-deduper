@@ -640,9 +640,9 @@ button { text-decoration: none; }
 
 .card.sim .viewer > div.RB { position: absolute; bottom: 5px; right: 5px; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; }
 
-.card.sim .grid { display: grid; grid-template-columns: 20% 80%; gap: 2px 2px; margin: 5px 10px; padding: 0px; }
+.card.sim .grid { display: grid; grid-template-columns: 20% 80%; margin: 3px 8px 0px 5px; padding: 0px; }
 
-.card.sim .grid > *:nth-child(2n-1) { justify-self: center; white-space: nowrap; font-size: 12px; overflow: visible; padding: 0px; }
+.card.sim .grid > *:nth-child(2n-1) { justify-self: center; white-space: nowrap; font-size: 11px; overflow: visible; padding: 0px; }
 
 .card.sim .grid > *:nth-child(2n) { justify-self: start; }
 

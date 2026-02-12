@@ -150,6 +150,7 @@ def mk(ass: models.Asset, modSim=True):
 					htm.Span("Path"), htm.Span(f"{path.dirname(ass.originalPath)}", className="tag second multiline"),
 					htm.Span("File"), htm.Span(f"{ass.originalFileName}", className="tag second multiline"),
 					htm.Span("CreateAt"), htm.Span(f"{ass.fileCreatedAt}", className="tag second"),
+					htm.Span("ModifiedAt"), htm.Span(f"{ass.fileModifiedAt}", className="tag second"),
 
 					*([htm.Span("livePhoto"), htm.Span(f"{ass.pathVdo}", className="tag blue"),] if isLive else []),
 					*([htm.Span("live VdoId"), htm.Span(f"{ass.vdoId}", className="tag blue"),] if isLive else []),

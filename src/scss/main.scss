@@ -848,14 +848,14 @@
 	.grid {
 		display: grid;
 		grid-template-columns: 20% 80%;
-		gap: 2px 2px;
-		margin: 5px 10px;
+		// gap: 2px 2px;
+		margin: 3px 8px 0px 5px;
 		padding: 0px;
 
 		> *:nth-child(2n-1) {
 			justify-self: center;
 			white-space: nowrap;
-			font-size: 12px;
+			font-size: 11px;
 			overflow: visible;
 			padding: 0px;
 		}

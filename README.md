@@ -126,6 +126,14 @@ When deleting duplicates, Metadata Merge can transfer metadata from deleted phot
   - Starts searching for the next photo that matches your `Threshold Min` settings and shows it in the `current` tab
   - When photo groups appear in the `current` tab, you can click on a photo's header to select it. This lights up the four action buttons on the top right. After using one of these actions, the kept photos in that group will be marked as resolved
   - If you don't do anything with a searched group, it'll show up in the `pending` tab waiting for you to handle it later
+  - `Auto Find Next`: When enabled, resolving or deleting the current group automatically triggers a search for the next unprocessed photo. When disabled, the system switches to the `pending` tab after each action, letting you work through all found groups before searching again
+  - You can always manually switch to the `pending` tab to review and process previously found groups
+
+- `Workflow`
+  - Press `Find Similar` to search a batch of groups
+  - Process groups in both `current` and `pending` tabs
+  - Press `Find Similar` again to search the next batch
+  - Repeat until all photos are processed
 
 - `Clear records & Keep resolved`
   - Clears out search records that haven't been resolved yet
