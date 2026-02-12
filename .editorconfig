@@ -36,11 +36,8 @@ align_enum = true
 
 compact_mode = true
 
-[*.py]
-indent_style = space
-
 [*.md]
 trim_trailing_whitespace = false
 
-[*.{py,yml}]
+[*.{yml}]
 indent_style = space

@@ -96,7 +96,7 @@ const LivePhoto = window.LivePhoto = {
 			{
 				this.toggleModalPlayback()
 			}
-			else if ( e.target.id == 'livephoto-progress-bar' || e.target.parentElement.id == 'livephoto-progress-bar' )
+			else if ( e.target.id == 'livephoto-progress-bar' || e.target.parentElement?.id == 'livephoto-progress-bar' )
 			{
 				this.seekModalVideo( e )
 			}

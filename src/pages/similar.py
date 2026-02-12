@@ -21,248 +21,244 @@ lg = log.get(__name__)
 
 
 def _mkMrgMsg(keepAssets):
-    mrgOk, mrgErr = immich.isMergeAvailable()
-    if not mrgOk:
-        return [
-            htm.Br(), htm.Br(),
-            htm.Span("Metadata Merge Unavailable", className="text-danger fw-bold"), htm.Br(),
-            f"Error: {mrgErr}", htm.Br(),
-            "Please contact raz for support.",
-        ]
+	mrgOk, mrgErr = immich.isMergeAvailable()
+	if not mrgOk:
+		return [
+			htm.Br(), htm.Br(),
+			htm.Span("Metadata Merge Unavailable", className="text-danger fw-bold"), htm.Br(),
+			f"Error: {mrgErr}", htm.Br(),
+			"Please contact raz for support.",
+		]
 
-    mrgAttrs = []
-    m = db.dto.mrg
-    if m.albums: mrgAttrs.append("Albums")
-    if m.favs: mrgAttrs.append("Favorites")
-    if m.tags: mrgAttrs.append("Tags")
-    if m.rating: mrgAttrs.append("Rating")
-    if m.desc: mrgAttrs.append("Description")
-    if m.loc: mrgAttrs.append("Location")
-    if m.vis: mrgAttrs.append("Visibility")
-    keepAids = [f"#{a.autoId}" for a in keepAssets]
-    return [
-        htm.Br(), htm.Br(),
-        htm.Span("Metadata Merge Enabled", className="text-warning fw-bold"), htm.Br(),
-        f"Attributes: {', '.join(mrgAttrs)}", htm.Br(),
-        f"Merge to: {', '.join(keepAids)}",
-    ]
+	mrgAttrs = []
+	m = db.dto.mrg
+	if m.albums: mrgAttrs.append("Albums")
+	if m.favs: mrgAttrs.append("Favorites")
+	if m.tags: mrgAttrs.append("Tags")
+	if m.rating: mrgAttrs.append("Rating")
+	if m.desc: mrgAttrs.append("Description")
+	if m.loc: mrgAttrs.append("Location")
+	if m.vis: mrgAttrs.append("Visibility")
+	keepAids = [f"#{a.autoId}" for a in keepAssets]
+	return [
+		htm.Br(), htm.Br(),
+		htm.Span("Metadata Merge Enabled", className="text-warning fw-bold"), htm.Br(),
+		f"Attributes: {', '.join(mrgAttrs)}", htm.Br(),
+		f"Merge to: {', '.join(keepAids)}",
+	]
 
 # Debug flag for verbose logging
 DEBUG = False
 
 dash.register_page(
-    __name__,
-    path=f'/{ks.pg.similar}',
-    path_template=f'/{ks.pg.similar}/<autoId>',
-    title=f"{ks.title}: " + ks.pg.similar.name,
+	__name__,
+	path=f'/{ks.pg.similar}',
+	path_template=f'/{ks.pg.similar}/<autoId>',
+	title=f"{ks.title}: " + ks.pg.similar.name,
 )
 
 
 class k:
-    assUrl = 'sim-AssFromUrl'
+	assUrl = 'sim-AssFromUrl'
 
-    txtCntRs = 'sim-txt-cnt-records'
-    txtCntOk = 'sim-txt-cnt-ok'
-    txtCntNo = 'sim-txt-cnt-no'
-    txtCntSel = 'sim-txt-cnt-sel'
+	txtCntRs = 'sim-txt-cnt-records'
+	txtCntOk = 'sim-txt-cnt-ok'
+	txtCntNo = 'sim-txt-cnt-no'
+	txtCntSel = 'sim-txt-cnt-sel'
 
-    btnAllSelect = 'sim-btn-AllSelect'
-    btnAllCancel = 'sim-btn-AllCancel'
-    btnExportIds = 'sim-btn-ExportIds'
+	btnAllSelect = 'sim-btn-AllSelect'
+	btnAllCancel = 'sim-btn-AllCancel'
+	btnExportIds = 'sim-btn-ExportIds'
 
-    btnFind = "sim-btn-fnd"
-    btnClear = "sim-btn-clear"
-    btnReset = "sim-btn-reset"
-    btnRmSel = "sim-btn-RmSel"
-    btnOkSel = "sim-btn-OkSel"
-    btnOkAll = "sim-btn-OkAll"
-    btnRmAll = "sim-btn-RmAll"
-    cbxNChkOkAll = "sim-cbx-NChk-OkAll"
-    cbxNChkRmSel = "sim-cbx-NChk-RmSel"
-    cbxNChkOkSel = "sim-cbx-NChk-OkSel"
-    cbxNChkRmAll = "sim-cbx-NChk-RmAll"
+	btnFind = "sim-btn-fnd"
+	btnClear = "sim-btn-clear"
+	btnReset = "sim-btn-reset"
+	btnRmSel = "sim-btn-RmSel"
+	btnOkSel = "sim-btn-OkSel"
+	btnOkAll = "sim-btn-OkAll"
+	btnRmAll = "sim-btn-RmAll"
+	cbxNChkOkAll = "sim-cbx-NChk-OkAll"
+	cbxNChkRmSel = "sim-cbx-NChk-RmSel"
+	cbxNChkOkSel = "sim-cbx-NChk-OkSel"
+	cbxNChkRmAll = "sim-cbx-NChk-RmAll"
 
 
-    tabs = 'sim-tabs'
-    tabCur = "tab-current"
-    tabPnd = "tab-pend"
-    pagerPnd = "sim-pager-pnd"
+	tabs = 'sim-tabs'
+	tabCur = "tab-current"
+	tabPnd = "tab-pend"
+	pagerPnd = "sim-pager-pnd"
 
-    gvSim = "sim-gvSim"
-    gvPnd = 'sim-gvPnd'
+	gvSim = "sim-gvSim"
+	gvPnd = 'sim-gvPnd'
 
-    @staticmethod
-    def id(k): return { "type":"sim", "id":f"{k}" }
+	@staticmethod
+	def id(k): return {"type": "sim", "id": f"{k}"}
 
 
 #========================================================================
 def layout(autoId=None):
+	try: autoId = str(autoId)
+	except: autoId = None
 
 
-    try:
-        autoId = str(autoId)
-    except:
-        autoId=None
+	import ui
+	return ui.renderBody([
+		#====== top start =======================================================
+		dcc.Store(id=k.assUrl, data=autoId),
+
+		# 客戶端選擇狀態管理的 dummy 元素
+		htm.Div(id={"type": "dummy-output", "id": "selection"}, style={"display": "none"}),
+		htm.Div(id={"type": "dummy-output", "id": "init-selection"}, style={"display": "none"}),
+
+		htm.Div([
+			htm.H3(f"{ks.pg.similar.name}"),
+			htm.Small(f"{ks.pg.similar.desc}", className="text-muted")
+		], className="body-header"),
 
 
-    import ui
-    return ui.renderBody([
-        #====== top start =======================================================
-        dcc.Store(id=k.assUrl, data=autoId ),
+		dbc.Row([
+			dbc.Col([
+				#------------------------------------------------------------------------
+				cardSets.renderThreshold(),
+				cardSets.renderMerge(),
+				cardSets.renderAutoSelect(),
+				#------------------------------------------------------------------------
+			], width=5),
 
-        # 客戶端選擇狀態管理的 dummy 元素
-        htm.Div(id={"type": "dummy-output", "id": "selection"}, style={"display": "none"}),
-        htm.Div(id={"type": "dummy-output", "id": "init-selection"}, style={"display": "none"}),
+			dbc.Col([
 
-        htm.Div([
-            htm.H3(f"{ks.pg.similar.name}"),
-            htm.Small(f"{ks.pg.similar.desc}", className="text-muted")
-        ], className="body-header"),
+				cardSets.renderCard(),
 
+				dbc.Row([
+					dbc.Col([
+						dbc.Button([
+							htm.Span(f"Find Similar"),
+							htm.Br(),
+							htm.Small("No similar found → auto-mark resolved"),
+						], id=k.btnFind, color="primary", className="w-100", disabled=True),
+					], width=6),
 
-        dbc.Row([
-            dbc.Col([
-                #------------------------------------------------------------------------
-                cardSets.renderThreshold(),
-                cardSets.renderMerge(),
-                cardSets.renderAutoSelect(),
-                #------------------------------------------------------------------------
-            ], width=5),
+					dbc.Col([
+						dbc.Button("Clear record & Keep resolved", id=k.btnClear, color="danger me-1", className="w-100 mb-1", disabled=True),
+						dbc.Button([
+							htm.Span("Reset records"),
+							htm.Br(),
+							htm.Small("re-search auto-resolved"),
+						], id=k.btnReset, color="danger", className="w-100", disabled=True),
+					], width=6, className="text-end"),
+				], className="mt-3"),
 
-            dbc.Col([
+			], width=7),
+		], className=""),
 
-                cardSets.renderCard(),
+		#====== top end =========================================================
+	], [
+		#====== bottom start=====================================================
 
-                dbc.Row([
-                    dbc.Col([
-                        dbc.Button([
-                            htm.Span(f"Find Similar"),
-                            htm.Br(),
-                            htm.Small("No similar found → auto-mark resolved"),
-                        ], id=k.btnFind, color="primary", className="w-100", disabled=True),
-                    ], width=6),
+		#------------------------------------------------------------------------
+		# Tabs
+		#------------------------------------------------------------------------
+		htm.Div([
 
-                    dbc.Col([
-                        dbc.Button("Clear record & Keep resolved", id=k.btnClear, color="danger me-1", className="w-100 mb-1", disabled=True),
-                        dbc.Button([
-                            htm.Span("Reset records"),
-                            htm.Br(),
-                            htm.Small("re-search auto-resolved"),
-                        ], id=k.btnReset, color="danger", className="w-100", disabled=True),
-                    ], width=6, className="text-end"),
-                ], className="mt-3"),
+			dbc.Tabs(
+				id=k.tabs,
+				active_tab=k.tabCur,
+				children=[
+					dbc.Tab(
+						label="current", tab_id=k.tabCur,
+						children=[
 
-            ], width=7),
-        ], className=""),
+							# Action buttons
+							htm.Div([
 
-        #====== top end =========================================================
-    ], [
-        #====== bottom start=====================================================
+								htm.Div([
 
-        #------------------------------------------------------------------------
-        # Tabs
-        #------------------------------------------------------------------------
-        htm.Div([
+									dbc.Button([htm.Span(className="fake-checkbox checked"), "select All"], id=k.btnAllSelect, size="sm", color="secondary", disabled=True),
+									dbc.Button([htm.Span(className="fake-checkbox"),"Deselect All"], id=k.btnAllCancel, size="sm", color="secondary", disabled=True),
+									dbc.Button("Export IDs", id=k.btnExportIds, size="sm", color="info", disabled=True),
 
-            dbc.Tabs(
-                id=k.tabs,
-                active_tab=k.tabCur,
-                children=[
-                    dbc.Tab(
-                        label="current", tab_id=k.tabCur,
-                        children=[
-
-                            # Action buttons
-                            htm.Div([
-
-                                htm.Div([
-
-                                    dbc.Button( [ htm.Span( className="fake-checkbox checked" ), "select All"], id=k.btnAllSelect, size="sm", color="secondary", disabled=True ),
-                                    dbc.Button( [ htm.Span( className="fake-checkbox" ),"Deselect All"], id=k.btnAllCancel, size="sm", color="secondary", disabled=True ),
-                                    dbc.Button("Export IDs", id=k.btnExportIds, size="sm", color="info", disabled=True ),
-
-                                ], className="left"),
+								], className="left"),
 
 
-                                htm.Div([
+								htm.Div([
 
-                                    htm.Div([
-                                        dbc.Checkbox(id=k.cbxNChkOkSel, label="No-Confirm", className="sm"),
-                                        htm.Br(),
-                                        dbc.Button("Keep Select, Delete others", id=k.btnOkSel, color="success", size="sm", disabled=True),
-                                    ]),
+									htm.Div([
+										dbc.Checkbox(id=k.cbxNChkOkSel, label="No-Confirm", className="sm"),
+										htm.Br(),
+										dbc.Button("Keep Select, Delete others", id=k.btnOkSel, color="success", size="sm", disabled=True),
+									]),
 
-                                    htm.Div([
-                                        dbc.Checkbox(id=k.cbxNChkRmSel, label="No-Confirm", className="sm"),
-                                        htm.Br(),
-                                        dbc.Button("Del Select, Keep others", id=k.btnRmSel, color="danger", size="sm", disabled=True),
-                                    ]),
+									htm.Div([
+										dbc.Checkbox(id=k.cbxNChkRmSel, label="No-Confirm", className="sm"),
+										htm.Br(),
+										dbc.Button("Del Select, Keep others", id=k.btnRmSel, color="danger", size="sm", disabled=True),
+									]),
 
-                                    htm.Div([
-                                        dbc.Checkbox(id=k.cbxNChkOkAll, label="No-Confirm", className="sm"),
-                                        htm.Br(),
-                                        dbc.Button("✅ Keep All", id=k.btnOkAll, color="success", size="sm", disabled=True),
-                                    ]),
+									htm.Div([
+										dbc.Checkbox(id=k.cbxNChkOkAll, label="No-Confirm", className="sm"),
+										htm.Br(),
+										dbc.Button("✅ Keep All", id=k.btnOkAll, color="success", size="sm", disabled=True),
+									]),
 
-                                    htm.Div([
-                                        dbc.Checkbox(id=k.cbxNChkRmAll, label="No-Confirm", className="sm"),
-                                        htm.Br(),
-                                        dbc.Button("❌ Delete All", id=k.btnRmAll, color="danger", size="sm", disabled=True),
-                                    ]),
+									htm.Div([
+										dbc.Checkbox(id=k.cbxNChkRmAll, label="No-Confirm", className="sm"),
+										htm.Br(),
+										dbc.Button("❌ Delete All", id=k.btnRmAll, color="danger", size="sm", disabled=True),
+									]),
 
-                                ], className="right"),
-
-
-                            ],
-                                className="tab-acts"
-                            ),
+								], className="right"),
 
 
-                            dbc.Spinner(
-                                htm.Div(id=k.gvSim),
-                                color="success", type="border", spinner_style={"width": "3rem", "height": "3rem"},
-                            ),
+							],
+								className="tab-acts"
+							),
 
-                            # Floating Goto Top Button
-                            htm.Button(
-                                "↑ Top",
-                                id="sim-goto-top-btn",
-                                className="goto-top-btn",
-                                style={"display": ""}
-                            ),
-                        ]
-                    ),
-                    dbc.Tab(
-                        label="pending",
-                        tab_id=k.tabPnd,
-                        id=k.tabPnd,
-                        disabled=True,
-                        children=[
-                            htm.Div([
-                                # top pager
-                                *pager.createPager(pgId=k.pagerPnd, idx=0, btnSize=9, className="mb-3"),
 
-                                dbc.Spinner(
-                                htm.Div(id=k.gvPnd),
-                                color="success", type="border", spinner_style={"width": "3rem", "height": "3rem"},
-                                ),
+							dbc.Spinner(
+								htm.Div(id=k.gvSim),
+								color="success", type="border", spinner_style={"width": "3rem", "height": "3rem"},
+							),
 
-                                # bottom pager
-                                *pager.createPager(pgId=k.pagerPnd, idx=1, btnSize=9, className="mt-3"),
+							# Floating Goto Top Button
+							htm.Button(
+								"↑ Top",
+								id="sim-goto-top-btn",
+								className="goto-top-btn",
+								style={"display": ""}
+							),
+						]
+					),
+					dbc.Tab(
+						label="pending",
+						tab_id=k.tabPnd,
+						id=k.tabPnd,
+						disabled=True,
+						children=[
+							htm.Div([
+								# top pager
+								*pager.createPager(pgId=k.pagerPnd, idx=0, btnSize=9, className="mb-3"),
 
-                                # Main pager (store only)
-                                *pager.createStore(pgId=k.pagerPnd),
-                            ], className="text-center")
-                        ]
-                    ),
-                ]
-            )
-        ],
-            className="ITab"
-        ),
+								dbc.Spinner(
+									htm.Div(id=k.gvPnd),
+									color="success", type="border", spinner_style={"width": "3rem", "height": "3rem"},
+								),
 
-        #====== bottom end ======================================================
-    ])
+								# bottom pager
+								*pager.createPager(pgId=k.pagerPnd, idx=1, btnSize=9, className="mt-3"),
+
+								# Main pager (store only)
+								*pager.createStore(pgId=k.pagerPnd),
+							], className="text-center")
+						]
+					),
+				]
+			)
+		],
+			className="ITab"
+		),
+
+		#====== bottom end ======================================================
+	])
 
 
 
@@ -277,23 +273,23 @@ pager.regCallbacks(k.pagerPnd)
 # Sync tab changes to now state
 #------------------------------------------------------------------------
 @cbk(
-    out(ks.sto.now, "data", allow_duplicate=True),
-    inp(k.tabs, "active_tab", ),
-    ste(ks.sto.now, "data"),
-    prevent_initial_call=True
+	out(ks.sto.now, "data", allow_duplicate=True),
+	inp(k.tabs, "active_tab",),
+	ste(ks.sto.now, "data"),
+	prevent_initial_call=True
 )
 def sim_OnTabChange(active_tab, dta_now):
-    if not active_tab or not dta_now: return noUpd
+	if not active_tab or not dta_now: return noUpd
 
-    now = Now.fromDic(dta_now)
+	now = Now.fromDic(dta_now)
 
-    if now.sim.activeTab == active_tab: return noUpd
+	if now.sim.activeTab == active_tab: return noUpd
 
-    lg.info(f"[sim:tab] Tab changed to: {active_tab} (from: {now.sim.activeTab})")
+	lg.info(f"[sim:tab] Tab changed to: {active_tab} (from: {now.sim.activeTab})")
 
-    patch = dash.Patch()
-    patch['sim']['activeTab'] = active_tab
-    return patch
+	patch = dash.Patch()
+	patch['sim']['activeTab'] = active_tab
+	return patch
 
 
 
@@ -301,38 +297,38 @@ def sim_OnTabChange(active_tab, dta_now):
 # Handle pager changes - reload pending data
 #------------------------------------------------------------------------
 @cbk(
-    [
-        out(k.gvPnd, "children", allow_duplicate=True),
-        out(ks.sto.now, "data", allow_duplicate=True),
-    ],
-    inp(pager.id.store(k.pagerPnd), "data"),
-    ste(ks.sto.now, "data"),
-    prevent_initial_call=True
+	[
+		out(k.gvPnd, "children", allow_duplicate=True),
+		out(ks.sto.now, "data", allow_duplicate=True),
+	],
+	inp(pager.id.store(k.pagerPnd), "data"),
+	ste(ks.sto.now, "data"),
+	prevent_initial_call=True
 )
 def sim_onPagerChanged(dta_pgr, dta_now):
-    if not dta_pgr or not dta_now: return noUpd.by(2)
+	if not dta_pgr or not dta_now: return noUpd.by(2)
 
-    now = Now.fromDic(dta_now)
-    pgr = Pager.fromDic(dta_pgr)
+	now = Now.fromDic(dta_now)
+	pgr = Pager.fromDic(dta_pgr)
 
-    # Check if we're already on this page with same data
-    oldPgr = now.sim.pagerPnd
-    if oldPgr and oldPgr.idx == pgr.idx and oldPgr.size == pgr.size and oldPgr.cnt == pgr.cnt:
-        if DEBUG: lg.info(f"[sim:pager] Already on page {pgr.idx}, skipping reload")
-        return noUpd.by(2)
+	# Check if we're already on this page with same data
+	oldPgr = now.sim.pagerPnd
+	if oldPgr and oldPgr.idx == pgr.idx and oldPgr.size == pgr.size and oldPgr.cnt == pgr.cnt:
+		if DEBUG: lg.info(f"[sim:pager] Already on page {pgr.idx}, skipping reload")
+		return noUpd.by(2)
 
-    now.sim.pagerPnd = pgr
+	now.sim.pagerPnd = pgr
 
-    paged = db.pics.getPagedPending(page=pgr.idx, size=pgr.size)
-    now.sim.assPend = paged
+	paged = db.pics.getPagedPending(page=pgr.idx, size=pgr.size)
+	now.sim.assPend = paged
 
-    lg.info(f"[sim:pager] paged: {pgr.idx}/{(pgr.cnt + pgr.size - 1) // pgr.size}, got {len(paged)} items")
+	lg.info(f"[sim:pager] paged: {pgr.idx}/{(pgr.cnt + pgr.size - 1) // pgr.size}, got {len(paged)} items")
 
-    gvPnd = gv.mkPndGrd(now.sim.assPend, onEmpty=[
-        dbc.Alert("No pending items on this page", color="secondary", className="text-center"),
-    ])
+	gvPnd = gv.mkPndGrd(now.sim.assPend, onEmpty=[
+		dbc.Alert("No pending items on this page", color="secondary", className="text-center"),
+	])
 
-    return gvPnd, now.toDict()
+	return gvPnd, now.toDict()
 
 
 
@@ -340,68 +336,68 @@ def sim_onPagerChanged(dta_pgr, dta_now):
 # assert from url
 #------------------------------------------------------------------------
 @cbk(
-    [
-        out(ks.sto.now, "data", allow_duplicate=True),
-        out(ks.sto.tsk, "data", allow_duplicate=True),
-        out(ks.sto.nfy, "data", allow_duplicate=True),
-    ],
-    inp(k.assUrl, "data"),
-    [
-        ste(ks.sto.now, "data"),
-        ste(ks.sto.nfy, "data"),
-    ],
-    prevent_initial_call="initial_duplicate"
+	[
+		out(ks.sto.now, "data", allow_duplicate=True),
+		out(ks.sto.tsk, "data", allow_duplicate=True),
+		out(ks.sto.nfy, "data", allow_duplicate=True),
+	],
+	inp(k.assUrl, "data"),
+	[
+		ste(ks.sto.now, "data"),
+		ste(ks.sto.nfy, "data"),
+	],
+	prevent_initial_call="initial_duplicate"
 )
 def sim_SyncUrlAssetToNow(autoId, dta_now, dta_nfy):
-    now = Now.fromDic(dta_now)
-    nfy = Nfy.fromDic(dta_nfy)
+	now = Now.fromDic(dta_now)
+	nfy = Nfy.fromDic(dta_nfy)
 
-    ass:Optional[models.Asset] = None
+	ass:Optional[models.Asset] = None
 
-    if autoId:
-        autoId = int(autoId)
+	if autoId and autoId != 'None':
+		autoId = int(autoId) if autoId else 0
 
-        if autoId == now.sim.aidUrl:
-            # 已執行過
-            return noUpd.by(3)
+		if autoId == now.sim.aidUrl:
+			# 已執行過
+			return noUpd.by(3)
 
-        lg.info(f"[sim] from url autoId[{autoId}]")
-        ass = db.pics.getByAutoId(autoId)
-        if ass:
-            lg.info(f"[sim:sync] asset from url: #{ass.autoId} id[{ass.id}] simOk[{ass.simOk}]")
+		lg.info(f"[sim] from url autoId[{autoId}]")
+		if autoId != 0: ass = db.pics.getByAutoId(autoId)
+		if ass:
+			lg.info(f"[sim:sync] asset from url: #{ass.autoId} id[{ass.id}] simOk[{ass.simOk}]")
 
-            if ass.autoId == now.sim.aidUrl:
-                nfy.info(f'[sim:sync] ignore searched #{ass.autoId}')
-                return noUpd, noUpd, nfy.toDict()
+			if ass.autoId == now.sim.aidUrl:
+				nfy.info(f'[sim:sync] ignore searched #{ass.autoId}')
+				return noUpd, noUpd, nfy.toDict()
 
-            if ass.simOk == 1:
-                nfy.info(f'[sim:sync] ignore resolved #{ass.autoId}')
-                return noUpd, noUpd, nfy.toDict()
+			if ass.simOk == 1:
+				nfy.info(f'[sim:sync] ignore resolved #{ass.autoId}')
+				return noUpd, noUpd, nfy.toDict()
 
-    if ass:
-        lg.info(f"[sim:sync] trigger #{ass.autoId} id[{ass.id}]")
-        now.sim.aidUrl = ass.autoId
-        now.sim.assAid = ass.autoId
+	if ass:
+		lg.info(f"[sim:sync] trigger #{ass.autoId} id[{ass.id}]")
+		now.sim.aidUrl = ass.autoId
+		now.sim.assAid = ass.autoId
 
-        mdl = Mdl()
-        mdl.id = ks.pg.similar
-        mdl.cmd = ks.cmd.sim.fnd
-        mdl.msg = f'Search images similar to {ass.autoId}'
+		mdl = Mdl()
+		mdl.id = ks.pg.similar
+		mdl.cmd = ks.cmd.sim.fnd
+		mdl.msg = f'Search images similar to {ass.autoId}'
 
-        tsk = mdl.mkTsk()
+		tsk = mdl.mkTsk()
 
-        lg.info(f"[sim:sync] to task: {tsk}")
-        return now.toDict(), tsk.toDict(), noUpd
+		lg.info(f"[sim:sync] to task: {tsk}")
+		return now.toDict(), tsk.toDict(), noUpd
 
 
-    # if not autoId:
-    #     if not now.sim.assUrl: return noUpd.by(3)
-    #
-    #     patch = dash.Patch()
-    #     patch['sim']['assUrl'] = None
-    #     return patch, noUpd, noUpd
+	# if not autoId:
+	#     if not now.sim.assUrl: return noUpd.by(3)
+	#
+	#     patch = dash.Patch()
+	#     patch['sim']['assUrl'] = None
+	#     return patch, noUpd, noUpd
 
-    return noUpd.by(3)
+	return noUpd.by(3)
 
 
 
@@ -409,114 +405,111 @@ def sim_SyncUrlAssetToNow(autoId, dta_now, dta_nfy):
 # onStatus
 #------------------------------------------------------------------------
 @cbk(
-    [
-        out(k.gvSim, "children"),
-        out(k.gvPnd, "children"),
-        out(ks.sto.now, "data", allow_duplicate=True),
-        out(pager.id.store(k.pagerPnd), "data", allow_duplicate=True),
-        out(k.tabPnd, "disabled"),
-        out(k.tabPnd, "label"),
-        out(k.tabs, "active_tab", allow_duplicate=True),
-    ],
-    inp(ks.sto.now, "data"),
-    [
-        ste(ks.sto.cnt, "data"),
-    ],
-    prevent_initial_call="initial_duplicate"
+	[
+		out(k.gvSim, "children"),
+		out(k.gvPnd, "children"),
+		out(ks.sto.now, "data", allow_duplicate=True),
+		out(pager.id.store(k.pagerPnd), "data", allow_duplicate=True),
+		out(k.tabPnd, "disabled"),
+		out(k.tabPnd, "label"),
+		out(k.tabs, "active_tab", allow_duplicate=True),
+	],
+	inp(ks.sto.now, "data"),
+	[
+		ste(ks.sto.cnt, "data"),
+	],
+	prevent_initial_call="initial_duplicate"
 )
 def sim_Load(dta_now, dta_cnt):
-    now = Now.fromDic(dta_now)
-    cnt = Cnt.fromDic(dta_cnt)
+	now = Now.fromDic(dta_now)
+	cnt = Cnt.fromDic(dta_cnt)
 
-    trgId = getTrgId()
-    if trgId: lg.info(f"[sim:load] load, trig: [ {trgId} ]")
+	trgId = getTrgId()
+	if trgId: lg.info(f"[sim:load] load, trig: [ {trgId} ]")
 
-    cntNo, cntOk, cntPn = cnt.simNo, cnt.simOk, cnt.simPnd
+	cntNo, cntOk, cntPn = cnt.simNo, cnt.simOk, cnt.simPnd
 
-    gview = []
+	gview = []
 
-    # Check multi mode from dto settings
-    if db.dto.muod.on:
-        gview = gv.mkGrdGrps(now.sim.assCur, onEmpty=[
-            dbc.Alert("No grouped results found..", color="secondary", className="text-center m-5"),
-        ])
-    else:
-        gview = gv.mkGrd(now.sim.assCur, onEmpty=[
-            dbc.Alert("Please find the similar images..", color="secondary", className="text-center m-5"),
-        ])
+	# Check multi mode from dto settings
+	if db.dto.muod.on:
+		gview = gv.mkGrdGrps(now.sim.assCur, onEmpty=[
+			dbc.Alert("No grouped results found..", color="secondary", className="text-center m-5"),
+		])
+	else:
+		gview = gv.mkGrd(now.sim.assCur, onEmpty=[
+			dbc.Alert("Please find the similar images..", color="secondary", className="text-center m-5"),
+		])
 
-    # Initialize or get pager
-    pgr = now.sim.pagerPnd
-    if not pgr:
-        pgr = Pager(idx=1, size=20)
-        now.sim.pagerPnd = pgr
+	# Initialize or get pager
+	pgr = now.sim.pagerPnd
+	if not pgr:
+		pgr = Pager(idx=1, size=20)
+		now.sim.pagerPnd = pgr
 
-    # Update pager total count
-    pagerData = None
-    oldPn = pgr.cnt
-    if pgr.cnt != cntPn:
-        pgr.cnt = cntPn
-        # Keep current page if still valid, otherwise reset to last valid page
-        totalPages = (cntPn + pgr.size - 1) // pgr.size if cntPn > 0 else 1
-        if pgr.idx > totalPages: pgr.idx = max(1, totalPages)
-        now.sim.pagerPnd = pgr
-        # Only update pager store if count actually changed
-        if oldPn != cntPn: pagerData = pgr
+	# Update pager total count
+	pagerData = None
+	oldPn = pgr.cnt
+	if pgr.cnt != cntPn:
+		pgr.cnt = cntPn
+		# Keep current page if still valid, otherwise reset to last valid page
+		totalPages = (cntPn + pgr.size - 1) // pgr.size if cntPn > 0 else 1
+		if pgr.idx > totalPages: pgr.idx = max(1, totalPages)
+		now.sim.pagerPnd = pgr
+		# Only update pager store if count actually changed
+		if oldPn != cntPn: pagerData = pgr
 
-    lg.info(f"--------------------------------------------------------------------------------")
-    lg.info(f"[sim:load] trig[{trgId}] muod[{db.dto.muod}] cntNo[{cntNo}] cntOk[{cntOk}] cntPn[{cntPn}]({oldPn}) assCur[{len(now.sim.assCur)}] assAid[{now.sim.assAid}]")
+	lg.info(f"--------------------------------------------------------------------------------")
+	lg.info(f"[sim:load] trig[{trgId}] muod[{db.dto.muod}] cntNo[{cntNo}] cntOk[{cntOk}] cntPn[{cntPn}]({oldPn}) assCur[{len(now.sim.assCur)}] assAid[{now.sim.assAid}]")
 
-    # Load pending data - reload if count changed or no data
-    isInitial = not trgId
-    needReload = isInitial
-    if cntPn > 0:
-        if not now.sim.assPend or len(now.sim.assPend) == 0:
-            needReload = True
-        elif oldPn != cntPn:
-            needReload = True
-            lg.info(f"[sim:load] Pending count changed from {oldPn} to {cntPn}, reloading data")
-    else:
-        needReload = True
+	# Load pending data - reload if count changed or no data
+	isInitial = not trgId
+	needReload = isInitial
+	if cntPn > 0:
+		if not now.sim.assPend or len(now.sim.assPend) == 0: needReload = True
+		elif oldPn != cntPn:
+			needReload = True
+			lg.info(f"[sim:load] Pending count changed from {oldPn} to {cntPn}, reloading data")
+	else: needReload = True
 
-    if needReload:
-        paged = db.pics.getPagedPending(page=pgr.idx, size=pgr.size)
-        lg.info(f"[sim:load] pend reload, idx[{pgr.idx}] size[{pgr.size}] got[{len(paged)}]")
-        now.sim.assPend = paged
+	if needReload:
+		paged = db.pics.getPagedPending(page=pgr.idx, size=pgr.size)
+		lg.info(f"[sim:load] pend reload, idx[{pgr.idx}] size[{pgr.size}] got[{len(paged)}]")
+		now.sim.assPend = paged
 
-    # Only rebuild gvPnd if pending data changed
-    if needReload:
-        gvPnd = gv.mkPndGrd(now.sim.assPend, onEmpty=[
-            dbc.Alert("Please find the similar images..", color="secondary", className="text-center m-5"),
-        ])
-    else:
-        gvPnd = noUpd
+	# Only rebuild gvPnd if pending data changed
+	if needReload:
+		gvPnd = gv.mkPndGrd(now.sim.assPend, onEmpty=[
+			dbc.Alert("Please find the similar images..", color="secondary", className="text-center m-5"),
+		])
+	else: gvPnd = noUpd
 
-    # Update pending tab state based on cntPn
-    tabDisabled = cntPn < 1
-    tabLabel = f"pending ({cntPn})" if cntPn >= 1 else "pending"
+	# Update pending tab state based on cntPn
+	tabDisabled = cntPn < 1
+	tabLabel = f"pending ({cntPn})" if cntPn >= 1 else "pending"
 
-    # Only update now if there were actual changes
-    nowChanged = needReload or (pagerData is not None)
-    nowDict = now.toDict() if nowChanged else noUpd
+	# Only update now if there were actual changes
+	nowChanged = needReload or (pagerData is not None)
+	nowDict = now.toDict() if nowChanged else noUpd
 
-    activeTab = now.sim.activeTab if now.sim.activeTab else k.tabCur
+	activeTab = now.sim.activeTab if now.sim.activeTab else k.tabCur
 
-    return [
-        gview, gvPnd,
-        nowDict,
-        pagerData.toDict() if pagerData else noUpd,
-        tabDisabled, tabLabel, activeTab
-    ]
+	return [
+		gview, gvPnd,
+		nowDict,
+		pagerData.toDict() if pagerData else noUpd,
+		tabDisabled, tabLabel, activeTab
+	]
 
 
 #------------------------------------------------------------------------
 # Update status counters - Using CLIENT-SIDE callbacks for performance
 #------------------------------------------------------------------------
 ccbk(
-    cbkFn( "similar", "onCardSelectClicked" ),
-    out(ks.sto.ste, "data"),
-    [inp({"type": "card-select", "id": ALL}, "n_clicks")],
-    prevent_initial_call=True
+	cbkFn("similar", "onCardSelectClicked"),
+	out(ks.sto.ste, "data"),
+	[inp({"type": "card-select", "id": ALL}, "n_clicks")],
+	prevent_initial_call=True
 )
 
 
@@ -524,12 +517,12 @@ ccbk(
 # Initialize client-side selection state when assets load
 #------------------------------------------------------------------------
 ccbk(
-    cbkFn( "similar", "onSimJs" ),
-    out({"type": "dummy-output", "id": "init-selection"}, "children"),
-    inp(ks.sto.now, "data"),
-    inp(ks.sto.ste, "data"),
-    inp(ks.sto.sets, "data"),
-    prevent_initial_call="initial_duplicate"
+	cbkFn("similar", "onSimJs"),
+	out({"type": "dummy-output", "id": "init-selection"}, "children"),
+	inp(ks.sto.now, "data"),
+	inp(ks.sto.ste, "data"),
+	inp(ks.sto.sets, "data"),
+	prevent_initial_call="initial_duplicate"
 )
 
 
@@ -537,367 +530,355 @@ ccbk(
 # Update all button states based on current data
 #------------------------------------------------------------------------
 @cbk(
-    [
-        out(k.btnFind, "disabled"),
-        out(k.btnClear, "disabled"),
-        out(k.btnReset, "disabled"),
-        out(k.btnOkAll, "disabled"),
-        out(k.btnRmAll, "disabled"),
-        out(k.btnRmSel, "disabled"),
-        out(k.btnOkSel, "disabled"),
-        out(k.btnExportIds, "disabled"),
-    ],
-    [
-        inp(ks.sto.now, "data"),
-        inp(ks.sto.ste, "data"),
-        inp(ks.sto.cnt, "data"),
-        inp(ks.sto.tsk, "data"),
-    ],
-    prevent_initial_call="initial_duplicate"
+	[
+		out(k.btnFind, "disabled"),
+		out(k.btnClear, "disabled"),
+		out(k.btnReset, "disabled"),
+		out(k.btnOkAll, "disabled"),
+		out(k.btnRmAll, "disabled"),
+		out(k.btnRmSel, "disabled"),
+		out(k.btnOkSel, "disabled"),
+		out(k.btnExportIds, "disabled"),
+	],
+	[
+		inp(ks.sto.now, "data"),
+		inp(ks.sto.ste, "data"),
+		inp(ks.sto.cnt, "data"),
+		inp(ks.sto.tsk, "data"),
+	],
+	prevent_initial_call="initial_duplicate"
 )
 def sim_UpdateButtons(dta_now, dta_ste, dta_cnt, dta_tsk):
-    now = Now.fromDic(dta_now)
-    ste = Ste.fromDic(dta_ste) if dta_ste else Ste()
-    cnt = Cnt.fromDic(dta_cnt)
-    tsk = Tsk.fromDic(dta_tsk)
+	now = Now.fromDic(dta_now)
+	ste = Ste.fromDic(dta_ste) if dta_ste else Ste()
+	cnt = Cnt.fromDic(dta_cnt)
+	tsk = Tsk.fromDic(dta_tsk)
 
-    from mod.mgr.tskSvc import mgr
-    isTaskRunning = False
-    if mgr:
-        for _, info in mgr.list().items():
-            if info.status.value in ['pending', 'running']:
-                isTaskRunning = True
-                break
-    if tsk.id and tsk.cmd: isTaskRunning = True
+	from mod.mgr.tskSvc import mgr
+	isTaskRunning = False
+	if mgr:
+		for _, info in mgr.list().items():
+			if info.status.value in ['pending', 'running']:
+				isTaskRunning = True
+				break
+	if tsk.id and tsk.cmd: isTaskRunning = True
 
-    cntNo = cnt.ass - cnt.simOk if cnt else 0
-    cntPn = cnt.simPnd if cnt else 0
-    disFind = cntNo <= 0 or (cntPn >= cntNo) or isTaskRunning
+	cntNo = cnt.ass - cnt.simOk if cnt else 0
+	cntPn = cnt.simPnd if cnt else 0
+	disFind = cntNo <= 0 or (cntPn >= cntNo) or isTaskRunning
 
-    cntSrchd = db.pics.countHasSimIds(isOk=0) if not isTaskRunning else 0
-    disClear = cntSrchd <= 0 or isTaskRunning
+	cntSrchd = db.pics.countHasSimIds(isOk=0) if not isTaskRunning else 0
+	disClear = cntSrchd <= 0 or isTaskRunning
 
-    cntOk = cnt.simOk if cnt else 0
-    disReset = cntOk <= 0 and cntPn <= 0 or isTaskRunning
+	cntOk = cnt.simOk if cnt else 0
+	disReset = cntOk <= 0 and cntPn <= 0 or isTaskRunning
 
-    cntAssets = len(now.sim.assCur) if now.sim.assCur else 0
-    disOk = cntAssets <= 0
-    disDel = cntAssets <= 0
+	cntAssets = len(now.sim.assCur) if now.sim.assCur else 0
+	disOk = cntAssets <= 0
+	disDel = cntAssets <= 0
 
-    cntSel = len(ste.selectedIds) if ste.selectedIds else 0
-    disRm = cntSel == 0
-    disRS = cntSel == 0
+	cntSel = len(ste.selectedIds) if ste.selectedIds else 0
+	disRm = cntSel == 0
+	disRS = cntSel == 0
 
-    disExport = cntAssets <= 0
+	disExport = cntAssets <= 0
 
-    # lg.info(f"[sim:UpdBtns] disFind[{disFind}]")
+	# lg.info(f"[sim:UpdBtns] disFind[{disFind}]")
 
-    return disFind, disClear, disReset, disOk, disDel, disRm, disRS, disExport
+	return disFind, disClear, disReset, disOk, disDel, disRm, disRS, disExport
 
 
 #------------------------------------------------------------------------
 # Handle group view button click
 #------------------------------------------------------------------------
 @cbk(
-    [
-        out(ks.sto.now, "data", allow_duplicate=True),
-        out(k.tabs, "active_tab", allow_duplicate=True),  # Switch to current tab
-    ],
-    inp({"type": "btn-view-group", "id": ALL}, "n_clicks"),
-    [
-        ste(ks.sto.now, "data"),
-    ],
-    prevent_initial_call=True
+	[
+		out(ks.sto.now, "data", allow_duplicate=True),
+		out(k.tabs, "active_tab", allow_duplicate=True),  # Switch to current tab
+	],
+	inp({"type": "btn-view-group", "id": ALL}, "n_clicks"),
+	[
+		ste(ks.sto.now, "data"),
+	],
+	prevent_initial_call=True
 )
 def sim_OnSwitchViewGroup(clks, dta_now):
-    if not ctx.triggered: return noUpd.by(2)
+	if not ctx.triggered: return noUpd.by(2)
 
-    # Check if any button was actually clicked
-    if not any(clks): return noUpd.by(2)
+	# Check if any button was actually clicked
+	if not any(clks): return noUpd.by(2)
 
-    now = Now.fromDic(dta_now)
+	now = Now.fromDic(dta_now)
 
-    trgId = ctx.triggered_id
+	trgId = ctx.triggered_id
 
-    if not trgId: return noUpd.by(2)
+	if not trgId: return noUpd.by(2)
 
-    assId = trgId["id"]
+	assId = trgId["id"]
 
-    lg.info(f"[sim:vgrp] switch: id[{assId}] clks[{clks}]")
+	lg.info(f"[sim:vgrp] switch: id[{assId}] clks[{clks}]")
 
-    asset = db.pics.getById(assId)
-    if not asset: return noUpd.by(2)
+	asset = db.pics.getById(assId)
+	if not asset: return noUpd.by(2)
 
-    now.sim.assAid = asset.autoId
-    now.sim.assCur = db.pics.getSimAssets(asset.autoId, db.dto.rtree)
+	now.sim.assAid = asset.autoId
+	now.sim.assCur = db.pics.getSimAssets(asset.autoId, db.dto.rtree)
 
-    if DEBUG: lg.info(f"[sim:vgrp] Loaded {len(now.sim.assCur)} assets for group")
+	if DEBUG: lg.info(f"[sim:vgrp] Loaded {len(now.sim.assCur)} assets for group")
 
-    return now.toDict(), k.tabCur  # Switch to current tab
+	return now.toDict(), k.tabCur  # Switch to current tab
 
 
 #========================================================================
 # trigger modal
 #========================================================================
 @cbk(
-    [
-        out(ks.sto.nfy, "data", allow_duplicate=True),
-        out(ks.sto.now, "data", allow_duplicate=True),
-        out(ks.sto.mdl, "data", allow_duplicate=True),
-        out(ks.sto.tsk, "data", allow_duplicate=True),
-        out(ks.sto.ste, "data", allow_duplicate=True),
-    ],
-    [
-        inp(k.btnFind, "n_clicks"),
-        inp(k.btnClear, "n_clicks"),
-        inp(k.btnReset, "n_clicks"),
-        inp(k.btnRmSel, "n_clicks"),
-        inp(k.btnOkSel, "n_clicks"),
-        inp(k.btnOkAll, "n_clicks"),
-        inp(k.btnRmAll, "n_clicks"),
-    ],
-    [
-        ste(ks.sto.now, "data"),
-        ste(ks.sto.cnt, "data"),
-        ste(ks.sto.mdl, "data"),
-        ste(ks.sto.tsk, "data"),
-        ste(ks.sto.nfy, "data"),
-        ste(ks.sto.ste, "data"),
-        ste(k.cbxNChkOkAll, "value"),
-        ste(k.cbxNChkRmSel, "value"),
-        ste(k.cbxNChkOkSel, "value"),
-        ste(k.cbxNChkRmAll, "value"),
-    ],
-    prevent_initial_call=True
+	[
+		out(ks.sto.nfy, "data", allow_duplicate=True),
+		out(ks.sto.now, "data", allow_duplicate=True),
+		out(ks.sto.mdl, "data", allow_duplicate=True),
+		out(ks.sto.tsk, "data", allow_duplicate=True),
+		out(ks.sto.ste, "data", allow_duplicate=True),
+	],
+	[
+		inp(k.btnFind, "n_clicks"),
+		inp(k.btnClear, "n_clicks"),
+		inp(k.btnReset, "n_clicks"),
+		inp(k.btnRmSel, "n_clicks"),
+		inp(k.btnOkSel, "n_clicks"),
+		inp(k.btnOkAll, "n_clicks"),
+		inp(k.btnRmAll, "n_clicks"),
+	],
+	[
+		ste(ks.sto.now, "data"),
+		ste(ks.sto.cnt, "data"),
+		ste(ks.sto.mdl, "data"),
+		ste(ks.sto.tsk, "data"),
+		ste(ks.sto.nfy, "data"),
+		ste(ks.sto.ste, "data"),
+		ste(k.cbxNChkOkAll, "value"),
+		ste(k.cbxNChkRmSel, "value"),
+		ste(k.cbxNChkOkSel, "value"),
+		ste(k.cbxNChkRmAll, "value"),
+	],
+	prevent_initial_call=True
 )
 def sim_RunModal(
-    clk_fnd, clk_clr, clk_rst, clk_rm, clk_rs, clk_ok, clk_ra,
-    dta_now, dta_cnt, dta_mdl, dta_tsk, dta_nfy, dta_ste,
-    nchkOkAll, nchkRmSel, ncRS, ncRA
+	clk_fnd, clk_clr, clk_rst, clk_rm, clk_rs, clk_ok, clk_ra,
+	dta_now, dta_cnt, dta_mdl, dta_tsk, dta_nfy, dta_ste,
+	nchkOkAll, nchkRmSel, ncRS, ncRA
 ):
-    if not clk_fnd and not clk_clr and not clk_rst and not clk_rm and not clk_rs and not clk_ok and not clk_ra:
-        lg.info( f"[sim:RunModal] non clicked")
-        return noUpd.by(5)
+	if not clk_fnd and not clk_clr and not clk_rst and not clk_rm and not clk_rs and not clk_ok and not clk_ra:
+		lg.info(f"[sim:RunModal] non clicked")
+		return noUpd.by(5)
 
-    trgId = getTrgId()
-    # if trgId: lg.info(f"[sim:RunModal] ---------->> trig: [ {trgId} ]")
+	trgId = getTrgId()
+	# if trgId: lg.info(f"[sim:RunModal] ---------->> trig: [ {trgId} ]")
 
-    now = Now.fromDic(dta_now)
-    cnt = Cnt.fromDic(dta_cnt)
-    mdl = Mdl.fromDic(dta_mdl)
-    tsk = Tsk.fromDic(dta_tsk)
-    nfy = Nfy.fromDic(dta_nfy)
-    ste = Ste.fromDic(dta_ste)
+	now = Now.fromDic(dta_now)
+	cnt = Cnt.fromDic(dta_cnt)
+	mdl = Mdl.fromDic(dta_mdl)
+	tsk = Tsk.fromDic(dta_tsk)
+	nfy = Nfy.fromDic(dta_nfy)
+	ste = Ste.fromDic(dta_ste)
 
-    retNow, retTsk, retSte = noUpd, noUpd, noUpd
-
-
-
-    # Check if any task is already running
-    from mod.mgr.tskSvc import mgr
-    if mgr:
-        for _, info in mgr.list().items():
-            if info.status.value in ['pending', 'running']:
-                nfy.warn(f"Task already running, please wait for it to complete")
-                return noUpd.by(5).upd(0, nfy)
-
-    if tsk.id:
-        if mgr and mgr.getInfo(tsk.id):
-            ti = mgr.getInfo(tsk.id)
-            if ti and ti.status in ['pending', 'running']:
-                nfy.warn(f"[similar] Task already running: {tsk.id}")
-                return noUpd.by(5).upd(0, nfy)
-            # lg.info(f"[similar] Clearing completed task: {tsk.id}")
-            tsk.id = None
-            tsk.cmd = None
-
-    lg.info(f"[similar] trig[{trgId}] tsk[{tsk}]")
-
-    #------------------------------------------------------------------------
-    if trgId == k.btnClear:
-        cntRs = db.pics.countHasSimIds(isOk=0)
-        if cntRs <= 0:
-            nfy.warn(f"[similar] No search records to clear")
-            return noUpd.by(5).upd(0, nfy)
-
-        mdl.reset()
-        mdl.id = ks.pg.similar
-        mdl.cmd = ks.cmd.sim.clear
-        mdl.msg = [
-            f"Clear search records but keep resolved items?", htm.Br(),
-            f"Will clear ({cntRs}) search records", htm.Br(),
-            htm.B("Resolved items (simOk=1) will be kept"), htm.Br(),
-        ]
-
-    #------------------------------------------------------------------------
-    elif trgId == k.btnReset:
-        cntOk = db.pics.countSimOk(isOk=1)
-        cntRs = db.pics.countHasSimIds()
-        if cntOk <= 0 and cntRs <= 0:
-            nfy.warn(f"[similar] DB does not contain any similarity records")
-            return noUpd.by(5).upd(0, nfy)
-
-        mdl.reset()
-        mdl.id = ks.pg.similar
-        mdl.cmd = ks.cmd.sim.reset
-        mdl.msg = [
-            f"Are you sure you want to reset all records?", htm.Br(),
-            f"include resolved({cntOk}) and search({cntRs})", htm.Br(),
-            htm.B("This operation cannot be undone"), htm.Br(),
-            "You may need to perform all similarity searches again."
-        ]
-
-    #------------------------------------------------------------------------
-    elif trgId == k.btnRmSel:
-        ass = ste.getSelected(now.sim.assCur)
-        assAll = now.sim.assCur
-        assKeep = [a for a in assAll if a.autoId not in {s.autoId for s in ass}]
-        cnt = len(ass)
-
-        lg.info(f"[sim:delSels] {cnt} assets selected")
-
-        if cnt > 0:
-            if db.dto.mrg.on:
-                errs = immich.validateKeepPaths(assKeep)
-                if errs:
-                    nfy.error(f"Cannot merge: {errs[0]}")
-                    return noUpd.by(5).upd(0, nfy)
-
-            mdl.reset()
-            mdl.id = ks.pg.similar
-            mdl.cmd = ks.cmd.sim.selRm
-            mdl.msg = [
-                f"Are you sure you want to Delete select images( {cnt} ) and Keep others( {len(assKeep)} )?", htm.Br(),
-                htm.B("This operation cannot be undone"),
-            ]
-
-            if db.dto.mrg.on:
-                mdl.msg.extend(_mkMrgMsg(assKeep))
-
-            if nchkRmSel:
-                retTsk = mdl.mkTsk()
-                mdl.reset()
-
-    #------------------------------------------------------------------------
-    elif trgId == k.btnOkSel:
-        ass = ste.getSelected(now.sim.assCur)
-        assAll = now.sim.assCur
-        assOthers = [a for a in assAll if a.autoId not in {s.autoId for s in ass}]
-        cnt = len(ass)
-
-        lg.info(f"[sim:resolveSels] {cnt} assets selected")
-
-        if cnt > 0:
-            if db.dto.mrg.on:
-                errs = immich.validateKeepPaths(ass)
-                if errs:
-                    nfy.error(f"Cannot merge: {errs[0]}")
-                    return noUpd.by(5).upd(0, nfy)
-
-            mdl.reset()
-            mdl.id = ks.pg.similar
-            mdl.cmd = ks.cmd.sim.selOk
-            mdl.msg = [
-                f"Are you sure you want to Resolve selected images( {cnt} ) and Delete others( {len(assOthers)} )?", htm.Br(),
-                htm.B("This operation cannot be undone"),
-            ]
-
-            if db.dto.mrg.on:
-                mdl.msg.extend(_mkMrgMsg(ass))
-
-            if ncRS:
-                retTsk = mdl.mkTsk()
-                mdl.reset()
-
-    #------------------------------------------------------------------------
-    elif trgId == k.btnRmAll:
-        ass = now.sim.assCur
-        cnt = len(ass)
-
-        lg.info(f"[sim:delAll] {cnt} assets to delete")
-
-        if cnt > 0:
-            mdl.reset()
-            mdl.id = ks.pg.similar
-            mdl.cmd = ks.cmd.sim.allRm
-            mdl.msg = [
-                f"Are you sure you want to Delete ALL current images( {cnt} )?", htm.Br(),
-                htm.B("This operation cannot be undone"),
-            ]
-
-            if ncRA:
-                retTsk = mdl.mkTsk()
-                mdl.reset()
-
-    #------------------------------------------------------------------------
-    elif trgId == k.btnOkAll:
-        ass = now.sim.assCur
-        cnt = len(ass)
-
-        lg.info(f"[sim:resolve] {cnt} assets")
-
-        if cnt > 0:
-            mdl.reset()
-            mdl.id = ks.pg.similar
-            mdl.cmd = ks.cmd.sim.allOk
-            mdl.msg = f"Are you sure mark resolved current images( {cnt} )?"
-
-            if nchkOkAll:
-                retTsk = mdl.mkTsk()
-                mdl.reset()
-
-    #------------------------------------------------------------------------
-    elif trgId == k.btnFind:
-
-        retSte = ste.clear()
-        if cnt.vec <= 0:
-            nfy.error("No vector data to process")
-            now.sim.clearAll()
-            return noUpd.by(5).upd( 0, [nfy, now] )
-
-        thMin = db.dto.thMin
-
-        lg.info(f"[thMin] min[{thMin}] max[1.0]")
-
-        dstAss: Optional[models.Asset] = None
-
-        #------------------------------------------------
-        # asset from url
-        #------------------------------------------------
-        if now.sim.aidUrl and now.sim.assAid and trgId != "sim-btn-fnd":
-            dstAss = db.pics.getByAutoId(now.sim.assAid)
-
-        #------------------------------------------------
-        # find from db
-        #------------------------------------------------
-        if not dstAss:
-            ass = db.pics.getAnyNonSim()
-            if ass:
-                dstAss = ass
-                lg.info(f"[sim] found non-simOk #{ass.autoId} assetId[{ass.id}]")
-
-        now.sim.clearAll()
-
-        if not dstAss:
-            nfy.warn(f"[sim] not any asset to find..")
-        else:
-            now.sim.assAid = dstAss.autoId
-
-            mdl.id = ks.pg.similar
-            mdl.cmd = ks.cmd.sim.fnd
-            tsk = mdl.mkTsk()
-            mdl.reset()
-
-            lg.info(f"[sim:run] now.sim.assAid[{now.sim.assAid}]")
-
-            # only find auto trigger tsk
-            retTsk = tsk
-            retNow = now
+	retNow, retTsk, retSte = noUpd, noUpd, noUpd
 
 
-    lg.info(f"[similar] modal[{mdl.id}] cmd[{mdl.cmd}]")
+	# Check if any task is already running
+	from mod.mgr.tskSvc import mgr
+	if mgr:
+		for _, info in mgr.list().items():
+			if info.status.value in ['pending', 'running']:
+				nfy.warn(f"Task already running, please wait for it to complete")
+				return noUpd.by(5).upd(0, nfy)
 
-    return noUpd.by( 5 ).upd( 0, [nfy, retNow, mdl, retTsk, retSte] )
+	if tsk.id:
+		if mgr and mgr.getInfo(tsk.id):
+			ti = mgr.getInfo(tsk.id)
+			if ti and ti.status in ['pending', 'running']:
+				nfy.warn(f"[similar] Task already running: {tsk.id}")
+				return noUpd.by(5).upd(0, nfy)
+			# lg.info(f"[similar] Clearing completed task: {tsk.id}")
+			tsk.id = None
+			tsk.cmd = None
+
+	lg.info(f"[similar] trig[{trgId}] tsk[{tsk}]")
+
+	#------------------------------------------------------------------------
+	if trgId == k.btnClear:
+		cntRs = db.pics.countHasSimIds(isOk=0)
+		if cntRs <= 0:
+			nfy.warn(f"[similar] No search records to clear")
+			return noUpd.by(5).upd(0, nfy)
+
+		mdl.reset()
+		mdl.id = ks.pg.similar
+		mdl.cmd = ks.cmd.sim.clear
+		mdl.msg = [
+			f"Clear search records but keep resolved items?", htm.Br(),
+			f"Will clear ({cntRs}) search records", htm.Br(),
+			htm.B("Resolved items (simOk=1) will be kept"), htm.Br(),
+		]
+	#------------------------------------------------------------------------
+	elif trgId == k.btnReset:
+		cntOk = db.pics.countSimOk(isOk=1)
+		cntRs = db.pics.countHasSimIds()
+		if cntOk <= 0 and cntRs <= 0:
+			nfy.warn(f"[similar] DB does not contain any similarity records")
+			return noUpd.by(5).upd(0, nfy)
+
+		mdl.reset()
+		mdl.id = ks.pg.similar
+		mdl.cmd = ks.cmd.sim.reset
+		mdl.msg = [
+			f"Are you sure you want to reset all records?", htm.Br(),
+			f"include resolved({cntOk}) and search({cntRs})", htm.Br(),
+			htm.B("This operation cannot be undone"), htm.Br(),
+			"You may need to perform all similarity searches again."
+		]
+	#------------------------------------------------------------------------
+	elif trgId == k.btnRmSel:
+		ass = ste.getSelected(now.sim.assCur)
+		assAll = now.sim.assCur
+		assKeep = [a for a in assAll if a.autoId not in {s.autoId for s in ass}]
+		cnt = len(ass)
+
+		lg.info(f"[sim:delSels] {cnt} assets selected")
+
+		if cnt > 0:
+			if db.dto.mrg.on:
+				errs = immich.validateKeepPaths(assKeep)
+				if errs:
+					nfy.error(f"Cannot merge: {errs[0]}")
+					return noUpd.by(5).upd(0, nfy)
+
+			mdl.reset()
+			mdl.id = ks.pg.similar
+			mdl.cmd = ks.cmd.sim.selRm
+			mdl.msg = [
+				f"Are you sure you want to Delete select images( {cnt} ) and Keep others( {len(assKeep)} )?", htm.Br(),
+				htm.B("This operation cannot be undone"),
+			]
+
+			if db.dto.mrg.on: mdl.msg.extend(_mkMrgMsg(assKeep))
+
+			if nchkRmSel:
+				retTsk = mdl.mkTsk()
+				mdl.reset()
+	#------------------------------------------------------------------------
+	elif trgId == k.btnOkSel:
+		ass = ste.getSelected(now.sim.assCur)
+		assAll = now.sim.assCur
+		assOthers = [a for a in assAll if a.autoId not in {s.autoId for s in ass}]
+		cnt = len(ass)
+
+		lg.info(f"[sim:resolveSels] {cnt} assets selected")
+
+		if cnt > 0:
+			if db.dto.mrg.on:
+				errs = immich.validateKeepPaths(ass)
+				if errs:
+					nfy.error(f"Cannot merge: {errs[0]}")
+					return noUpd.by(5).upd(0, nfy)
+
+			mdl.reset()
+			mdl.id = ks.pg.similar
+			mdl.cmd = ks.cmd.sim.selOk
+			mdl.msg = [
+				f"Are you sure you want to Resolve selected images( {cnt} ) and Delete others( {len(assOthers)} )?", htm.Br(),
+				htm.B("This operation cannot be undone"),
+			]
+
+			if db.dto.mrg.on: mdl.msg.extend(_mkMrgMsg(ass))
+
+			if ncRS:
+				retTsk = mdl.mkTsk()
+				mdl.reset()
+	#------------------------------------------------------------------------
+	elif trgId == k.btnRmAll:
+		ass = now.sim.assCur
+		cnt = len(ass)
+
+		lg.info(f"[sim:delAll] {cnt} assets to delete")
+
+		if cnt > 0:
+			mdl.reset()
+			mdl.id = ks.pg.similar
+			mdl.cmd = ks.cmd.sim.allRm
+			mdl.msg = [
+				f"Are you sure you want to Delete ALL current images( {cnt} )?", htm.Br(),
+				htm.B("This operation cannot be undone"),
+			]
+
+			if ncRA:
+				retTsk = mdl.mkTsk()
+				mdl.reset()
+	#------------------------------------------------------------------------
+	elif trgId == k.btnOkAll:
+		ass = now.sim.assCur
+		cnt = len(ass)
+
+		lg.info(f"[sim:resolve] {cnt} assets")
+
+		if cnt > 0:
+			mdl.reset()
+			mdl.id = ks.pg.similar
+			mdl.cmd = ks.cmd.sim.allOk
+			mdl.msg = f"Are you sure mark resolved current images( {cnt} )?"
+
+			if nchkOkAll:
+				retTsk = mdl.mkTsk()
+				mdl.reset()
+	#------------------------------------------------------------------------
+	elif trgId == k.btnFind:
+		retSte = ste.clear()
+		if cnt.vec <= 0:
+			nfy.error("No vector data to process")
+			now.sim.clearAll()
+			return noUpd.by(5).upd(0, [nfy, now])
+
+		thMin = db.dto.thMin
+
+		lg.info(f"[thMin] min[{thMin}] max[1.0]")
+
+		dstAss: Optional[models.Asset] = None
+
+		#------------------------------------------------
+		# asset from url
+		#------------------------------------------------
+		if now.sim.aidUrl and now.sim.assAid and trgId != "sim-btn-fnd": dstAss = db.pics.getByAutoId(now.sim.assAid)
+
+		#------------------------------------------------
+		# find from db
+		#------------------------------------------------
+		if not dstAss:
+			ass = db.pics.getAnyNonSim()
+			if ass:
+				dstAss = ass
+				lg.info(f"[sim] found non-simOk #{ass.autoId} assetId[{ass.id}]")
+
+		now.sim.clearAll()
+
+		if not dstAss: nfy.warn(f"[sim] not any asset to find..")
+		else:
+			now.sim.assAid = dstAss.autoId
+
+			mdl.id = ks.pg.similar
+			mdl.cmd = ks.cmd.sim.fnd
+			tsk = mdl.mkTsk()
+			mdl.reset()
+
+			lg.info(f"[sim:run] now.sim.assAid[{now.sim.assAid}]")
+
+			# only find auto trigger tsk
+			retTsk = tsk
+			retNow = now
+
+
+	lg.info(f"[similar] modal[{mdl.id}] cmd[{mdl.cmd}]")
+
+	return noUpd.by(5).upd(0, [nfy, retNow, mdl, retTsk, retSte])
 
 
 #========================================================================
@@ -907,364 +888,349 @@ from mod.models import IFnProg
 
 
 def queueAutoNext(sto: models.ITaskStore):
-    tsk = sto.tsk
+	tsk = sto.tsk
 
-    ass = db.pics.getAnyNonSim()
-    if ass:
-        lg.info(f"[sim] auto found non-simOk assetId[{ass.id}]")
+	ass = db.pics.getAnyNonSim()
+	if ass:
+		lg.info(f"[sim] auto found non-simOk assetId[{ass.id}]")
 
-        mdl = models.Mdl()
-        mdl.id = ks.pg.similar
-        mdl.cmd = ks.cmd.sim.fnd
-        mdl.args = {'thMin': db.dto.thMin}
+		mdl = models.Mdl()
+		mdl.id = ks.pg.similar
+		mdl.cmd = ks.cmd.sim.fnd
+		mdl.args = {'thMin': db.dto.thMin}
 
-        ntsk = mdl.mkTsk()
-        ntsk.args['assetId'] = ass.id
+		ntsk = mdl.mkTsk()
+		ntsk.args['assetId'] = ass.id
 
-        sto.tsk.nexts.append(ntsk)
+		sto.tsk.nexts.append(ntsk)
 
-        sto.tsk = tsk
-        # nfy.success([f"Auto-Find next: #{ass.autoId}"])
+		sto.tsk = tsk
+		# nfy.success([f"Auto-Find next: #{ass.autoId}"])
 
 
 def sim_FindSimilar(doReport: IFnProg, sto: models.ITaskStore):
-    from db import sim
+	from db import sim
 
-    nfy, now, tsk = sto.nfy, sto.now, sto.tsk
+	nfy, now, tsk = sto.nfy, sto.now, sto.tsk
 
-    maxItems = db.dto.rtreeMax
-    thMin = db.dto.thMin
+	maxItems = db.dto.rtreeMax
+	thMin = db.dto.thMin
 
-    thMin = co.vad.float(thMin, 0.9)
+	thMin = co.vad.float(thMin, 0.9)
 
-    fromUrl = now.sim.assAid > 0 and now.sim.assAid == now.sim.aidUrl
+	fromUrl = now.sim.assAid > 0 and now.sim.assAid == now.sim.aidUrl
 
-    lg.info(f"[sim:fs] config maxItems[{maxItems}] fromUrl[{fromUrl}]")
+	lg.info(f"[sim:fs] config maxItems[{maxItems}] fromUrl[{fromUrl}]")
 
 
-    try:
-        lg.info(f"[sim:fs] now.sim.assAid[{now.sim.assAid}]")
-        doReport(1, f"prepare..")
+	try:
+		t0 = time.time()
+		lg.info(f"[sim:fs] now.sim.assAid[{now.sim.assAid}]")
+		doReport(1, f"prepare..")
 
-        # Find asset candidate
-        try:
-            asset = sim.findCandidate(now.sim.assAid, tsk.args)
-        except RuntimeError as e:
-            if "already searched" in str(e):
-                now.sim.assCur = []
-                return sto, [str(e)]
-            raise e
+		# Find asset candidate
+		try: asset = sim.findCandidate(now.sim.assAid, tsk.args)
+		except RuntimeError as e:
+			if "already searched" in str(e):
+				now.sim.assCur = []
+				return sto, [str(e)]
+			raise e
 
-        # search
-        grps = sim.searchBy(asset, doReport, sto.isCancelled, fromUrl)
+		# search
+		grps = sim.searchBy(asset, doReport, sto.isCancelled, fromUrl)
 
-        if not grps:
-            nfy.info(f"No similar Threshold[{thMin}] groups found for asset #{asset.autoId}")
-            now.sim.assCur = []
-            return sto, f"No similar Threshold[{thMin}] groups found for asset #{asset.autoId}"
+		if not grps:
+			nfy.info(f"No similar Threshold[{thMin}] groups found for asset #{asset.autoId}")
+			now.sim.assCur = []
+			return sto, f"No similar Threshold[{thMin}] groups found for asset #{asset.autoId}"
 
-        if not grps[0].assets:
-            nfy.info(f"Asset #{asset.autoId} no similar found")
-            return sto, f"Asset #{asset.autoId} no similar found"
+		if not grps[0].assets:
+			nfy.info(f"Asset #{asset.autoId} no similar found")
+			return sto, f"Asset #{asset.autoId} no similar found"
 
-        # Auto mark single items as resolved
-        db.pics.setSimAutoMark()
+		# Auto mark single items as resolved
+		db.pics.setSimAutoMark()
 
-        assets = []
-        for g in grps: assets.extend(g.assets)
+		assets = []
+		for g in grps: assets.extend(g.assets)
 
-        doReport(95, f"Finalizing {len(grps)} group(s) with {len(assets)} total assets")
-        time.sleep(0.5)
+		doReport(95, f"Finalizing {len(grps)} group(s) with {len(assets)} total assets")
+		time.sleep(0.5)
 
-        # Update state
-        now.sim.assAid = asset.autoId
-        now.sim.assCur = assets
-        now.sim.activeTab = k.tabCur
+		# Update state
+		now.sim.assAid = asset.autoId
+		now.sim.assCur = assets
+		now.sim.activeTab = k.tabCur
 
-        lg.info(f"[sim:fs] done, found {len(grps)} group(s) with {len(assets)} assets")
-        lg.info(f"[sim:fs] assets autoIds: {[a.autoId for a in assets]}")
+		lg.info(f"[sim:fs] done, found {len(grps)} group(s) with {len(assets)} assets")
+		lg.info(f"[sim:fs] assets autoIds: {[a.autoId for a in assets]}")
 
-        if not now.sim.assCur: raise RuntimeError(f"No groups found")
+		if not now.sim.assCur: raise RuntimeError(f"No groups found")
 
-        doReport(100, f"Completed finding {len(grps)} similar photo group(s)")
+		doReport(100, f"Completed finding {len(grps)} similar photo group(s)")
 
-        # Generate completion message
-        if db.dto.muod.on:
-            mxGrp = db.dto.muod.sz
+		# Generate completion message
+		if db.dto.muod.on:
+			mxGrp = db.dto.muod.sz
 
-            msg = [f"Found {len(grps)} similar photo group(s) with {len(assets)} total photos"]
-            if len(grps) >= mxGrp: msg.append(f"Reached maximum group limit ({mxGrp} groups).")
-        else:
-            root = grps[0].asset
-            assert root is not None
-            cntInfos = len(grps[0].bseInfos)
-            cntAll = len(assets)
-            hasRoot = any(a.autoId == root.autoId for a in assets)
-            msg = [f"Found {cntInfos} similar, displaying {cntAll} for #{root.autoId} ({root.id})"]
-            if not hasRoot:
-                msg.append(f"⚠️ Root #{root.autoId} missing from display!")
-            if cntAll > cntInfos:
-                msg.append(f"include ({cntAll - cntInfos}) asset extra tree in similar tree.")
-            if cntAll >= maxItems:
-                msg.append(f"Reached maximum search limit ({maxItems} items).")
+			msg = [f"Found {len(grps)} similar photo group(s) with {len(assets)} total photos"]
+			if len(grps) >= mxGrp: msg.append(f"Reached maximum group limit ({mxGrp} groups).")
+		else:
+			root = grps[0].asset
+			assert root is not None
+			cntInfos = len(grps[0].bseInfos)
+			cntAll = len(assets)
+			hasRoot = any(a.autoId == root.autoId for a in assets)
+			msg = [f"Found {cntInfos} similar, displaying {cntAll} for #{root.autoId} ({root.id})"]
+			if not hasRoot: msg.append(f"⚠️ Root #{root.autoId} missing from display!")
+			if cntAll > cntInfos: msg.append(f"include ({cntAll - cntInfos}) asset extra tree in similar tree.")
+			if cntAll >= maxItems: msg.append(f"Reached maximum search limit ({maxItems} items).")
 
-        # Clear selection state, auto-select is now calculated on client side
-        sto.ste.clear()
-        sto.ste.cntTotal = len(now.sim.assCur) if now.sim.assCur else 0
+		# Clear selection state, auto-select is now calculated on client side
+		sto.ste.clear()
+		sto.ste.cntTotal = len(now.sim.assCur) if now.sim.assCur else 0
 
-        nfy.success(msg)
-        return sto, msg
+		elapsed = time.time() - t0
+		msg.append(f"Elapsed: {elapsed:.1f}s")
 
-    except Exception as e:
-        msg = f"[sim:fs] Similar search failed: {str(e)}"
-        nfy.error(msg)
-        lg.error(traceback.format_exc())
-        now.sim.clearAll()
-        sto.ste.clear()
-        raise RuntimeError(msg)
+		nfy.success(msg)
+		return sto, msg
+	except Exception as e:
+		msg = f"[sim:fs] Similar search failed: {str(e)}"
+		nfy.error(msg)
+		lg.error(traceback.format_exc())
+		now.sim.clearAll()
+		sto.ste.clear()
+		raise RuntimeError(msg)
 
 
 
 def sim_ClearSims(doReport: IFnProg, sto: models.ITaskStore):
-    nfy, now, tsk = sto.nfy, sto.now, sto.tsk
+	nfy, now, tsk = sto.nfy, sto.now, sto.tsk
 
-    try:
-        keepSimOk = tsk.cmd == ks.cmd.sim.clear
+	try:
+		keepSimOk = tsk.cmd == ks.cmd.sim.clear
 
-        doReport(10, "Preparing to clear similarity records...")
+		doReport(10, "Preparing to clear similarity records...")
 
-        if keepSimOk:
-            cntRs = db.pics.countHasSimIds(isOk=0)
-            if cntRs <= 0:
-                msg = "No search records to clear"
-                lg.info(msg)
-                nfy.info(msg)
-                return sto, msg
-        else:
-            cntOk = db.pics.countSimOk(isOk=1)
-            cntRs = db.pics.countHasSimIds()
-            if cntOk <= 0 and cntRs <= 0:
-                msg = "No similarity records to clear"
-                lg.info(msg)
-                nfy.info(msg)
-                return sto, msg
+		if keepSimOk:
+			cntRs = db.pics.countHasSimIds(isOk=0)
+			if cntRs <= 0:
+				msg = "No search records to clear"
+				lg.info(msg)
+				nfy.info(msg)
+				return sto, msg
+		else:
+			cntOk = db.pics.countSimOk(isOk=1)
+			cntRs = db.pics.countHasSimIds()
+			if cntOk <= 0 and cntRs <= 0:
+				msg = "No similarity records to clear"
+				lg.info(msg)
+				nfy.info(msg)
+				return sto, msg
 
-        doReport(30, "Clearing similarity records from database...")
+		doReport(30, "Clearing similarity records from database...")
 
-        db.pics.clearAllSimIds(keepSimOk=keepSimOk)
+		db.pics.clearAllSimIds(keepSimOk=keepSimOk)
 
-        doReport(90, "Updating dynamic data...")
+		doReport(90, "Updating dynamic data...")
 
-        now.sim.clearAll()
-        sto.ste.clear()
+		now.sim.clearAll()
+		sto.ste.clear()
 
-        doReport(100, "Clear completed")
+		doReport(100, "Clear completed")
 
-        if keepSimOk:
-            msg = f"Successfully cleared search records but kept resolved items"
-        else:
-            msg = f"Successfully cleared all similarity records"
+		if keepSimOk: msg = f"Successfully cleared search records but kept resolved items"
+		else: msg = f"Successfully cleared all similarity records"
 
-        lg.info(f"[sim_Clear] {msg}")
-        nfy.success(msg)
+		lg.info(f"[sim_Clear] {msg}")
+		nfy.success(msg)
 
-        return sto, msg
-
-    except Exception as e:
-        msg = f"Failed to clear similarity records: {str(e)}"
-        lg.error(f"[sim_Clear] {msg}")
-        lg.error(traceback.format_exc())
-        nfy.error(msg)
-        raise RuntimeError(msg)
+		return sto, msg
+	except Exception as e:
+		msg = f"Failed to clear similarity records: {str(e)}"
+		lg.error(f"[sim_Clear] {msg}")
+		lg.error(traceback.format_exc())
+		nfy.error(msg)
+		raise RuntimeError(msg)
 
 
 
 def sim_SelectedDelete(doReport: IFnProg, sto: models.ITaskStore):
-    nfy, now, ste = sto.nfy, sto.now, sto.ste
-    xmpInfos = []
-    try:
-        assAlls = now.sim.assCur
-        assSels = ste.getSelected(assAlls) if ste else []
-        assLefts = [a for a in assAlls if a.autoId not in {s.autoId for s in assSels}]
+	nfy, now, ste = sto.nfy, sto.now, sto.ste
+	xmpInfos = []
+	try:
+		assAlls = now.sim.assCur
+		assSels = ste.getSelected(assAlls) if ste else []
+		assLefts = [a for a in assAlls if a.autoId not in {s.autoId for s in assSels}]
 
-        cntSelect = len(assSels)
-        msg = f"[sim] Delete Selected Assets( {cntSelect} ) Success!"
+		cntSelect = len(assSels)
+		msg = f"[sim] Delete Selected Assets( {cntSelect} ) Success!"
 
-        if not assSels or cntSelect == 0: raise RuntimeError("Selected not found")
+		if not assSels or cntSelect == 0: raise RuntimeError("Selected not found")
 
-        with psql.mkConn() as conn:
-            with conn.cursor() as cur:
-                if db.dto.mrg.on:
-                    opts = immich.MergeOpts(
-                        albums=db.dto.mrg.albums,
-                        favorites=db.dto.mrg.favs,
-                        tags=db.dto.mrg.tags,
-                        rating=db.dto.mrg.rating,
-                        description=db.dto.mrg.desc,
-                        location=db.dto.mrg.loc,
-                        visibility=db.dto.mrg.vis
-                    )
-                    result = immich.mergeMetadata(assLefts, assSels, opts, cur)
-                    xmpInfos = result.get('xmpInfos', [])
+		with psql.mkConn() as conn:
+			with conn.cursor() as cur:
+				if db.dto.mrg.on:
+					opts = immich.MergeOpts(
+						albums=db.dto.mrg.albums,
+						favorites=db.dto.mrg.favs,
+						tags=db.dto.mrg.tags,
+						rating=db.dto.mrg.rating,
+						description=db.dto.mrg.desc,
+						location=db.dto.mrg.loc,
+						visibility=db.dto.mrg.vis
+					)
+					result = immich.mergeMetadata(assLefts, assSels, opts, cur)
+					xmpInfos = result.get('xmpInfos', [])
 
-                immich.trashByAssets(assSels, cur)
-                conn.commit()
+				immich.trashByAssets(assSels, cur)
+				conn.commit()
 
-        db.pics.deleteBy(assSels)
-        db.pics.setResolveBy(assLefts)
+		db.pics.deleteBy(assSels)
+		db.pics.setResolveBy(assLefts)
 
-        if xmpInfos: immich.cleanupXmpBak(xmpInfos)
+		if xmpInfos: immich.cleanupXmpBak(xmpInfos)
 
-        now.sim.clearAll()
-        sto.ste.clear()
+		now.sim.clearAll()
+		sto.ste.clear()
 
-        if not db.dto.autoNext:
-            now.sim.activeTab = k.tabPnd
-        else:
-            queueAutoNext(sto)
+		if not db.dto.autoNext: now.sim.activeTab = k.tabPnd
+		else: queueAutoNext(sto)
 
-        nfy.success(msg)
+		nfy.success(msg)
 
-        return sto, msg
-    except Exception as e:
-        if xmpInfos: immich.restoreXmpBak(xmpInfos)
-        msg = f"[sim] Delete selected failed: {str(e)}"
-        nfy.error(msg)
-        lg.error(traceback.format_exc())
-        now.sim.clearAll()
-        sto.ste.clear()
+		return sto, msg
+	except Exception as e:
+		if xmpInfos: immich.restoreXmpBak(xmpInfos)
+		msg = f"[sim] Delete selected failed: {str(e)}"
+		nfy.error(msg)
+		lg.error(traceback.format_exc())
+		now.sim.clearAll()
+		sto.ste.clear()
 
-        raise RuntimeError(msg)
+		raise RuntimeError(msg)
 
 
 def sim_SelectedResolve(doReport: IFnProg, sto: models.ITaskStore):
-    nfy, now, ste = sto.nfy, sto.now, sto.ste
-    xmpInfos = []
-    try:
-        assAlls = now.sim.assCur
-        assSels = ste.getSelected(assAlls) if ste else []
-        assOthers = [a for a in assAlls if a.autoId not in {s.autoId for s in assSels}]
+	nfy, now, ste = sto.nfy, sto.now, sto.ste
+	xmpInfos = []
+	try:
+		assAlls = now.sim.assCur
+		assSels = ste.getSelected(assAlls) if ste else []
+		assOthers = [a for a in assAlls if a.autoId not in {s.autoId for s in assSels}]
 
-        cntSelect = len(assSels)
-        cntOthers = len(assOthers)
-        msg = f"[sim] Resolve Selected Assets( {cntSelect} ) and Delete Others( {cntOthers} ) Success!"
+		cntSelect = len(assSels)
+		cntOthers = len(assOthers)
+		msg = f"[sim] Resolve Selected Assets( {cntSelect} ) and Delete Others( {cntOthers} ) Success!"
 
-        if not assSels or cntSelect == 0: raise RuntimeError("Selected not found")
+		if not assSels or cntSelect == 0: raise RuntimeError("Selected not found")
 
-        lg.info(f"[sim:selOk] resolve assets[{cntSelect}] delete[ {cntOthers} ]")
+		lg.info(f"[sim:selOk] resolve assets[{cntSelect}] delete[ {cntOthers} ]")
 
-        with psql.mkConn() as conn:
-            with conn.cursor() as cur:
-                if db.dto.mrg.on:
-                    opts = immich.MergeOpts(
-                        albums=db.dto.mrg.albums,
-                        favorites=db.dto.mrg.favs,
-                        tags=db.dto.mrg.tags,
-                        rating=db.dto.mrg.rating,
-                        description=db.dto.mrg.desc,
-                        location=db.dto.mrg.loc,
-                        visibility=db.dto.mrg.vis
-                    )
-                    result = immich.mergeMetadata(assSels, assOthers, opts, cur)
-                    xmpInfos = result.get('xmpInfos', [])
+		with psql.mkConn() as conn:
+			with conn.cursor() as cur:
+				if db.dto.mrg.on:
+					opts = immich.MergeOpts(
+						albums=db.dto.mrg.albums,
+						favorites=db.dto.mrg.favs,
+						tags=db.dto.mrg.tags,
+						rating=db.dto.mrg.rating,
+						description=db.dto.mrg.desc,
+						location=db.dto.mrg.loc,
+						visibility=db.dto.mrg.vis
+					)
+					result = immich.mergeMetadata(assSels, assOthers, opts, cur)
+					xmpInfos = result.get('xmpInfos', [])
 
-                if assOthers:
-                    immich.trashByAssets(assOthers, cur)
-                conn.commit()
+				if assOthers: immich.trashByAssets(assOthers, cur)
+				conn.commit()
 
-        if assOthers: db.pics.deleteBy(assOthers)
-        db.pics.setResolveBy(assSels)
+		if assOthers: db.pics.deleteBy(assOthers)
+		db.pics.setResolveBy(assSels)
 
-        if xmpInfos:
-            immich.cleanupXmpBak(xmpInfos)
+		if xmpInfos: immich.cleanupXmpBak(xmpInfos)
 
-        now.sim.clearAll()
-        sto.ste.clear()
+		now.sim.clearAll()
+		sto.ste.clear()
 
-        if not db.dto.autoNext:
-            now.sim.activeTab = k.tabPnd
-        else:
-            queueAutoNext(sto)
+		if not db.dto.autoNext: now.sim.activeTab = k.tabPnd
+		else: queueAutoNext(sto)
 
-        return sto, msg
-    except Exception as e:
-        if xmpInfos:
-            immich.restoreXmpBak(xmpInfos)
-        msg = f"[sim] Resolve selected failed: {str(e)}"
-        nfy.error(msg)
-        lg.error(traceback.format_exc())
-        now.sim.clearAll()
-        sto.ste.clear()
+		return sto, msg
+	except Exception as e:
+		if xmpInfos: immich.restoreXmpBak(xmpInfos)
+		msg = f"[sim] Resolve selected failed: {str(e)}"
+		nfy.error(msg)
+		lg.error(traceback.format_exc())
+		now.sim.clearAll()
+		sto.ste.clear()
 
-        raise RuntimeError(msg)
+		raise RuntimeError(msg)
 
 
 def sim_AllResolve(doReport: IFnProg, sto: models.ITaskStore):
-    nfy, now, cnt = sto.nfy, sto.now, sto.cnt
-    try:
-        assets = now.sim.assCur
-        cntAll = len(assets)
-        msg = f"[sim] set Resolved Assets( {cntAll} ) Success!"
+	nfy, now, cnt = sto.nfy, sto.now, sto.cnt
+	try:
+		assets = now.sim.assCur
+		cntAll = len(assets)
+		msg = f"[sim] set Resolved Assets( {cntAll} ) Success!"
 
-        if not assets or cnt == 0: raise RuntimeError("Current Assets not found")
-        lg.info(f"[sim:allResolve] resolve assets[{cntAll}] ")
+		if not assets or cnt == 0: raise RuntimeError("Current Assets not found")
+		lg.info(f"[sim:allResolve] resolve assets[{cntAll}] ")
 
-        db.pics.setResolveBy(assets)
+		db.pics.setResolveBy(assets)
 
-        now.sim.clearAll()
-        sto.ste.clear()
+		now.sim.clearAll()
+		sto.ste.clear()
 
-        if not db.dto.autoNext:
-            now.sim.activeTab = k.tabPnd
-        else:
-            queueAutoNext(sto)
+		if not db.dto.autoNext: now.sim.activeTab = k.tabPnd
+		else: queueAutoNext(sto)
 
-        return sto, msg
-    except Exception as e:
-        msg = f"[sim] Resolved All failed: {str(e)}"
-        nfy.error(msg)
-        lg.error(traceback.format_exc())
-        now.sim.clearAll()
-        sto.ste.clear()
+		return sto, msg
+	except Exception as e:
+		msg = f"[sim] Resolved All failed: {str(e)}"
+		nfy.error(msg)
+		lg.error(traceback.format_exc())
+		now.sim.clearAll()
+		sto.ste.clear()
 
-        raise RuntimeError(msg)
+		raise RuntimeError(msg)
 
 
 def sim_AllDelete(doReport: IFnProg, sto: models.ITaskStore):
-    nfy, now = sto.nfy, sto.now
-    try:
-        assets = now.sim.assCur
-        cntAll = len(assets)
-        msg = f"[sim] Delete All Assets( {cntAll} ) Success!"
+	nfy, now = sto.nfy, sto.now
+	try:
+		assets = now.sim.assCur
+		cntAll = len(assets)
+		msg = f"[sim] Delete All Assets( {cntAll} ) Success!"
 
-        if not assets or cntAll == 0: raise RuntimeError("Current Assets not found")
+		if not assets or cntAll == 0: raise RuntimeError("Current Assets not found")
 
-        lg.info(f"[sim:allDel] delete assets[{cntAll}] ")
+		lg.info(f"[sim:allDel] delete assets[{cntAll}] ")
 
-        with psql.mkConn() as conn:
-            with conn.cursor() as cur:
-                immich.trashByAssets(assets, cur)
-                conn.commit()
+		with psql.mkConn() as conn:
+			with conn.cursor() as cur:
+				immich.trashByAssets(assets, cur)
+				conn.commit()
 
-        db.pics.deleteBy(assets)
+		db.pics.deleteBy(assets)
 
-        now.sim.clearAll()
-        sto.ste.clear()
+		now.sim.clearAll()
+		sto.ste.clear()
 
-        if not db.dto.autoNext:
-            now.sim.activeTab = k.tabPnd
-        else:
-            queueAutoNext(sto)
+		if not db.dto.autoNext: now.sim.activeTab = k.tabPnd
+		else: queueAutoNext(sto)
 
-        return sto, msg
-    except Exception as e:
-        msg = f"[sim] Delete all failed: {str(e)}"
-        nfy.error(msg)
-        lg.error(traceback.format_exc())
-        now.sim.clearAll()
-        sto.ste.clear()
+		return sto, msg
+	except Exception as e:
+		msg = f"[sim] Delete all failed: {str(e)}"
+		nfy.error(msg)
+		lg.error(traceback.format_exc())
+		now.sim.clearAll()
+		sto.ste.clear()
 
-        raise RuntimeError(msg)
+		raise RuntimeError(msg)
 
 
 

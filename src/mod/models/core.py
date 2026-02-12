@@ -27,7 +27,7 @@ class Gws(BaseDictModel):
     tsn: str = ''
     typ: Optional[str] = None
     nam: Optional[str] = None
-    msg: Optional[str] = None
+    msg: Union[str, List[str], None] = None
     ste: Optional[TskStatus] = None
     prg: float = 0.0
 

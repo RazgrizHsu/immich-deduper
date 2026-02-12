@@ -4,7 +4,7 @@ from datetime import datetime
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set, Union
 
 from flask_socketio import SocketIO, emit
 from flask import request
@@ -15,30 +15,24 @@ lg = log.get(__name__)
 
 
 class SioWrap:
-    """SocketIO wrapper with type-safe API and runtime validation"""
-    def __init__(self, sio: SocketIO):
-        self._sio = sio
+	"""SocketIO wrapper with type-safe API and runtime validation"""
+	def __init__(self, sio: SocketIO): self._sio = sio
 
-    def emit(self, event: str, data: dict, room: str | None = None):
-        try:
-            self._sio.emit(event, data, room=room)  # type: ignore[call-arg]
-        except TypeError as e:
-            if 'room' in str(e):
-                raise RuntimeError("flask-socketio API changed: room param removed") from e
-            raise
+	def emit(self, event: str, data: dict, room: str | None=None):
+		try: self._sio.emit(event, data, room=room)  # type: ignore[call-arg]
+		except TypeError as e:
+			if 'room' in str(e): raise RuntimeError("flask-socketio API changed: room param removed") from e
+			raise
 
-    def on(self, event: str, handler):
-        self._sio.on_event(event, handler)
+	def on(self, event: str, handler): self._sio.on_event(event, handler)
 
-    def broadcast(self, event: str, data: dict):
-        self._sio.emit(event, data)
+	def broadcast(self, event: str, data: dict): self._sio.emit(event, data)
 
-    @staticmethod
-    def sid() -> str:
-        sid = getattr(request, 'sid', None)
-        if sid is None:
-            raise RuntimeError("flask-socketio API changed: request.sid removed")
-        return sid
+	@staticmethod
+	def sid() -> str:
+		sid = getattr(request, 'sid', None)
+		if sid is None: raise RuntimeError("flask-socketio API changed: request.sid removed")
+		return sid
 
 from mod.models import TskStatus, IFnRst, IFnProg, Gws
 
@@ -47,265 +41,244 @@ DEBUG = False
 
 @dataclass
 class TskInfo:
-    sn: str
-    name: str
-    dtc: float
-    status: TskStatus = TskStatus.PENDING
-    prog: int = 0
-    msg: str = ""
-    result: Optional[IFnRst] = None
-    err: Optional[str] = None
-    dts: Optional[float] = None
-    dte: Optional[float] = None
+	sn: str
+	name: str
+	dtc: float
+	status: TskStatus = TskStatus.PENDING
+	prog: int = 0
+	msg: Union[str, List[str]] = ""
+	result: Optional[IFnRst] = None
+	err: Optional[str] = None
+	dts: Optional[float] = None
+	dte: Optional[float] = None
 
-    def gws(self, typ:str):
-        ti = self
-        g = Gws.mk( typ, ti.sn, ti.status.value, ti.name, ti.msg, ti.prog )
-        return g
+	def gws(self, typ:str):
+		ti = self
+		g = Gws.mk(typ, ti.sn, ti.status.value, ti.name, ti.msg, ti.prog)
+		return g
 
 
 @dataclass
 class BseTsk(ABC):
-    name: str = field()
+	name: str = field()
 
-    @abstractmethod
-    def run(self, doReport: Optional[IFnProg] = None) -> Any:
-        pass
+	@abstractmethod
+	def run(self, doReport: Optional[IFnProg]=None) -> Any: pass
 
 
 #========================================================================
 # Task Manager
 #========================================================================
 class TskMgr:
-    def __init__(self):
-        self.sio: Optional[SioWrap] = None
-        self.infos: Dict[str, TskInfo] = {}
-        self.threads: Dict[str, threading.Thread] = {}
-        self.tsks: Dict[str, BseTsk] = {}
-        self.connected_clients: Set[str] = set()
-        self.running = False
-        self.startupId = str(uuid.uuid4())
+	def __init__(self):
+		self.sio: Optional[SioWrap] = None
+		self.infos: Dict[str, TskInfo] = {}
+		self.threads: Dict[str, threading.Thread] = {}
+		self.tsks: Dict[str, BseTsk] = {}
+		self.connected_clients: Set[str] = set()
+		self.running = False
+		self.startupId = str(uuid.uuid4())
 
-    def _sendCurrentTaskStatus(self, client_id: str):
-        if not self.sio: return
+	def _sendCurrentTaskStatus(self, client_id: str):
+		if not self.sio: return
 
-        try:
-            now = time.time()
-            RECENT_THRESHOLD = 10
+		try:
+			now = time.time()
+			RECENT_THRESHOLD = 10
 
-            for tsn, ti in self.infos.items():
-                if ti.status in [TskStatus.RUNNING, TskStatus.PENDING]:
-                    lg.info(f"[tskMgr] Sending current task to new client: {ti.name} - {ti.status.value}")
-                    self.sio.emit('task_message', ti.gws('start').toDict(), room=client_id)
-                    if ti.status == TskStatus.RUNNING:
-                        self.sio.emit('task_message', ti.gws('progress').toDict(), room=client_id)
-                    return
+			for tsn, ti in self.infos.items():
+				if ti.status in [TskStatus.RUNNING, TskStatus.PENDING]:
+					lg.info(f"[tskMgr] Sending current task to new client: {ti.name} - {ti.status.value}")
+					self.sio.emit('task_message', ti.gws('start').toDict(), room=client_id)
+					if ti.status == TskStatus.RUNNING: self.sio.emit('task_message', ti.gws('progress').toDict(), room=client_id)
+					return
 
-            for tsn, ti in self.infos.items():
-                if ti.status in [TskStatus.COMPLETED, TskStatus.FAILED, TskStatus.CANCELLED]:
-                    if ti.dte and (now - ti.dte) < RECENT_THRESHOLD:
-                        lg.info(f"[tskMgr] Sending recent complete to new client: {ti.name}")
-                        self.sio.emit('task_message', ti.gws('complete').toDict(), room=client_id)
-                        return
+			for tsn, ti in self.infos.items():
+				if ti.status in [TskStatus.COMPLETED, TskStatus.FAILED, TskStatus.CANCELLED]:
+					if ti.dte and (now - ti.dte) < RECENT_THRESHOLD:
+						lg.info(f"[tskMgr] Sending recent complete to new client: {ti.name}")
+						self.sio.emit('task_message', ti.gws('complete').toDict(), room=client_id)
+						return
+		except Exception as e: lg.error(f"[tskMgr] Error sending current task status: {e}")
 
-        except Exception as e:
-            lg.error(f"[tskMgr] Error sending current task status: {e}")
+	def setup_socketio(self, socketio: SocketIO):
+		self.sio = SioWrap(socketio)
+		self._register_handlers()
+		lg.info(f"[tskMgr] SocketIO setup completed")
 
-    def setup_socketio(self, socketio: SocketIO):
-        self.sio = SioWrap(socketio)
-        self._register_handlers()
-        lg.info(f"[tskMgr] SocketIO setup completed")
+	def _register_handlers(self):
+		if not self.sio: return
 
-    def _register_handlers(self):
-        if not self.sio: return
+		self.sio.on('connect', self._handle_connect)
+		self.sio.on('disconnect', self._handle_disconnect)
+		self.sio.on('message', self._handle_message)
 
-        self.sio.on('connect', self._handle_connect)
-        self.sio.on('disconnect', self._handle_disconnect)
-        self.sio.on('message', self._handle_message)
+	def _handle_connect(self):
+		client_id = SioWrap.sid()
+		self.connected_clients.add(client_id)
 
-    def _handle_connect(self):
-        client_id = SioWrap.sid()
-        self.connected_clients.add(client_id)
+		cnt = len(self.connected_clients)
+		lg.info(f"[tskMgr] connected.. Total[{cnt}] client[{client_id}]")
 
-        cnt = len(self.connected_clients)
-        lg.info(f"[tskMgr] connected.. Total[{cnt}] client[{client_id}]")
+		# Send connected message with startupId for reload detection
+		msg = Gws.mk('connected', '', '', '', '', 0).toDict()
+		msg['startupId'] = self.startupId
+		emit('task_message', msg)
 
-        # Send connected message with startupId for reload detection
-        msg = Gws.mk('connected', '', '', '', '', 0).toDict()
-        msg['startupId'] = self.startupId
-        emit('task_message', msg)
+		# Send current running task status to newly connected client
+		self._sendCurrentTaskStatus(client_id)
 
-        # Send current running task status to newly connected client
-        self._sendCurrentTaskStatus(client_id)
+	def _handle_disconnect(self):
+		client_id = SioWrap.sid()
+		if client_id in self.connected_clients:
+			self.connected_clients.remove(client_id)
+			lg.info(f"[tskMgr] disconnected.. Total[{len(self.connected_clients)}] client[{client_id}]")
 
-    def _handle_disconnect(self):
-        client_id = SioWrap.sid()
-        if client_id in self.connected_clients:
-            self.connected_clients.remove(client_id)
-            lg.info(f"[tskMgr] disconnected.. Total[{len(self.connected_clients)}] client[{client_id}]")
+	def _handle_message(self, data):
+		client_id = SioWrap.sid()
+		if DEBUG: lg.info(f"[tskMgr] Received message from client {client_id}: {data}")
 
-    def _handle_message(self, data):
-        client_id = SioWrap.sid()
-        if DEBUG: lg.info(f"[tskMgr] Received message from client {client_id}: {data}")
+	def broadcast(self, gws: Gws):
+		if not self.sio:
+			lg.warning(f"[tskMgr] SocketIO not initialized, cannot broadcast {gws.typ}")
+			return
 
-    def broadcast(self, gws: Gws):
-        if not self.sio:
-            lg.warning(f"[tskMgr] SocketIO not initialized, cannot broadcast {gws.typ}")
-            return
+		if self.connected_clients:
+			try:
+				self.sio.broadcast('task_message', gws.toDict())
 
-        if self.connected_clients:
-            try:
-                self.sio.broadcast('task_message', gws.toDict())
+				if gws.typ == 'progress':
+					if DEBUG: lg.info(f"[tskMgr] Progress sent: {gws.prg}%")
+				elif gws.typ == 'complete': lg.info(f"[tskMgr] Complete sent: status[{gws.ste}]")
+				elif gws.typ == 'start': lg.info(f"[tskMgr] Start sent: name[{gws.nam}]")
 
-                if gws.typ == 'progress':
-                    if DEBUG: lg.info(f"[tskMgr] Progress sent: {gws.prg}%")
-                elif gws.typ == 'complete':
-                    lg.info(f"[tskMgr] Complete sent: status[{gws.ste}]")
-                elif gws.typ == 'start':
-                    lg.info(f"[tskMgr] Start sent: name[{gws.nam}]")
+				if DEBUG: lg.info(f"[tskMgr:broadcast] Sent to {len(self.connected_clients)} clients")
+			except Exception as e: lg.error(f"[tskMgr] Broadcast error: {e}")
+		elif gws.typ in ['start', 'progress', 'complete']: lg.warning(f"[tskMgr] No clients for [{gws.typ}] message")
 
-                if DEBUG: lg.info(f"[tskMgr:broadcast] Sent to {len(self.connected_clients)} clients")
+	def start(self):
+		if not self.running:
+			self.running = True
+			lg.info(f"[tskMgr] Task manager started")
 
-            except Exception as e:
-                lg.error(f"[tskMgr] Broadcast error: {e}")
+	def stop(self): self.running = False
 
-        elif gws.typ in ['start', 'progress', 'complete']:
-            lg.warning(f"[tskMgr] No clients for [{gws.typ}] message")
+	def regBy(self, task: BseTsk) -> str:
+		dt = datetime.now()
+		sn = str(uuid.uuid4())
 
-    def start(self):
-        if not self.running:
-            self.running = True
-            lg.info(f"[tskMgr] Task manager started")
+		ti = TskInfo(sn=sn, name=task.name, dtc=dt.timestamp())
 
-    def stop(self):
-        self.running = False
+		self.infos[sn] = ti
+		self.tsks[sn] = task
+		return sn
 
-    def regBy(self, task: BseTsk) -> str:
-        dt = datetime.now()
-        sn = str(uuid.uuid4())
+	def cancel(self, tsn: str) -> bool:
+		if tsn not in self.infos: return False
 
-        ti = TskInfo(sn=sn, name=task.name, dtc=dt.timestamp())
+		ti = self.infos[tsn]
+		if ti.status in [TskStatus.COMPLETED, TskStatus.FAILED, TskStatus.CANCELLED]: return False
 
-        self.infos[sn] = ti
-        self.tsks[sn] = task
-        return sn
+		ti.status = TskStatus.CANCELLED
+		ti.dte = time.time()
 
-    def cancel(self, tsn: str) -> bool:
-        if tsn not in self.infos: return False
+		lg.info(f"[tskMgr] Task {tsn} cancelled, sending complete message")
 
-        ti = self.infos[tsn]
-        if ti.status in [TskStatus.COMPLETED, TskStatus.FAILED, TskStatus.CANCELLED]: return False
+		# Send cancel complete message to update UI
+		if self.sio: self.broadcast(ti.gws('complete'))
 
-        ti.status = TskStatus.CANCELLED
-        ti.dte = time.time()
+		return True
 
-        lg.info(f"[tskMgr] Task {tsn} cancelled, sending complete message")
+	def isCancelled(self, tsn: str) -> bool:
+		if tsn not in self.infos: return False
+		return self.infos[tsn].status == TskStatus.CANCELLED
 
-        # Send cancel complete message to update UI
-        if self.sio:
-            self.broadcast(ti.gws('complete'))
+	#------------------------------------------------
+	# run on Thread
+	#------------------------------------------------
+	def _execOnThread(self, tsn: str):
+		tk = self.tsks.get(tsn)
+		ti = self.infos.get(tsn)
 
-        return True
+		if not tk or not ti: return
 
-    def isCancelled(self, tsn: str) -> bool:
-        if tsn not in self.infos: return False
-        return self.infos[tsn].status == TskStatus.CANCELLED
+		ti.status = TskStatus.RUNNING
+		ti.dts = time.time()
 
-    #------------------------------------------------
-    # run on Thread
-    #------------------------------------------------
-    def _execOnThread(self, tsn: str):
-        tk = self.tsks.get(tsn)
-        ti = self.infos.get(tsn)
+		#------------------------------------
+		# sending
+		#------------------------------------
+		def doSend(gws:Gws): self.broadcast(gws)
 
-        if not tk or not ti: return
+		#------------------------------------
+		dtu = 0
 
-        ti.status = TskStatus.RUNNING
-        ti.dts = time.time()
+		def fnReport(pct: int, msg: str):
+			if ti.status == TskStatus.CANCELLED: return  # Stop reporting if cancelled
 
-        #------------------------------------
-        # sending
-        #------------------------------------
-        def doSend(gws:Gws):
-            self.broadcast(gws)
+			ti.prog = pct
+			ti.msg = msg
 
-        #------------------------------------
-        dtu = 0
+			nonlocal dtu
+			now = time.time()
+			if now - dtu < 0.3 and pct < 100: return #limit sec
+			dtu = now
 
-        def fnReport(pct: int, msg: str):
-            if ti.status == TskStatus.CANCELLED: return  # Stop reporting if cancelled
+			doSend(ti.gws('progress'))
+			pass
 
-            ti.prog = pct
-            ti.msg = msg
+		#------------------------------------
+		try:
+			doSend(ti.gws('start'))
 
-            nonlocal dtu
-            now = time.time()
-            if now - dtu < 0.3 and pct < 100: return #limit sec
-            dtu = now
+			if ti.status != TskStatus.CANCELLED:
+				sto, retMsg = tk.run(fnReport)
 
-            doSend(ti.gws('progress'))
-            pass
+				if ti.status == TskStatus.CANCELLED:
+					ti.msg = "Task was cancelled"
+					ti.prog = 0
+				else:
+					ti.status = TskStatus.COMPLETED
+					ti.result = sto
+					ti.prog = 100
+					ti.msg = retMsg
+		except Exception as e:
+			if ti.status == TskStatus.CANCELLED: ti.msg = "Task was cancelled"
+			else:
+				ti.status = TskStatus.FAILED
+				ti.err = str(e)
+				ti.msg = f"Error: {str(e)}"
+		finally:
+			ti.dte = time.time()
 
-        #------------------------------------
-        try:
-            doSend(ti.gws('start'))
+			# Only send complete message if not already sent by cancel()
+			if ti.status != TskStatus.CANCELLED: doSend(ti.gws('complete'))
 
-            if ti.status != TskStatus.CANCELLED:
-                sto, retMsg = tk.run(fnReport)
+			if tsn in self.threads: del self.threads[tsn]
 
-                if ti.status == TskStatus.CANCELLED:
-                    ti.msg = "Task was cancelled"
-                    ti.prog = 0
-                else:
-                    ti.status = TskStatus.COMPLETED
-                    ti.result = sto
-                    ti.prog = 100
-                    ti.msg = retMsg
+	def run(self, tsn: str) -> bool:
+		if tsn not in self.infos: raise RuntimeError(f"Task {tsn} not found in tasks")
 
-        except Exception as e:
-            if ti.status == TskStatus.CANCELLED:
-                ti.msg = "Task was cancelled"
-            else:
-                ti.status = TskStatus.FAILED
-                ti.err = str(e)
-                ti.msg = f"Error: {str(e)}"
+		if tsn in self.threads: raise RuntimeError(f"Task {tsn} already running")
 
-        finally:
-            ti.dte = time.time()
-
-            # Only send complete message if not already sent by cancel()
-            if ti.status != TskStatus.CANCELLED: doSend(ti.gws('complete') )
-
-            if tsn in self.threads: del self.threads[tsn]
-
-    def run(self, tsn: str) -> bool:
-        if tsn not in self.infos:
-            raise RuntimeError(f"Task {tsn} not found in tasks")
-
-        if tsn in self.threads:
-            raise RuntimeError(f"Task {tsn} already running")
-
-        thread = threading.Thread(
-            target=self._execOnThread,
-            args=(tsn,),
-            daemon=True
-        )
-        self.threads[tsn] = thread
-        thread.start()
-        # if DEBUG: lg.info(f"Task {tsn} thread started")
-        return True
+		thread = threading.Thread(
+			target=self._execOnThread,
+			args=(tsn,),
+			daemon=True
+		)
+		self.threads[tsn] = thread
+		thread.start()
+		# if DEBUG: lg.info(f"Task {tsn} thread started")
+		return True
 
 
-    def getInfo(self, tsn: str) -> Optional[TskInfo]:
-        return self.infos.get(tsn)
+	def getInfo(self, tsn: str) -> Optional[TskInfo]: return self.infos.get(tsn)
 
-    def list(self) -> Dict[str, TskInfo]:
-        return self.infos.copy()
+	def list(self) -> Dict[str, TskInfo]: return self.infos.copy()
 
 
-    def hasRunning(self):
-        for tid, info in self.list().items():
-            if info.status.value in ['pending', 'running']:
-                return True
+	def hasRunning(self):
+		for tid, info in self.list().items():
+			if info.status.value in ['pending', 'running']: return True
 
-        return False
+		return False

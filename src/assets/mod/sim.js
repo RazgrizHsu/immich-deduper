@@ -317,7 +317,7 @@ function getAutoSelectAuids(assets, ausl){
 			window.auslLogs[gid] = {status: 'selected', selectedAids: [result.aid], reason: `Selected #${result.aid} (score: ${result.score})`, details: Object.entries(result.allScores).map(([aid, d]) => ({aid: parseInt(aid), score: d.score, reasons: d.reasons}))}
 			console.log(`[ausl] Group ${gid}: Selected best asset #${result.aid}`)
 		} else {
-			window.auslLogs[gid] = {status: 'no_winner', selectedAids: [], reason: 'No winner: all scores are 0', details: result?.allScores ? Object.entries(result.allScores).map(([aid, d]) => ({aid: parseInt(aid), score: d.score, reasons: d.reasons})) : []}
+			window.auslLogs[gid] = {status: 'no_winner', selectedAids: [], reason: result?.score > 0 ? `No winner: tied at score ${result.score}` : 'No winner: all scores are 0', details: result?.allScores ? Object.entries(result.allScores).map(([aid, d]) => ({aid: parseInt(aid), score: d.score, reasons: d.reasons})) : []}
 		}
 	}
 

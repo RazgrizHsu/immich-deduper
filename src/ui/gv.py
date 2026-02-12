@@ -11,143 +11,137 @@ from ui import gvEx, cards
 
 
 def mkGrd(assets: list[models.Asset], minW=230, onEmpty=None, maker=cards.mk):
-    if not assets or len(assets) == 0:
-        if onEmpty:
-            if isinstance(onEmpty, str):
-                return dbc.Alert(f"{onEmpty}", color="warning", className="text-center")
-            else:
-                return onEmpty
-        return htm.Div(dbc.Alert("--------", color="warning"), className="text-center")
+	if not assets or len(assets) == 0:
+		if onEmpty:
+			if isinstance(onEmpty, str): return dbc.Alert(f"{onEmpty}", color="warning", className="text-center")
+			else: return onEmpty
+		return htm.Div(dbc.Alert("--------", color="warning"), className="text-center")
 
-    cntAss = len(assets)
+	cntAss = len(assets)
 
-    if cntAss <= 4:
-        styGrid = {
-            "display": "flex",
-            "flexWrap": "wrap",
-            "gap": "1rem",
-            "justifyContent": "center"
-        }
-        styItem = {"flex": f"1 1 {minW}px"}
-    else:
-        styGrid = {
-            "display": "grid",
-            "gridTemplateColumns": f"repeat(auto-fit, minmax({minW}px, 1fr))",
-            "gap": "1rem"
-        }
-        styItem = {}
+	if cntAss <= 4:
+		styGrid = {
+			"display": "flex",
+			"flexWrap": "wrap",
+			"gap": "1rem",
+			"justifyContent": "center"
+		}
+		styItem = {"flex": f"1 1 {minW}px"}
+	else:
+		styGrid = {
+			"display": "grid",
+			"gridTemplateColumns": f"repeat(auto-fit, minmax({minW}px, 1fr))",
+			"gap": "1rem"
+		}
+		styItem = {}
 
-    rows = []
-    firstRels = False
-    cntRelats = sum(1 for a in assets if a.vw.isRelats)
+	rows = []
+	firstRels = False
+	cntRelats = sum(1 for a in assets if a.vw.isRelats)
 
-    gid = assets[0].vw.muodId if assets[0].vw.muodId is not None else assets[0].autoId
-    rows.append(htm.Div([
-        htm.Label(f"Group {gid} ( {len(assets)} items )"),
-        dbc.Button([htm.Span(className="fake-checkbox checked"), "select this group all"], size="sm", color="secondary", id=f"cbx-sel-grp-all-{gid}", className="txt-sm me-1"),
-        dbc.Button([htm.Span(className="fake-checkbox"), "deselect this group All"], size="sm", color="secondary", id=f"cbx-sel-grp-non-{gid}", className="txt-sm"),
-    ], className="hr"))
+	gid = assets[0].vw.muodId if assets[0].vw.muodId is not None else assets[0].autoId
+	rows.append(htm.Div([
+		htm.Label(f"Group {gid} ( {len(assets)} items )"),
+		dbc.Button([htm.Span(className="fake-checkbox checked"), "select this group all"], size="sm", color="secondary", id=f"cbx-sel-grp-all-{gid}", className="txt-sm me-1"),
+		dbc.Button([htm.Span(className="fake-checkbox"), "deselect this group All"], size="sm", color="secondary", id=f"cbx-sel-grp-non-{gid}", className="txt-sm"),
+	], className="hr"))
 
-    for idx, a in enumerate(assets):
-        card = maker(a)
+	for idx, a in enumerate(assets):
+		card = maker(a)
 
-        if a.vw.isRelats and not firstRels:
-            firstRels = True
-            rows.append(htm.Div(htm.Label(f"relates ({cntRelats}) :"), className="hr"))
+		if a.vw.isRelats and not firstRels:
+			firstRels = True
+			rows.append(htm.Div(htm.Label(f"relates ({cntRelats}) :"), className="hr"))
 
-        rows.append(htm.Div(card, style=styItem))
+		rows.append(htm.Div(card, style=styItem))
 
-    lg.info(f"[sim:gv] assets[{len(assets)}] rows[{len(rows)}]")
+	lg.info(f"[sim:gv] assets[{len(assets)}] rows[{len(rows)}]")
 
-    return htm.Div(rows, className="gv fsp", style=styGrid)
+	return htm.Div(rows, className="gv fsp", style=styGrid)
 
 
 def mkGrdGrps(assets: List[models.Asset], minW=250, maxW=300, onEmpty=None):
-    if not assets or len(assets) == 0:
-        if onEmpty:
-            if isinstance(onEmpty, str):
-                return dbc.Alert(f"{onEmpty}", color="warning", className="text-center")
-            else:
-                return onEmpty
-        return htm.Div(dbc.Alert("--------", color="warning"), className="text-center")
+	if not assets or len(assets) == 0:
+		if onEmpty:
+			if isinstance(onEmpty, str): return dbc.Alert(f"{onEmpty}", color="warning", className="text-center")
+			else: return onEmpty
+		return htm.Div(dbc.Alert("--------", color="warning"), className="text-center")
 
-    cntAss = len(assets)
+	cntAss = len(assets)
 
-    if cntAss <= 4:
-        styGrid = {
-            "display": "flex",
-            "flexWrap": "wrap",
-            "gap": "1rem",
-            "justifyContent": "center"
-        }
-        styItem = {"flex": f"1 1 {minW}px"}
-    else:
-        styGrid = {
-            "display": "grid",
-            "gridTemplateColumns": f"repeat(auto-fit, minmax({minW}px, 1fr))",
-            "gap": "1rem"
-        }
-        styItem = {}
+	if cntAss <= 4:
+		styGrid = {
+			"display": "flex",
+			"flexWrap": "wrap",
+			"gap": "1rem",
+			"justifyContent": "center"
+		}
+		styItem = {"flex": f"1 1 {minW}px"}
+	else:
+		styGrid = {
+			"display": "grid",
+			"gridTemplateColumns": f"repeat(auto-fit, minmax({minW}px, 1fr))",
+			"gap": "1rem"
+		}
+		styItem = {}
 
-    groups = {}
-    for asset in assets:
-        grpId = asset.vw.muodId or 0
-        if grpId not in groups: groups[grpId] = []
-        groups[grpId].append(asset)
+	groups = {}
+	for asset in assets:
+		grpId = asset.vw.muodId or 0
+		if grpId not in groups: groups[grpId] = []
+		groups[grpId].append(asset)
 
-    rows = []
-    for grpId in sorted(groups.keys()):
-        grpAssets = groups[grpId]
-        grpCount = len(grpAssets)
+	rows = []
+	for grpId in sorted(groups.keys()):
+		grpAssets = groups[grpId]
+		grpCount = len(grpAssets)
 
 
-        rows.append(htm.Div([
-            htm.Label(f"Group {grpId} ( {grpCount} items )"),
+		rows.append(htm.Div([
+			htm.Label(f"Group {grpId} ( {grpCount} items )"),
 
-            dbc.Button( [ htm.Span( className="fake-checkbox checked" ), "select this group all"], size="sm", color="secondary", id=f"cbx-sel-grp-all-{grpId}", className="txt-sm me-1" ),
-            dbc.Button( [ htm.Span( className="fake-checkbox" ),"deselect this group All"], size="sm", color="secondary", id=f"cbx-sel-grp-non-{grpId}", className="txt-sm" ),
+			dbc.Button([htm.Span(className="fake-checkbox checked"), "select this group all"], size="sm", color="secondary", id=f"cbx-sel-grp-all-{grpId}", className="txt-sm me-1"),
+			dbc.Button([htm.Span(className="fake-checkbox"),"deselect this group All"], size="sm", color="secondary", id=f"cbx-sel-grp-non-{grpId}", className="txt-sm"),
 
-        ], className="hr"))
+		], className="hr"))
 
-        for asset in grpAssets:
-            card = cards.mk(asset)
-            rows.append(htm.Div(card, style=styItem))
+		for asset in grpAssets:
+			card = cards.mk(asset)
+			rows.append(htm.Div(card, style=styItem))
 
-    lg.info(f"[fsp:gv] assets[{len(assets)}] groups[{len(groups)}] rows[{len(rows)}]")
+	lg.info(f"[fsp:gv] assets[{len(assets)}] groups[{len(groups)}] rows[{len(rows)}]")
 
-    return htm.Div(rows, className="gv fsp", style=styGrid)
+	return htm.Div(rows, className="gv fsp", style=styGrid)
 
 
 
 def mkPndGrd(assets: list[models.Asset], minW=230, maxW=300, onEmpty=None):
-    if not assets or len(assets) == 0:
-        if onEmpty:
-            if isinstance(onEmpty, str):
-                return dbc.Alert(f"{onEmpty}", color="warning", className="text-center")
-            else:
-                return onEmpty
-        return htm.Div(dbc.Alert("--------", color="warning"), className="text-center")
+	if not assets or len(assets) == 0:
+		if onEmpty:
+			if isinstance(onEmpty, str): return dbc.Alert(f"{onEmpty}", color="warning", className="text-center")
+			else: return onEmpty
+		return htm.Div(dbc.Alert("--------", color="warning"), className="text-center")
 
-    cntAss = len(assets)
+	cntAss = len(assets)
 
-    if cntAss <= 4:
-        styGrid = {
-            "display": "flex",
-            "flexWrap": "wrap",
-            "gap": "1rem",
-            "justifyContent": "start"
-        }
-        styItem = {"flex": f"1 1 {minW}px", "maxWidth": f"{maxW}px"}
-    else:
-        styGrid = {
-            "display": "grid",
-            "gridTemplateColumns": f"repeat(auto-fit, minmax({minW}px, 1fr))",
-            "gap": "1rem"
-        }
-        styItem = {}
+	if cntAss <= 4:
+		styGrid = {
+			"display": "flex",
+			"flexWrap": "wrap",
+			"gap": "1rem",
+			"justifyContent": "start"
+		}
+		styItem = {"flex": f"1 1 {minW}px", "maxWidth": f"{maxW}px"}
+	else:
+		styGrid = {
+			"display": "grid",
+			"gridTemplateColumns": f"repeat(auto-fit, minmax({minW}px, 1fr))",
+			"gap": "1rem"
+		}
+		styItem = {}
 
-    rows = [htm.Div(cards.mkCardPnd(a), style=styItem) for a in assets]
+	rows = [htm.Div(cards.mkCardPnd(a), style=styItem) for a in assets]
 
-    lg.info(f"[sim:gvPnd] assets[{len(assets)}] rows[{len(rows)}]")
+	lg.info(f"[sim:gvPnd] assets[{len(assets)}] rows[{len(rows)}]")
 
-    return htm.Div(rows, style=styGrid)
+	return htm.Div(rows, style=styGrid)

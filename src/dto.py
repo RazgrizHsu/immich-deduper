@@ -4,7 +4,7 @@ from typing import Any, Callable, cast, Generic, TypeVar, overload
 from conf import ks, Optional
 from util import log
 
-from dtom import Ausl, Muod, Gpsk, Excl, Mrg
+from dtom import Ausl, Muod, Gpsk, Excl, Mrg, PairKv
 
 lg = log.get(__name__)
 

@@ -431,66 +431,6 @@ $spac: ($pad * 2) + ($gx * 2) + $sideW + 10px;
 }
 
 
-
-
-/*======================== task ========================*/
-.tskPanel {
-	flex: inherit !important;
-
-	width: 80vw;
-	margin: 15px auto 15px auto;
-	padding: 10px 30px 10px 30px;
-	border-radius: 16px;
-	border: 2px solid #4acdff99;
-	box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
-
-	background: #2d4a69;
-	@include bg-gradient(#264a69);
-
-	.progress {
-		border: #999999 1px solid;
-	}
-
-	&.fly {
-		position: fixed;
-		top: 33vw;
-		left: 10px;
-		margin: 0;
-		width: 48vw;
-		z-index: 1050;
-		box-shadow: 0 0 10px 3px #ffffff55;
-		animation: slideIn 0.3s ease-out;
-	}
-
-	button:not(:last-child) {
-		margin-right: auto;
-	}
-
-	> .msgs {
-		> * {
-			width: inherit;
-		}
-
-		display: flex;
-		justify-content: space-between;
-
-		div:last-child {
-			margin-left: auto;
-		}
-	}
-}
-
-@keyframes slideIn {
-	from {
-		transform: translateX(100%);
-		opacity: 0;
-	}
-	to {
-		transform: translateX(0);
-		opacity: 1;
-	}
-}
-
 /*======================== taber ========================*/
 .ITab {
 	.nav-tabs {

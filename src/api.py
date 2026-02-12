@@ -19,76 +19,73 @@ assets = []
 timeout = 5000
 urlApi:str = "current we don't need it"
 
-if not urlApi: raise KeyError('[api] the urlApi environment variable is not set')
 if not urlApi.endswith('/'): urlApi += '/'
 if not urlApi.endswith('api'): urlApi = urlApi + 'api'
 
 def _get(endpoint: str, apiKey: str, headers=None, params=None, stream=False):
-    if not apiKey: raise KeyError('muse have ApiKey')
+	if not apiKey: raise KeyError('muse have ApiKey')
 
-    if headers is None: headers = {}
+	if headers is None: headers = {}
 
-    headers['x-api-key'] = apiKey
-    if 'Accept' not in headers: headers['Accept'] = 'application/json'
+	headers['x-api-key'] = apiKey
+	if 'Accept' not in headers: headers['Accept'] = 'application/json'
 
-    url = f"{urlApi}/{endpoint.lstrip('/')}"
-    try:
-        lg.info(f"[API] GET: url[{url}] header[{headers}]")
-        rep = requests.get(url, headers=headers, params=params, verify=False, timeout=timeout, stream=stream)
-        rep.raise_for_status()
-        return rep
-    except requests.exceptions.RequestException as e:
-        lg.error(f"API GET request failed: {str(e)}")
-        return None
-    except Exception as e:
-        lg.error(f"Unexpected error in API GET: {str(e)}")
-        return None
+	url = f"{urlApi}/{endpoint.lstrip('/')}"
+	try:
+		lg.info(f"[API] GET: url[{url}] header[{headers}]")
+		rep = requests.get(url, headers=headers, params=params, verify=False, timeout=timeout, stream=stream)
+		rep.raise_for_status()
+		return rep
+	except requests.exceptions.RequestException as e:
+		lg.error(f"API GET request failed: {str(e)}")
+		return None
+	except Exception as e:
+		lg.error(f"Unexpected error in API GET: {str(e)}")
+		return None
 
 
 def _post(endpoint: str, apiKey: str, data=None, json_data=None, headers=None):
-    if not apiKey: raise KeyError('muse have ApiKey')
-    if headers is None: headers = {}
+	if not apiKey: raise KeyError('muse have ApiKey')
+	if headers is None: headers = {}
 
-    headers['x-api-key'] = apiKey
-    if 'Accept' not in headers:
-        headers['Accept'] = 'application/json'
+	headers['x-api-key'] = apiKey
+	if 'Accept' not in headers: headers['Accept'] = 'application/json'
 
-    if json_data is not None and 'Content-Type' not in headers:
-        headers['Content-Type'] = 'application/json'
+	if json_data is not None and 'Content-Type' not in headers: headers['Content-Type'] = 'application/json'
 
-    url = f"{urlApi}/{endpoint.lstrip('/')}"
-    try:
-        lg.debug(f"POST: {url}")
-        rep = requests.post(url, headers=headers, data=data, json=json_data, verify=False, timeout=timeout)
-        rep.raise_for_status()
-        return rep
-    except requests.exceptions.RequestException as e:
-        lg.error(f"API POST request failed: {str(e)}")
-        return None
-    except Exception as e:
-        lg.error(f"Unexpected error in API POST: {str(e)}")
-        return None
+	url = f"{urlApi}/{endpoint.lstrip('/')}"
+	try:
+		lg.debug(f"POST: {url}")
+		rep = requests.post(url, headers=headers, data=data, json=json_data, verify=False, timeout=timeout)
+		rep.raise_for_status()
+		return rep
+	except requests.exceptions.RequestException as e:
+		lg.error(f"API POST request failed: {str(e)}")
+		return None
+	except Exception as e:
+		lg.error(f"Unexpected error in API POST: {str(e)}")
+		return None
 
 
 def _api_delete(endpoint: str, apiKey: str, json_data=None, headers=None):
-    if not apiKey: raise KeyError('muse have ApiKey')
-    if headers is None: headers = {}
+	if not apiKey: raise KeyError('muse have ApiKey')
+	if headers is None: headers = {}
 
-    headers['x-api-key'] = apiKey
-    if json_data is not None and 'Content-Type' not in headers: headers['Content-Type'] = 'application/json'
+	headers['x-api-key'] = apiKey
+	if json_data is not None and 'Content-Type' not in headers: headers['Content-Type'] = 'application/json'
 
-    url = f"{urlApi}/{endpoint.lstrip('/')}"
-    try:
-        lg.debug(f"DELETE: {url}")
-        rep = requests.delete(url, headers=headers, json=json_data, verify=False, timeout=timeout)
-        rep.raise_for_status()
-        return rep
-    except requests.exceptions.RequestException as e:
-        lg.error(f"API DELETE request failed: {str(e)}")
-        return None
-    except Exception as e:
-        lg.error(f"Unexpected error in API DELETE: {str(e)}")
-        return None
+	url = f"{urlApi}/{endpoint.lstrip('/')}"
+	try:
+		lg.debug(f"DELETE: {url}")
+		rep = requests.delete(url, headers=headers, json=json_data, verify=False, timeout=timeout)
+		rep.raise_for_status()
+		return rep
+	except requests.exceptions.RequestException as e:
+		lg.error(f"API DELETE request failed: {str(e)}")
+		return None
+	except Exception as e:
+		lg.error(f"Unexpected error in API DELETE: {str(e)}")
+		return None
 
 
 

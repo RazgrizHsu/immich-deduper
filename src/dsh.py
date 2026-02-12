@@ -1,5 +1,5 @@
 import os
-from typing import Any, Sequence
+from typing import Any, Sequence, Union
 import dash
 
 import dash_bootstrap_components as dbc
@@ -25,42 +25,51 @@ os.makedirs(pathCache, exist_ok=True)
 def toOpts(o: list[dict[str, Any]]) -> Sequence[Any]: return o
 
 
-def getTrgId(ctx=None):
-    ctx = dash.callback_context if ctx is None else ctx
-    return ctx.triggered[0]['prop_id'].split('.')[0]
+class TrgId:
+	def __init__(self, raw): self._d = raw if isinstance(raw, dict) else {'id': raw}
 
+	def __eq__(self, other):
+		if isinstance(other, str): return self._d.get('id') == other
+		return NotImplemented
+
+	def __getitem__(self, key): return self._d[key]
+
+	def get(self, key, default=None): return self._d.get(key, default)
+
+	def __repr__(self): return repr(self._d)
+
+
+def getTrgId() -> TrgId: return TrgId(ctx.triggered_id) #type:ignore
 
 def registerScss():
-    import sass
-    from watchdog.observers import Observer
-    from watchdog.events import FileSystemEventHandler
+	import sass
+	from watchdog.observers import Observer
+	from watchdog.events import FileSystemEventHandler
 
-    def build():
-        sass_dir = pathFromRoot('src/scss')
-        css_dir = pathFromRoot('src/assets')
-        try:
-            sass.compile(dirname=(sass_dir, css_dir), output_style='compact')
-        except Exception as e:
-            lg.error(f"[scss] compile error: {e}")
+	def build():
+		sass_dir = pathFromRoot('src/scss')
+		css_dir = pathFromRoot('src/assets')
+		try: sass.compile(dirname=(sass_dir, css_dir), output_style='compact')
+		except Exception as e: lg.error(f"[scss] compile error: {e}")
 
-    class ScssHandler(FileSystemEventHandler):
-        def on_modified(self, event):
-            if event.src_path.endswith('.scss'):
-                build()
-                lg.info(f"[scss] build: {event.src_path}")
+	class ScssHandler(FileSystemEventHandler):
+		def on_modified(self, event):
+			if event.src_path.endswith('.scss'):
+				build()
+				lg.info(f"[scss] build: {event.src_path}")
 
-    os.makedirs(pathFromRoot('src/assets'), exist_ok=True)
-    os.makedirs(pathFromRoot('src/scss'), exist_ok=True)
+	os.makedirs(pathFromRoot('src/assets'), exist_ok=True)
+	os.makedirs(pathFromRoot('src/scss'), exist_ok=True)
 
-    build()
+	build()
 
-    observer = Observer()
-    observer.schedule(ScssHandler(), pathFromRoot('src/scss'), recursive=True)
-    observer.start()
+	observer = Observer()
+	observer.schedule(ScssHandler(), pathFromRoot('src/scss'), recursive=True)
+	observer.start()
 
 
 class NoUpdList(list):
-    """
+	"""
     Extended no_update array with partial position updates support
 
     Usage Examples:
@@ -94,8 +103,8 @@ class NoUpdList(list):
         return noUpd.by(4).upd(0, [store1_data, store2_data])
     """
 
-    def upd(self, idx, vals):
-        """
+	def upd(self, idx, vals):
+		"""
         Update values sequentially from specified index position
 
         Args:
@@ -116,19 +125,19 @@ class NoUpdList(list):
         Returns:
             New NoUpdList instance
         """
-        result = self.copy()
-        if not isinstance(vals, list): vals = [vals]
-        for i, v in enumerate(vals):
-            # Auto-convert BaseDictModel to dict
-            from mod.models import BaseDictModel
-            if isinstance(v, BaseDictModel): v = v.toDict()
-            if idx + i < len(result): result[idx + i] = v
-        return result
+		result = self.copy()
+		if not isinstance(vals, list): vals = [vals]
+		for i, v in enumerate(vals):
+			# Auto-convert BaseDictModel to dict
+			from mod.models import BaseDictModel
+			if isinstance(v, BaseDictModel): v = v.toDict()
+			if idx + i < len(result): result[idx + i] = v
+		return result
 
 
 # noinspection PyProtectedMember
 class NoUpdHelper(dash._no_update.NoUpdate):
-    """
+	"""
     Extended no_update utility class
 
     Usage Examples:
@@ -139,9 +148,9 @@ class NoUpdHelper(dash._no_update.NoUpdate):
     return noUpd.by(4).upd(0, data1).upd(2, data2)
     """
 
-    @classmethod
-    def by(cls, count: int):
-        """
+	@classmethod
+	def by(cls, count: int):
+		"""
         Create NoUpdList with specified length
 
         Args:
@@ -150,7 +159,7 @@ class NoUpdHelper(dash._no_update.NoUpdate):
         Returns:
             NoUpdList containing count number of dash.no_update values
         """
-        return NoUpdList([dash.no_update for i in range(count)])
+		return NoUpdList([dash.no_update for i in range(count)])
 
 
 noUpd = NoUpdHelper()
