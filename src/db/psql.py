@@ -35,6 +35,8 @@ class SchemaInfo:
 	albumAsset: str = 'album_asset'
 	tagAsset: str = 'tag_asset'
 	albumUser: str = 'album_user'
+	# asset_file features
+	assetFileHasEdited: bool = False
 	# Junction table column names
 	albumAssetAlbumId: str = 'albumId'
 	albumAssetAssetId: str = 'assetId'
@@ -87,6 +89,15 @@ def detectSchema():
 				schema.assetExif = 'asset_exif' if 'asset_exif' in relTables else 'exif'
 				schema.assetFile = 'asset_file' if 'asset_file' in relTables else 'asset_files'
 				schema.assetFace = 'asset_face' if 'asset_face' in relTables else 'asset_faces'
+
+				# Detect asset_file features (isEdited column for newer Immich versions)
+				c.execute(Q(f"""
+					SELECT column_name FROM information_schema.columns
+					WHERE table_schema = 'public'
+					AND table_name = '{schema.assetFile}'
+					AND column_name = 'isEdited'
+				"""))
+				schema.assetFileHasEdited = c.fetchone() is not None
 
 				# Detect junction table names (new: album_asset, old: albums_assets_assets)
 				c.execute("""
@@ -376,28 +387,41 @@ def testAssetsPath():
 
 						# error message
 						envVar = 'IMMICH_THUMB' if isThumb else 'IMMICH_PATH'
-						if isThumb and not envs.immichThumb:
-							lg.error(f"[psql] testPath: FAILED - thumb path detected but IMMICH_THUMB not configured")
-							return [
-								"Thumbnail path detected but IMMICH_THUMB not configured:",
-								f"  DB path: '{originalPath}'",
-								f"  Resolved: '{pathFi}' (not found)",
-								"",
-								"For separate thumbnail directory, set IMMICH_THUMB in .env",
-								"and add volume mount: - ${IMMICH_THUMB}:/thumbs:ro"
-							]
+						envVal = envs.envImmichThumb if isThumb else envs.envImmichPath
+						contVal = envs.immichThumb if isThumb else envs.immichPath
 
 						lg.error(f"[psql] testPath: FAILED - {envVar} path not found [{pathFi}]")
-						return [
-							"Asset file not found at expected path:",
-							f"  {pathFi}",
+
+						msgs = [
+							"Path mapping failed:",
+							f"  DB path: '{originalPath}'",
+							f"  Resolved: '{pathFi}' (not found)",
+							f"  {envVar} env: '{envVal or '(not set)'}'",
+							f"  Container mount: '{contVal}'",
 							"",
-							"This path was constructed from:",
-							f"  {envVar} + DB Path",
-							f"  DB Path: '{originalPath}'",
-							"",
-							f"Please verify {envVar} environment variable matches your Immich installation path."
 						]
+
+						# check prefix mismatch
+						dbPrefix = originalPath.split('/thumbs/')[0] if '/thumbs/' in originalPath else originalPath.rsplit('/', 1)[0]
+						if envVal and dbPrefix and dbPrefix != envVal:
+							msgs += [
+								f"The DB path prefix '{dbPrefix}' differs from {envVar} '{envVal}'.",
+								"",
+								"If your Immich uses non-default IMMICH_MEDIA_LOCATION:",
+								f"  Ensure {envVar} matches your Immich's IMMICH_MEDIA_LOCATION",
+								"",
+							]
+
+						if isThumb:
+							msgs += [
+								"For separate thumbnail directory:",
+								"  Set IMMICH_THUMB in .env",
+								"  Add volume mount: ${IMMICH_THUMB}:/thumbs:ro",
+							]
+						else:
+							msgs.append(f"Please verify {envVar} matches your Immich installation path.")
+
+						return msgs
 
 				return [
 					"Asset path test failed.",

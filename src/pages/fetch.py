@@ -215,7 +215,8 @@ def fth_Status(usrId, dta_cnt, dta_tsk, dta_nfy):
 			disBtnRun = cntRemote <= cntLocal or cntRemote == 0
 
 			if usr:
-				txtBtn = f"Fetch: {usr.name} ({cntRemote})"
+				diff = cntRemote - cntLocal
+				txtBtn = f"Fetch: {usr.name} (+{diff})" if diff > 0 else f"Fetch: {usr.name} (synced)"
 				txtClr = f"Clear local: {usr.name} ({cntLocal})"
 			else:
 				txtBtn = "--No user--"

@@ -347,10 +347,11 @@ def mergeMetadata(keepAssets: List[models.Asset], trashAssets: List[models.Asset
 				# Update sidecarPath for new xmp
 				if isNewXmp:
 					dbXmpPath = asset.originalPath + '.xmp'
+					conflictCols = '("assetId", "type", "isEdited")' if sch.assetFileHasEdited else '("assetId", "type")'
 					cur.execute(psql.Q(f'''
                         INSERT INTO {sch.assetFile} ("assetId", "type", "path")
                         VALUES (%s, 'sidecar', %s)
-                        ON CONFLICT ("assetId", "type") DO UPDATE SET "path" = EXCLUDED."path"
+                        ON CONFLICT {conflictCols} DO UPDATE SET "path" = EXCLUDED."path"
                     '''), (asset.id, dbXmpPath))
 					lg.info(f"[merge] sidecarPath updated: {asset.id}")
 

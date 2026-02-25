@@ -1069,6 +1069,8 @@ def sim_SelectedDelete(doReport: IFnProg, sto: models.ITaskStore):
 
 		if not assSels or cntSelect == 0: raise RuntimeError("Selected not found")
 
+		lg.info(f"[sim:delSel] delete[{cntSelect}] keep[{len(assLefts)}] mergeOn[{db.dto.mrg.on}]")
+
 		with psql.mkConn() as conn:
 			with conn.cursor() as cur:
 				if db.dto.mrg.on:
@@ -1126,7 +1128,7 @@ def sim_SelectedResolve(doReport: IFnProg, sto: models.ITaskStore):
 
 		if not assSels or cntSelect == 0: raise RuntimeError("Selected not found")
 
-		lg.info(f"[sim:selOk] resolve assets[{cntSelect}] delete[ {cntOthers} ]")
+		lg.info(f"[sim:selOk] resolve assets[{cntSelect}] delete[ {cntOthers} ] mergeOn[{db.dto.mrg.on}]")
 
 		with psql.mkConn() as conn:
 			with conn.cursor() as cur:
