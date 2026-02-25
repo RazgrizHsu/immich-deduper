@@ -244,7 +244,7 @@ def pathFromRoot(path):
 # envs
 #------------------------------------------------------------------------
 class envs:
-	version = '0.2.10'
+	version = '0.2.11'
 	isDev = False if isDock else bool(os.getenv('IsDev', False))
 	isDevUI = False if isDock else bool(os.getenv('IsDevUI', False))
 	isDock = False if not isDock else True
@@ -252,7 +252,7 @@ class envs:
 	envImmichThumb:str = os.getenv('IMMICH_THUMB', '')  # original from .env
 	immichPath:str = '/immich' if isDock else envImmichPath
 	immichThumb:str = '/thumbs' if isDock and envImmichThumb else envImmichThumb
-	qdrantUrl:str = 'http://immich-deduper-qdrant:6333' if isDock else os.getenv('QDRANT_URL','')
+	qdrantUrl:str = os.getenv('QDRANT_URL') or ('http://immich-deduper-qdrant:6333' if isDock else '')
 	psqlHost:str = os.getenv('PSQL_HOST','')
 	psqlPort:str = os.getenv('PSQL_PORT','')
 	psqlDb:str = os.getenv('PSQL_DB','')

@@ -1,6 +1,6 @@
 [project]
 name = "immich-deduper"
-version = "0.2.10"
+version = "0.2.11"
 
 [tool.pyright]
 include = ["src"]
