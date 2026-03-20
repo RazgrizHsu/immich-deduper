@@ -537,7 +537,7 @@ def renderGpuSettings():
 						htm.Label("Batch Size: "),
 						dcc.Slider(
 							id=k.id(k.gpuBatchSize),
-							min=1, max=64, step=1,
+							min=1, max=256, step=1,
 							value=db.dto.gpuBatchSize,
 							marks=optGpuBatch,
 							disabled=db.dto.gpuAutoMode,

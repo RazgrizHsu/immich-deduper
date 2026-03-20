@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import multiprocessing
 import threading
 
+from collections import deque
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -279,11 +280,14 @@ def loadImagesParallel(assets: List[models.Asset], photoQ, maxWorkers=10) -> Tup
 
 	return imgs, rstOKs, rstNos
 
-def saveVectorBatch(assets: List[models.Asset], photoQ) -> List[Tuple[models.Asset, Optional[str]]]:
-	try: imgs, rstOKs, rstNos = loadImagesParallel(assets, photoQ)
-	except RuntimeError as e:
-		if "Critical error during image loading" in str(e): raise e
-		else: return [(asset, f"Image loading failed: {str(e)}") for asset in assets]
+def saveVectorBatch(assets: List[models.Asset], photoQ, preloaded=None) -> List[Tuple[models.Asset, Optional[str]]]:
+	if preloaded:
+		imgs, rstOKs, rstNos = preloaded
+	else:
+		try: imgs, rstOKs, rstNos = loadImagesParallel(assets, photoQ)
+		except RuntimeError as e:
+			if "Critical error during image loading" in str(e): raise e
+			else: return [(asset, f"Image loading failed: {str(e)}") for asset in assets]
 
 	results = rstNos
 	if not imgs: return results
@@ -382,14 +386,26 @@ def processVectors(assets: List[models.Asset], photoQ, onUpdate: models.IFnProg,
 		if device_type in ['cuda', 'mps'] and batchSize > 1:
 			lg.info(f"[imgs] Using {device_type.upper()} batch processing: {len(batches)} batches of size {batchSize}")
 
+			# Prefetch: load multiple batches ahead while GPU processes current batch
+			pfDepth = 3
+			pfExec = ThreadPoolExecutor(max_workers=pfDepth)
+			pfFuts = deque()
+			for i in range(min(pfDepth, len(batches))):
+				pfFuts.append(pfExec.submit(loadImagesParallel, batches[i], photoQ))
+
 			for batchIdx, batch in enumerate(batches):
 				if isCancelled and isCancelled():
 					lg.info("[imgs] Processing cancelled by user")
 					pi.erro = len(assets) - cntDone
+					pfExec.shutdown(wait=False)
 					break
 
 				try:
-					results = saveVectorBatch(batch, photoQ)
+					preloaded = pfFuts.popleft().result()
+					nxtIdx = batchIdx + pfDepth
+					if nxtIdx < len(batches):
+						pfFuts.append(pfExec.submit(loadImagesParallel, batches[nxtIdx], photoQ))
+					results = saveVectorBatch(batch, photoQ, preloaded=preloaded)
 
 					with lock:
 						firstError = None
@@ -466,6 +482,7 @@ def processVectors(assets: List[models.Asset], photoQ, onUpdate: models.IFnProg,
 					with lock:
 						pi.erro += len(batch)
 						cntDone += len(batch)
+			pfExec.shutdown(wait=False)
 		else:
 			lg.info(f"[imgs] Using CPU threading: {numWorkers} workers")
 

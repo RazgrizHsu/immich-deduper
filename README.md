@@ -56,6 +56,7 @@ Find and remove similar/duplicate images using deep learning.
    - Follows Immich's deletion logic for compatibility
    - **Important**: Enable trash feature in Immich settings first
    - Deleted assets appear in Immich's trash where you can permanently delete or restore them
+   - If you trash assets directly in Immich, run Fetch again to sync the changes (trashed assets and their vectors will be automatically removed)
 
 
 ---
