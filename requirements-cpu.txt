@@ -3,7 +3,7 @@
 
 --index-url https://download.pytorch.org/whl/cpu
 --extra-index-url https://pypi.org/simple
-torch~=2.7.0
-torchvision~=0.22.0
+torch~=2.11.0
+torchvision~=0.26.0
 
 -r requirements-base.txt

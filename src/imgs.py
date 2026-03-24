@@ -138,7 +138,7 @@ def extractFeaturesBatch(images: List[Image.Image]) -> List[np.ndarray]:
 
 		batch_tensor = torch.stack(image_tensors)
 
-		if device_type == 'cuda': batch_tensor = batch_tensor.to(conf.device, non_blocking=True)
+		if device_type == 'cuda': batch_tensor = batch_tensor.to(conf.device, non_blocking=False)
 		elif device_type == 'mps': batch_tensor = batch_tensor.to(conf.device, non_blocking=False)
 		else: batch_tensor = batch_tensor.to(conf.device)
 
