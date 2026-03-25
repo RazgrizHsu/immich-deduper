@@ -13,11 +13,11 @@ from dto import dto, DtoSets, AutoDbField
 
 def init():
     try:
+        lg.info(('-'*25) + 'preinit' + ('-'*25))
         sets.init()
         pics.init()
         vecs.init()
         psql.init()
-        lg.info('All databases initialized successfully')
     except Exception as e:
         raise RuntimeError(f'Database initialization failed: {str(e)}')
 
@@ -25,7 +25,7 @@ def close():
     try:
         sets.close()
         vecs.close()
-        lg.info('All database connections closed successfully')
+        lg.info('All database closed')
     except Exception as e:
         lg.error(f'Failed to close database connections: {str(e)}')
         return False
@@ -36,7 +36,7 @@ def resetAllData():
     try:
         pics.clearAll()
         vecs.cleanAll()
-        lg.info('[clear] All records cleared successfully')
+        lg.info('[clear] All records cleared')
     except Exception as e:
         lg.error(f'[clear] Failed to clear all records: {str(e)}')
         return False

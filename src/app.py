@@ -72,6 +72,9 @@ app.layout = htm.Div([
 
 #========================================================================
 if __name__ == "__main__":
+	import faulthandler as fh
+	fh.enable(file=open(log.log_file, 'a'))
+
 	lg = log.get(__name__)
 	try:
 		from conf import envs
@@ -115,6 +118,13 @@ if __name__ == "__main__":
 				port=int(conf.envs.ddupPort),
 				allow_unsafe_werkzeug=True
 			)
+	except Exception as e:
+		lg.info("---------------------------------------")
+		lg.info(f"Unhandled exception: {type(e).__name__}")
+		lg.info("---------------------------------------")
+		lg.error(f"detail: {e}")
+		lg.info("=======================================")
+		raise
 	finally:
 		import db
 
@@ -124,5 +134,5 @@ if __name__ == "__main__":
 
 		multiprocessing.current_process().close()
 		lg.info("---------------------------------------")
-		lg.info("Application closed, all connections closed")
-		lg.info("=======================================")
+		lg.info("Application closed")
+		lg.info("========================================================================")
