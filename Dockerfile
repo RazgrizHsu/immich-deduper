@@ -27,8 +27,10 @@ RUN --mount=type=cache,target=/root/.cache \
         pip install -r requirements-cpu.txt; \
     elif [ "$DEVICE" = "cuda" ]; then \
         pip install -r requirements-cuda.txt; \
+    elif [ "$DEVICE" = "cuda128" ]; then \
+        pip install -r requirements-cuda128.txt; \
     else \
-        echo "Unsupported DEVICE=$DEVICE (expected: cpu, cuda)" >&2; exit 1; \
+        echo "Unsupported DEVICE=$DEVICE (expected: cpu, cuda, cuda128)" >&2; exit 1; \
     fi
 
 COPY src/ ./src/

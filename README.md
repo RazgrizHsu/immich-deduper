@@ -375,7 +375,7 @@ Using Docker Compose is the easiest installation method, automatically including
    - `IMMICH_PATH`: Path to your Immich upload directory
    - `IMMICH_THUMB`: (Optional) Path for separate thumbnail directory (requires additional volume mount)
    - `DEDUP_DATA`: Directory for Deduper data storage
-   - `DEDUP_IMAGE`: Deduper image tag to run (`latest` default CPU, `latest-cuda`, or `latest-cpu`)
+   - `DEDUP_IMAGE`: Deduper image tag to run (see [Docker Image Tags](#docker-image-tags--gpu-support))
    - `QDRANT_URL`: (Optional) Custom Qdrant database URL for non-Docker environments or custom container setups
    - `OFFLINE`: (Optional) Set to `true` for air-gapped environments (see [Offline Mode](#offline-mode))
 
@@ -406,7 +406,17 @@ Using Docker Compose is the easiest installation method, automatically including
    DEDUP_IMAGE=razgrizhsu/immich-deduper:latest-cpu
    ```
 
-   If using a GPU image (`latest-cuda`), add (or uncomment) GPU device reservation in `docker-compose.yml`:
+   ```env
+   # CUDA 12.6 (GTX 10xx ~ RTX 40xx)
+   DEDUP_IMAGE=razgrizhsu/immich-deduper:latest-cuda
+   ```
+
+   ```env
+   # CUDA 12.8 (RTX 50xx / Blackwell)
+   DEDUP_IMAGE=razgrizhsu/immich-deduper:latest-cuda128
+   ```
+
+   If using a GPU image (`latest-cuda` or `latest-cuda128`), add (or uncomment) GPU device reservation in `docker-compose.yml`:
 
    ```yaml
    deploy:
@@ -444,21 +454,31 @@ Using Docker Compose is the easiest installation method, automatically including
    docker compose down && docker compose pull && docker compose up -d
    ```
 
-### Docker Image Tags
+### Docker Image Tags & GPU Support
 
-- `latest`: default CPU image tag (compose default)
-- `latest-cuda`: explicit CUDA-enabled image for Linux + NVIDIA GPU
-- `latest-cpu`: CPU-only image, much smaller than CUDA
+| Tag | CUDA | Supported GPUs |
+|-----|------|----------------|
+| `latest` | - | CPU only (compose default) |
+| `latest-cpu` | - | CPU only, smaller image |
+| `latest-cuda` | 12.6 | Pascal ~ Ada Lovelace (GTX 10xx, RTX 20xx/30xx/40xx) |
+| `latest-cuda128` | 12.8 | Turing ~ Blackwell (RTX 20xx/30xx/40xx/50xx) |
 
-If you build locally, you can create equivalent tags:
+> **Which CUDA tag should I use?**
+> - RTX 50xx (Blackwell): use `latest-cuda128`
+> - GTX 10xx / RTX 20xx~40xx: use `latest-cuda`
+> - Unsure: `latest-cuda` covers most NVIDIA GPUs
+
+If you build locally:
 
 ```bash
 # CPU
 docker build -t immich-deduper:latest-cpu --build-arg DEVICE=cpu .
 
-# CUDA
+# CUDA 12.6 (Pascal ~ Ada Lovelace)
 docker build -t immich-deduper:latest-cuda --build-arg DEVICE=cuda .
 
+# CUDA 12.8 (Blackwell / RTX 50xx)
+docker build -t immich-deduper:latest-cuda128 --build-arg DEVICE=cuda128 .
 ```
 
 
@@ -496,14 +516,14 @@ For custom environments and development needs.
 
    **GPU acceleration:**
    ```bash
-   # Linux with NVIDIA GPU (CUDA)
+   # NVIDIA GPU with CUDA 12.6 (GTX 10xx ~ RTX 40xx)
    pip install -r requirements-cuda.txt
-   
+
+   # NVIDIA GPU with CUDA 12.8 (RTX 50xx / Blackwell)
+   pip install -r requirements-cuda128.txt
+
    # macOS with Apple Silicon (MPS)
    pip install -r requirements.txt
-   
-   # Windows with NVIDIA GPU
-   pip install -r requirements-cuda.txt
    ```
 
    **Platform-specific notes:**

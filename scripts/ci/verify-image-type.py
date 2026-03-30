@@ -13,8 +13,8 @@ def fail(msg: str) -> None:
 
 def main() -> None:
     device = os.environ.get("DEVICE")
-    if device not in {"cpu", "cuda"}:
-        fail(f"Unsupported DEVICE={device!r}; expected 'cpu' or 'cuda'")
+    if device not in {"cpu", "cuda", "cuda128"}:
+        fail(f"Unsupported DEVICE={device!r}; expected 'cpu', 'cuda', or 'cuda128'")
 
     torch_ver = torch.__version__
     tv_ver = torchvision.__version__
@@ -33,10 +33,11 @@ def main() -> None:
             fail("CPU image expected +cpu torch/torchvision wheels")
         return
 
-    if not cuda_ver:
-        fail("CUDA image expected non-empty torch.version.cuda")
-    if "+cu" not in torch_ver or "+cu" not in tv_ver:
-        fail("CUDA image expected CUDA-enabled torch/torchvision wheels")
+    if device in {"cuda", "cuda128"}:
+        if not cuda_ver:
+            fail("CUDA image expected non-empty torch.version.cuda")
+        if "+cu" not in torch_ver or "+cu" not in tv_ver:
+            fail("CUDA image expected CUDA-enabled torch/torchvision wheels")
 
 
 if __name__ == "__main__":

@@ -549,6 +549,7 @@ def renderGpuSettings():
 				htm.Ul([
 					htm.Li([htm.B("Auto Mode: "), "Automatically selects optimal batch size based on GPU memory"]),
 					htm.Li([htm.B("Manual Mode: "), "Increase gradually while monitoring items/sec. Too high causes memory swapping and severe slowdown"]),
+					htm.Li([htm.B("Warning: "), "Avoid setting batch size too aggressively. Some users have reported crashes with high values"]),
 					htm.Li([htm.B("Suggested: "), "2GB → 2-4, 4GB → 6, 8GB → 8-12, 12GB+ → 16"])
 				])
 			], className="irow"),

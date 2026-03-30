@@ -1,7 +1,7 @@
 # Deduper CUDA dependencies
 # Uses CUDA-enabled PyTorch wheels
 
---index-url https://download.pytorch.org/whl/cu128
+--index-url https://download.pytorch.org/whl/cu126
 --extra-index-url https://pypi.org/simple
 torch~=2.11.0
 torchvision~=0.26.0

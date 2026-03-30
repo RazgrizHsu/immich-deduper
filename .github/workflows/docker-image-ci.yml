@@ -38,7 +38,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        device: [cpu, cuda]
+        device: [cpu, cuda, cuda128]
 
     steps:
       - name: Checkout
@@ -135,31 +135,23 @@ jobs:
           echo "Downloaded size files:"
           find size-artifacts -maxdepth 2 -type f -name 'size-*.tsv' -print | sort
 
-          cpu_file="size-artifacts/size-cpu.tsv"
-          cuda_file="size-artifacts/size-cuda.tsv"
-          if [ ! -f "$cpu_file" ] || [ ! -f "$cuda_file" ]; then
-            echo "Missing expected size artifact files in size-artifacts/" >&2
-            exit 1
-          fi
-
-          cpu_bytes="$(awk -F '\t' 'NR==1{print $2}' "$cpu_file")"
-          cpu_mib="$(awk -F '\t' 'NR==1{print $3}' "$cpu_file")"
-          cuda_bytes="$(awk -F '\t' 'NR==1{print $2}' "$cuda_file")"
-          cuda_mib="$(awk -F '\t' 'NR==1{print $3}' "$cuda_file")"
-
-          if [ -z "$cpu_bytes" ] || [ -z "$cpu_mib" ] || [ -z "$cuda_bytes" ] || [ -z "$cuda_mib" ]; then
-            echo "Failed to parse size values from TSV artifacts" >&2
-            echo "CPU file contents:" >&2
-            cat "$cpu_file" >&2
-            echo "CUDA file contents:" >&2
-            cat "$cuda_file" >&2
-            exit 1
-          fi
-
-          echo "Parsed CPU size: ${cpu_mib} MiB (${cpu_bytes} bytes)"
-          echo "Parsed CUDA size: ${cuda_mib} MiB (${cuda_bytes} bytes)"
-          echo "| cpu | ${cpu_bytes} | ${cpu_mib} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| cuda | ${cuda_bytes} | ${cuda_mib} |" >> "$GITHUB_STEP_SUMMARY"
+          for dev in cpu cuda cuda128; do
+            f="size-artifacts/size-${dev}.tsv"
+            if [ ! -f "$f" ]; then
+              echo "Missing size artifact: $f" >&2
+              exit 1
+            fi
+            bytes="$(awk -F '\t' 'NR==1{print $2}' "$f")"
+            mib="$(awk -F '\t' 'NR==1{print $3}' "$f")"
+            if [ -z "$bytes" ] || [ -z "$mib" ]; then
+              echo "Failed to parse size values from $f" >&2
+              cat "$f" >&2
+              exit 1
+            fi
+            echo "Parsed ${dev} size: ${mib} MiB (${bytes} bytes)"
+            echo "| ${dev} | ${bytes} | ${mib} |" >> "$GITHUB_STEP_SUMMARY"
+            eval "${dev}_bytes=${bytes}"
+          done
 
           if [ "$cpu_bytes" -ge "$cuda_bytes" ]; then
             echo "Expected CPU image to be smaller than CUDA image (${cpu_bytes} >= ${cuda_bytes})" >&2

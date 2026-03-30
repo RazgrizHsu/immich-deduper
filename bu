@@ -34,14 +34,16 @@ def showHelp():
 Options:
   -h, --help    Show this help
   -up           Push images to Docker Hub
-  -gpu          Build only CUDA version (can combine with -up)
+  -gpu          Build only CUDA versions (can combine with -up)
+  -gpu128       Build only CUDA 12.8 version (Blackwell, can combine with -up)
   -pub          Publish release to GitHub
   -tag TAG      Use custom tag instead of version from pyproject.toml
 
 Examples:
   ./bu              Build locally
   ./bu -up          Build and push to Docker Hub
-  ./bu -up -gpu     Build and push CUDA only
+  ./bu -up -gpu     Build and push CUDA versions only
+  ./bu -up -gpu128  Build and push CUDA 12.8 only
   ./bu -pub         Publish GitHub release (no build)
   ./bu -up -pub     Build, push, and publish
 """)
@@ -137,31 +139,40 @@ def buildImg(tag, device, tagSuffix, platforms, push=False):
 	result = subprocess.run(cmd)
 	if result.returncode != 0: err(f"Build failed for {fullTag}")
 
-def buildAll(tag, upload, gpuOnly):
+def buildAll(tag, upload, gpuOnly, gpu128Only):
 	ensureBuilder()
 
 	if upload:
 		print("Building multi-platform Docker images and pushing to Docker Hub")
-		if gpuOnly:
-			print("Building CUDA version only")
+		if gpu128Only:
+			print("Building CUDA 12.8 version only")
+			buildImg(tag, "cuda128", "-cuda128", "linux/amd64", push=True)
+		elif gpuOnly:
+			print("Building CUDA versions only")
 			buildImg(tag, "cuda", "-cuda", "linux/amd64", push=True)
+			buildImg(tag, "cuda128", "-cuda128", "linux/amd64", push=True)
 		else:
 			plat = "linux/amd64,linux/arm64/v8"
 			buildImg(tag, "cpu", "", plat, push=True)
 			buildImg(tag, "cuda", "-cuda", "linux/amd64", push=True)
-			print("Successfully built and pushed both CPU and CUDA versions.")
+			buildImg(tag, "cuda128", "-cuda128", "linux/amd64", push=True)
+			print("Successfully built and pushed CPU, CUDA, and CUDA 12.8 versions.")
 	else:
 		print("Building Docker images for current host platform (not pushing).")
 		arch = run("uname -m") or "amd64"
 		curPlat = f"linux/{arch.replace('aarch64', 'arm64').replace('x86_64', 'amd64')}"
 
-		if gpuOnly:
-			print("Building CUDA version only")
+		if gpu128Only:
+			print("Building CUDA 12.8 version only")
+			buildImg(tag, "cuda128", "-cuda128", "linux/amd64")
+		elif gpuOnly:
+			print("Building CUDA versions only")
 			buildImg(tag, "cuda", "-cuda", "linux/amd64")
+			buildImg(tag, "cuda128", "-cuda128", "linux/amd64")
 		else:
 			buildImg(tag, "cpu", "", curPlat)
-			print("Building CUDA version for AMD64 platform")
 			buildImg(tag, "cuda", "-cuda", "linux/amd64")
+			buildImg(tag, "cuda128", "-cuda128", "linux/amd64")
 			print("Successfully built and loaded images for local testing.")
 
 def publish(tag, scriptDir):
@@ -286,6 +297,7 @@ def main():
 
 	upload = False
 	gpuOnly = False
+	gpu128Only = False
 	pubRelease = False
 	customTag = ""
 
@@ -294,6 +306,7 @@ def main():
 		arg = args[i]
 		if arg == "-up": upload = True
 		elif arg == "-gpu": gpuOnly = True
+		elif arg == "-gpu128": gpu128Only = True
 		elif arg == "-pub": pubRelease = True
 		elif arg == "-tag":
 			if i + 1 >= len(args): err("-tag requires a value")
@@ -317,12 +330,12 @@ def main():
 	if not (pubRelease and not upload):
 		print("Starting Docker image build process...")
 
-		reqFiles = ["requirements.txt", "requirements-cuda.txt", "Dockerfile"]
+		reqFiles = ["requirements.txt", "requirements-cuda.txt", "requirements-cuda128.txt", "Dockerfile"]
 		for f in reqFiles:
 			if not (scriptDir / f).exists(): err(f"{f} not found")
 		if not (scriptDir / "src").is_dir(): err("src directory not found")
 
-		buildAll(tag, upload, gpuOnly)
+		buildAll(tag, upload, gpuOnly, gpu128Only)
 
 	if pubRelease: publish(tag, scriptDir)
 
