@@ -12,7 +12,8 @@ ARG DEDUP_PORT=8086
 ENV PORT=${DEDUP_PORT}
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    TORCHINDUCTOR_CACHE_DIR=/tmp/torch_inductor
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libimage-exiftool-perl && \

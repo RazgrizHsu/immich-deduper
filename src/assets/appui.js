@@ -172,6 +172,18 @@ const ui = window.ui = {
 			tipEl.style.position = 'absolute'
 			tipEl.style.zIndex = this.baseZIndex++
 
+			// viewport boundary clamp
+			tipEl.offsetHeight
+			const finalRect = tipEl.getBoundingClientRect()
+			const pad = 8
+			if (finalRect.right > viewWidth - pad) {
+				const ov = finalRect.right - (viewWidth - pad)
+				tipEl.style.left = `${parseFloat(tipEl.style.left) - ov}px`
+			}
+			if (finalRect.left < pad) {
+				tipEl.style.left = `${parseFloat(tipEl.style.left) + (pad - finalRect.left)}px`
+			}
+
 			return {direction}
 		},
 
