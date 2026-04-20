@@ -183,7 +183,7 @@ function _selectBestAsset(grpAssets, ausl){
 	const topScorers = scores.filter(s => s.scr === maxScr)
 
 	if (topScorers.length > 1) {
-		if (ausl.kpEmpty) {
+		if (ausl.kpCands) {
 			const tiedAids = topScorers.map(s => s.aid)
 			console.log(`[ausl] Tie kept: ${topScorers.length} assets at score ${maxScr}, keeping all [${tiedAids.join(', ')}]`)
 			for (const s of topScorers){
@@ -280,7 +280,7 @@ function waitForCardsAndUpdate(ids){
 
 function getAutoSelectAuids(assets, ausl){
 	console.log(`[ausl] Starting auto-selection, ausl.on[${ausl?.on}], assets count=${assets?.length || 0}`)
-	console.log(`[ausl] Weights: Earlier[${ausl?.earlier}] Later[${ausl?.later}] ExifRich[${ausl?.exRich}] ExifPoor[${ausl?.exPoor}] BigSize[${ausl?.ofsBig}] SmallSize[${ausl?.ofsSml}] BigDim[${ausl?.dimBig}] SmallDim[${ausl?.dimSml}] SkipLow[${ausl?.skipLow}] AllLive[${ausl?.allLive}] KpEmpty[${ausl?.kpEmpty}] JPG[${ausl?.typJpg}] PNG[${ausl?.typPng}] HEIC[${ausl?.typHeic}] Fav[${ausl?.fav}] InAlb[${ausl?.inAlb}] User[${ausl?.usr?.k}:${ausl?.usr?.v}] Path[${ausl?.pth?.k}:${ausl?.pth?.v}]`)
+	console.log(`[ausl] Weights: Earlier[${ausl?.earlier}] Later[${ausl?.later}] ExifRich[${ausl?.exRich}] ExifPoor[${ausl?.exPoor}] BigSize[${ausl?.ofsBig}] SmallSize[${ausl?.ofsSml}] BigDim[${ausl?.dimBig}] SmallDim[${ausl?.dimSml}] SkipLow[${ausl?.skipLow}] AllLive[${ausl?.allLive}] KpEmpty[${ausl?.kpCands}] JPG[${ausl?.typJpg}] PNG[${ausl?.typPng}] HEIC[${ausl?.typHeic}] Fav[${ausl?.fav}] InAlb[${ausl?.inAlb}] User[${ausl?.usr?.k}:${ausl?.usr?.v}] Path[${ausl?.pth?.k}:${ausl?.pth?.v}]`)
 
 	window.auslReasons = {}
 	window.auslLogs = {}
@@ -320,12 +320,12 @@ function getAutoSelectAuids(assets, ausl){
 				const isLow = scr <= 0.96
 				return {aid: ass.autoId, score: scr, reasons: [isLow ? 'Low similarity' : 'High similarity']}
 			})
-			if (ausl.kpEmpty) {
+			if (ausl.kpCands) {
 				const keepAids = grpAss.map(a => a.autoId)
 				console.log(`[ausl] Group ${gid}: Low sim kept (${lowList}), keeping all [${keepAids.join(', ')}]`)
 				selIds.push(...keepAids)
 				for (const aid of keepAids) window.auslReasons[aid] = ['LowSimKept']
-				window.auslLogs[gid] = {status: 'low_sim_kept', selectedAids: keepAids, reason: `Selected all ${keepAids.length} (low similarity, disable "Keep all when auto-select empty" to skip this group)`, details}
+				window.auslLogs[gid] = {status: 'low_sim_kept', selectedAids: keepAids, reason: `Selected all ${keepAids.length} (low similarity, disable "Keep candidates, not empty" to skip this group)`, details}
 				continue
 			}
 			console.log(`[ausl] Group ${gid}: SKIPPING due to low similarity: ${lowList}`)
@@ -339,7 +339,7 @@ function getAutoSelectAuids(assets, ausl){
 			for (const aid of result.aids){
 				window.auslReasons[aid] = result.allScores[aid]?.reasons || result.reasons
 			}
-			const reasonText = result.tied ? `Selected all ${result.aids.length} (tied at score ${result.score}, disable "Keep all when auto-select empty" to leave empty)` : `Selected #${result.aids[0]} (score: ${result.score})`
+			const reasonText = result.tied ? `Selected all ${result.aids.length} (tied at score ${result.score}, disable "Keep candidates, not empty" to leave empty)` : `Selected #${result.aids[0]} (score: ${result.score})`
 			window.auslLogs[gid] = {status: result.tied ? 'tied_kept' : 'selected', selectedAids: result.aids, reason: reasonText, details: Object.entries(result.allScores).map(([aid, d]) => ({aid: parseInt(aid), score: d.score, reasons: d.reasons}))}
 			console.log(`[ausl] Group ${gid}: ${reasonText}`)
 		} else {

@@ -202,6 +202,7 @@ Automatically select the best photo in each duplicate group based on configurabl
 |----------|-----------|-------------|
 | **Options** | Skip Low Similarity | Skip groups containing photos with similarity < 0.96 |
 | | All LivePhotos | Select all LivePhoto assets in group (ignores other criteria) |
+| | Keep candidates, not empty | Keep tied top-scored or low-similarity candidates instead of leaving group empty |
 | **DateTime** | Earlier / Later | Prefer photos taken earlier or later |
 | **EXIF** | Rich / Poor | Prefer photos with more or fewer EXIF fields |
 | **Filename** | Longer / Shorter | Prefer longer or shorter filenames |

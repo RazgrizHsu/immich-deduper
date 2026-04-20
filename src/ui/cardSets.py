@@ -183,7 +183,7 @@ def renderAutoSelect():
 
 				dbc.Checkbox(id=k.ausl("skipLow"), label="Skip has sim(<0.96) group", value=a.skipLow, disabled=dis),
 				dbc.Checkbox(id=k.ausl("allLive"), label="All LivePhotos (ignore criteria)", value=a.allLive, disabled=dis),
-				dbc.Checkbox(id=k.ausl("kpEmpty"), label="Keep all when auto-select empty (safer)", value=a.kpEmpty, disabled=dis), htm.Br(),
+				dbc.Checkbox(id=k.ausl("kpCands"), label="Keep candidates, not empty (safer)", value=a.kpCands, disabled=dis), htm.Br(),
 
 				htm.Hr(),
 

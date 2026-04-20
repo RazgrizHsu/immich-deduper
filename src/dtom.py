@@ -22,7 +22,7 @@ class Ausl:
 	on:bool = True
 	skipLow:bool = True
 	allLive:bool = False
-	kpEmpty:bool = True
+	kpCands:bool = True
 	earlier:int = 2
 	later:int = 0
 	exRich:int = 1

@@ -25,3 +25,4 @@ docs/w
 .env
 .env.*
 trace.*
+**/imch/
