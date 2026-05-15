@@ -1,0 +1,104 @@
+name: Docker Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version tag (without leading v), e.g. 1.2.3"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-push:
+    name: Build + Push (${{ matrix.device }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - device: cpu
+            suffix: ""
+            platforms: linux/amd64,linux/arm64/v8
+          - device: cuda
+            suffix: "-cuda"
+            platforms: linux/amd64
+          - device: cuda128
+            suffix: "-cuda128"
+            platforms: linux/amd64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Resolve version
+        id: ver
+        env:
+          REF: ${{ github.ref }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ -n "${INPUT_TAG:-}" ]; then
+            v="$INPUT_TAG"
+          else
+            v="${REF#refs/tags/v}"
+          fi
+          if [ -z "$v" ] || [ "$v" = "$REF" ]; then
+            echo "Failed to resolve version from ref=$REF input=$INPUT_TAG" >&2
+            exit 1
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Compose tags
+        id: tags
+        env:
+          IMAGE: razgrizhsu/immich-deduper
+          VERSION: ${{ steps.ver.outputs.version }}
+          SUFFIX: ${{ matrix.suffix }}
+          DEVICE: ${{ matrix.device }}
+        run: |
+          set -euo pipefail
+          tags="${IMAGE}:${VERSION}${SUFFIX}"$'\n'"${IMAGE}:latest${SUFFIX}"
+          if [ "$DEVICE" = "cpu" ]; then
+            tags="${tags}"$'\n'"${IMAGE}:latest-cpu"
+          fi
+          {
+            echo "tags<<EOF"
+            echo "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push (${{ matrix.device }})
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ matrix.platforms }}
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          build-args: |
+            DEDUP_PORT=8086
+            DEVICE=${{ matrix.device }}
+          cache-from: type=gha,scope=immich-deduper-${{ matrix.device }}-main
+          cache-to: type=gha,scope=immich-deduper-${{ matrix.device }}-release,mode=max
