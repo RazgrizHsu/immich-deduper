@@ -186,6 +186,65 @@ def regBy(app):
 			return jsonify({"error": f"Failed to get WsConfig, {str(e)}"}), 500
 
 	#----------------------------------------------------------------
+	# Auto-Select client log endpoint
+	#----------------------------------------------------------------
+	def _fmtSz(n):
+		n=int(n or 0)
+		if n>=1024*1024*1024:return f"{n/(1024*1024*1024):.1f}GB"
+		if n>=1024*1024:return f"{n/(1024*1024):.1f}MB"
+		if n>=1024:return f"{n/1024:.1f}KB"
+		return f"{n}B"
+
+	def _fmtAusl(ausl):
+		parts=[]
+		ks=['earlier','later','exRich','exPoor','ofsBig','ofsSml','dimBig','dimSml','namLon','namSht','typJpg','typPng','typHeic','fav','inAlb']
+		for k in ks:
+			v=ausl.get(k,0)
+			if v and v>0:parts.append(f"{k}={v}")
+		for k in ['usr','pth','dev']:
+			obj=ausl.get(k) or {}
+			if (obj.get('v') or 0)>0:parts.append(f"{k}[{obj.get('k')}]={obj.get('v')}")
+		flags=[k for k in ['skipLow','kpCands','allLive'] if ausl.get(k)]
+		return (' '.join(parts) or '(no weights)')+' | '+(' '.join(flags) or '(no flags)')
+
+	@app.server.route('/api/log/ausl',methods=['POST'])
+	def postAuslLog():
+		try:
+			data=request.get_json(silent=True) or {}
+			ausl=data.get('ausl',{}) or {}
+			assIds=data.get('assetIds',[]) or []
+			groups=data.get('groups',{}) or {}
+			lg.info(f"[ausl:cli] ============= Auto Selection =============")
+			lg.info(f"[ausl:cli] assets[{len(assIds)}]: {','.join(map(str,assIds))}")
+			lg.info(f"[ausl:cli] ausl: {_fmtAusl(ausl)}")
+			for gid,entry in groups.items():
+				status=entry.get('status')
+				sel=entry.get('selectedAids',[])
+				reason=entry.get('reason','')
+				details=entry.get('details',[]) or []
+				lg.info(f"[ausl:cli] -- gid[{gid}] status[{status}] sel{sel}")
+				lg.info(f"[ausl:cli]    reason: {reason}")
+				for d in details:
+					m=d.get('metrics') or {}
+					aid=f"#{d.get('aid')}"
+					sc=d.get('score','-')
+					rs=','.join(d.get('reasons') or []) or '-'
+					fsz=_fmtSz(m.get('fileSz',0))
+					dim=m.get('dim',0)
+					nl=m.get('nameLen',0)
+					ft=m.get('fileType') or ''
+					fav=int(bool(m.get('isFav')))
+					alb=int(bool(m.get('hasAlb')))
+					exf=m.get('exfCnt',0)
+					fn=m.get('fname') or ''
+					dt=m.get('dt') or ''
+					lg.info(f"[ausl:cli]    {aid} score={sc} fsize={fsz} dim={dim} nLen={nl} type={ft} fav={fav} alb={alb} exf={exf} fname={fn} dt={dt} reasons={rs}")
+			return jsonify({"ok":True})
+		except Exception as e:
+			lg.error(f"[api] postAuslLog Failed: {str(e)}")
+			return jsonify({"error":str(e)}),500
+
+	#----------------------------------------------------------------
 	# System Check endpoint
 	#----------------------------------------------------------------
 	@app.server.route('/api/chk')

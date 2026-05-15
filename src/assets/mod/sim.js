@@ -53,27 +53,30 @@ function _normalizeDate(dt){
 	return s
 }
 
+function _extractMetric(ass){
+	const exif = ass.jsonExif
+	const dt = exif?.dateTimeOriginal || ass.fileCreatedAt
+	return {
+		aid: ass.autoId,
+		dt: _normalizeDate(dt),
+		exfCnt: _countExif(exif),
+		fileSz: exif?.fileSizeInByte || 0,
+		dim: (exif?.exifImageWidth || 0) + (exif?.exifImageHeight || 0),
+		nameLen: ass.originalFileName?.length || 0,
+		fileType: ass.originalFileName?.toLowerCase().split('.').pop() || '',
+		fname: ass.originalFileName || '',
+		isFav: !!ass.isFavorite,
+		hasAlb: !!(ass.ex?.albs?.length),
+		ownerId: ass.ownerId || '',
+		path: ass.originalPath || '',
+		deviceId: ass.deviceId || ''
+	}
+}
+
 function _selectBestAsset(grpAssets, ausl){
 	if (!grpAssets?.length) return null
 
-	const metrics = grpAssets.map(ass =>{
-		const exif = ass.jsonExif
-		const dt = exif?.dateTimeOriginal || ass.fileCreatedAt
-		return {
-			aid: ass.autoId,
-			dt: _normalizeDate(dt),
-			exfCnt: _countExif(exif),
-			fileSz: exif?.fileSizeInByte || 0,
-			dim: (exif?.exifImageWidth || 0) + (exif?.exifImageHeight || 0),
-			nameLen: ass.originalFileName?.length || 0,
-			fileType: ass.originalFileName?.toLowerCase().split('.').pop() || '',
-			isFav: !!ass.isFavorite,
-			hasAlb: !!(ass.ex?.albs?.length),
-			ownerId: ass.ownerId || '',
-			path: ass.originalPath || '',
-			deviceId: ass.deviceId || ''
-		}
-	})
+	const metrics = grpAssets.map(ass => _extractMetric(ass))
 
 	console.log(`[ausl] Group comparison:`)
 	for ( const m of metrics){
@@ -180,7 +183,7 @@ function _selectBestAsset(grpAssets, ausl){
 			reasons.push(`Device+${pts}`)
 		}
 
-		allScores[m.aid] = {score: scr, reasons}
+		allScores[m.aid] = {score: scr, reasons, metrics: m}
 		scores.push({aid: m.aid, scr, reasons})
 		console.log(`[ausl] #${m.aid}: score[${scr}] (${reasons.length ? reasons.join(', ') : 'no matches'})`)
 	}
@@ -320,11 +323,12 @@ function getAutoSelectAuids(assets, ausl){
 		const skipResult = _shouldSkipLowSim(grpAss, ausl)
 		if (skipResult.skip) {
 			const lowList = skipResult.lowScoreAssets.map(a => `#${a.aid}(${a.score.toFixed(4)})`).join(', ')
-			const details = grpAss.map(ass =>{
-				const scr = ass.vw?.score
-				if (!scr) return {aid: ass.autoId, score: '-', reasons: ['Main']}
-				const isLow = scr <= 0.96
-				return {aid: ass.autoId, score: scr, reasons: [isLow ? 'Low similarity' : 'High similarity']}
+			const details=grpAss.map(ass =>{
+				const scr=ass.vw?.score
+				const metrics=_extractMetric(ass)
+				if (!scr) return {aid:ass.autoId,score:'-',reasons:['Main'],metrics}
+				const isLow=scr<=0.96
+				return {aid:ass.autoId,score:scr,reasons:[isLow ? 'Low similarity' :'High similarity'],metrics}
 			})
 			if (ausl.kpCands) {
 				const keepAids = grpAss.map(a => a.autoId)
@@ -339,21 +343,48 @@ function getAutoSelectAuids(assets, ausl){
 			continue
 		}
 
-		const result = _selectBestAsset(grpAss, ausl)
-		if (result?.aids?.length) {
-			selIds.push(...result.aids)
-			for (const aid of result.aids){
-				window.auslReasons[aid] = result.allScores[aid]?.reasons || result.reasons
+		const rst = _selectBestAsset(grpAss, ausl)
+		if (rst?.aids?.length) {
+			selIds.push(...rst.aids)
+			for (const aid of rst.aids){
+				window.auslReasons[aid] = rst.allScores[aid]?.reasons || rst.reasons
 			}
-			const reasonText = result.tied ? `Selected all ${result.aids.length} (tied at score ${result.score}, disable "Keep candidates, not empty" to leave empty)` : `Selected #${result.aids[0]} (score: ${result.score})`
-			window.auslLogs[gid] = {status: result.tied ? 'tied_kept' : 'selected', selectedAids: result.aids, reason: reasonText, details: Object.entries(result.allScores).map(([aid, d]) => ({aid: parseInt(aid), score: d.score, reasons: d.reasons}))}
+			let reasonText
+			if (rst.tied) {
+				const sets = rst.aids.map(aid => (rst.allScores[aid]?.reasons || []).filter(r => r !== 'Tie').sort().join(','))
+				const cnt = {}
+				for (const s of sets) cnt[s] = (cnt[s] || 0) + 1
+				const grps = Object.entries(cnt)
+				if (grps.length > 1) {
+					const desc = grps.map(([k, v]) => `${k || '(none)'} (${v} asset${v > 1 ? 's' : ''})`).join(', ')
+					reasonText = `Tied at score ${rst.score} across criteria: ${desc}.<br/>Adjust those weights to break the tie, or disable "Keep candidates, not empty" to leave empty. Selected all ${rst.aids.length}.`
+				} else {
+					reasonText = `Tied at score ${rst.score}. All share the same winning criteria.<br/>Disable "Keep candidates, not empty" to leave empty. Selected all ${rst.aids.length}.`
+				}
+			} else {
+				reasonText = `Selected #${rst.aids[0]} (score: ${rst.score})`
+			}
+			window.auslLogs[gid]={status:rst.tied ? 'tied_kept' :'selected',selectedAids:rst.aids,reason:reasonText,details:Object.entries(rst.allScores).map(([aid,d])=>({aid:parseInt(aid),score:d.score,reasons:d.reasons,metrics:d.metrics}))}
 			console.log(`[ausl] Group ${gid}: ${reasonText}`)
 		} else {
-			window.auslLogs[gid] = {status: 'no_winner', selectedAids: [], reason: result?.score > 0 ? `No winner: tied at score ${result.score}` : 'No winner: all scores are 0', details: result?.allScores ? Object.entries(result.allScores).map(([aid, d]) => ({aid: parseInt(aid), score: d.score, reasons: d.reasons})) : []}
+			let reason = rst?.score>0 ?
+				`No winner: tied at score ${rst.score}.<br/>Adjust ausl weights to break the tie,<br/>or enable "Keep candidates, not empty" to keep all.` :
+				`No winner: all scores are 0.<br/>None of the configured criteria differentiates these assets.<br/>Adjust criteria or enable "Keep candidates, not empty".`
+			window.auslLogs[gid]={status:'no_winner',selectedAids:[],reason,details:rst?.allScores ? Object.entries(rst.allScores).map(([aid,d])=>({aid:parseInt(aid),score:d.score,reasons:d.reasons,metrics:d.metrics})) :[]}
 		}
 	}
 
 	console.log(`[ausl] Final selection: ${selIds.length} assets: [${selIds.join(', ')}]`)
+
+	try{
+		fetch('/api/log/ausl',{
+			method:'POST',
+			headers:{'Content-Type':'application/json'},
+			body:JSON.stringify({assetIds:assets.map(a=>a.autoId).sort((x,y)=>x-y),ausl,groups:window.auslLogs})
+		}).catch(e=>console.error('[ausl] log post failed:',e))
+	}
+	catch (e){ console.error('[ausl] log post err:',e) }
+
 	return selIds
 }
 
