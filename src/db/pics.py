@@ -807,34 +807,18 @@ def countHasSimIds(isOk=0):
 		with mkConn() as conn:
 			c = conn.cursor()
 			c.execute("""
-				SELECT COUNT(*) FROM (
-					SELECT si.autoId FROM assetsSims si
-					INNER JOIN assets a ON si.autoId = a.autoId
-					WHERE a.simOk = ?
-					GROUP BY si.autoId
-					HAVING COUNT(*) > 1
-				)
+				SELECT COUNT(*) FROM assets a
+				WHERE a.simOk = ?
+					AND EXISTS (
+						SELECT 1 FROM assetsSims si
+						WHERE si.autoId = a.autoId
+						LIMIT 1 OFFSET 1
+					)
 			""", (isOk,))
 			row = c.fetchone()
 			count = row[0] if row else 0
 			return count
 	except Exception as e: raise mkErr(f"Failed to count assets with simInfos and simOk[{isOk}]", e)
-
-
-# simOk mean that already resolve by user
-def getAnySimPending() -> Optional[models.Asset]:
-	try:
-		with mkConn() as conn:
-			c = conn.cursor()
-			c.execute("""
-				SELECT a.* FROM assets a
-				WHERE a.simOk = 0
-					AND (SELECT COUNT(*) FROM assetsSims si WHERE si.autoId = a.autoId) > 1
-				LIMIT 1
-			""")
-			row = c.fetchone()
-			return models.Asset.fromDB(c, row) if row else None
-	except Exception as e: raise mkErr("Failed to get pending assets", e)
 
 
 def getAllSimOks(isOk=0) -> List[models.Asset]:
@@ -1031,12 +1015,11 @@ def countSimPending():
 	try:
 		with mkConn() as conn:
 			c = conn.cursor()
-			# Count groups with isMain=1 and simOk=0 and more than 1 assetsSims
 			c.execute("""
-				SELECT COUNT(*) FROM assets a
-				WHERE a.simOk = 0
-					AND EXISTS (SELECT 1 FROM assetsGrps ag WHERE ag.autoId = a.autoId AND ag.isMain = 1)
-					AND (SELECT COUNT(*) FROM assetsSims si WHERE si.autoId = a.autoId) > 1
+				SELECT COUNT(*) FROM assetsGrps ag
+				INNER JOIN assets a ON a.autoId = ag.autoId AND a.simOk = 0
+				WHERE ag.isMain = 1
+					AND (SELECT COUNT(*) FROM assetsSims si WHERE si.autoId = ag.autoId) > 1
 			""")
 			cnt = c.fetchone()[0]
 			return cnt
