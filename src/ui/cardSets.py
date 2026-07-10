@@ -180,8 +180,11 @@ def renderMerge():
 
 
 def renderAutoSelect():
-	a = db.dto.ausl
-	dis = not a.on
+	a=db.dto.ausl
+	dis=not a.on
+	hasDev=db.psql.getSchema().hasAssetDeviceId
+	disDev=dis or not hasDev
+	devTip="Immich 3.0+ removed device tracking; this criterion is unavailable" if not hasDev else None
 	return dbc.Card([
 		dbc.CardHeader([htm.Span("Auto Selection"),htm.Small(["selects top point in group",htm.Br(),"auto-updates on change"])]),
 		dbc.CardBody([
@@ -275,12 +278,13 @@ def renderAutoSelect():
 				], className="icriteria"),
 
 				htm.Div([
-					htm.Span(htm.Span("Device", className="tag txt-smx me-1")),
-					htm.Label("Source", className="me-2"),
-					dbc.Select(id=k.ausl("devPri"), options=toOpts(getDevOpts()), value=a.dev.k, disabled=dis, size="sm", className="me-1", style={"minWidth": "60px"}),
-					htm.Label("Weight", className="me-2"),
-					dbc.Select(id=k.ausl("devWgt"), options=toOpts(optWeights), value=a.dev.v, disabled=dis, size="sm"),
-				], className="icriteria"),
+					htm.Span(htm.Span("Device",className="tag txt-smx me-1")),
+					htm.Label("Source",className="me-2"),
+					dbc.Select(id=k.ausl("devPri"),options=toOpts(getDevOpts()),value=a.dev.k,disabled=disDev,size="sm",className="me-1",style={"minWidth":"60px"}),
+					htm.Label("Weight",className="me-2"),
+					dbc.Select(id=k.ausl("devWgt"),options=toOpts(optWeights),value=a.dev.v,disabled=disDev,size="sm"),
+					htm.Span(devTip,className="txt-smx text-muted ms-2") if devTip else None,
+				],className="icriteria",title=devTip),
 
 			], className="mb-2 igrid txt-sm"),
 		])
@@ -522,8 +526,13 @@ def ausl_OnUpd(values):
 
 	lg.info(f"[ausl:OnUpd] {a}")
 
-	# on 開關永遠不 disable，其他根據 a.on 決定
-	disabledStates = [False if f == 'on' else not a.on for f in fields]
+	# on 開關永遠不 disable,其他根據 a.on 決定
+	hasDev=db.psql.getSchema().hasAssetDeviceId
+	def _disFld(f):
+		if f=='on':return False
+		if f in ('devPri','devWgt') and not hasDev:return True
+		return not a.on
+	disabledStates=[_disFld(f) for f in fields]
 	from dto import DcProxy
 	if not isinstance(a, DcProxy): raise RuntimeError(f"Expected DcProxy, got {type(a)}")
 	setsData = {'ausl': asdict(a.raw())}

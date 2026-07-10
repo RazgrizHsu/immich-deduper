@@ -39,6 +39,9 @@ class SchemaInfo:
 	assetFileHasEdited: bool = False
 	# asset table features
 	hasEncVidPath: bool = True
+	hasAssetDeviceId: bool = True
+	# album table features
+	hasAlbumOwnerId: bool = True
 	# Junction table column names
 	albumAssetAlbumId: str = 'albumId'
 	albumAssetAssetId: str = 'assetId'
@@ -47,7 +50,7 @@ class SchemaInfo:
 	albumUserAlbumId: str = 'albumId'
 	albumUserUserId: str = 'userId'
 
-_schema = None
+schemaCache = None
 
 def detectSchema():
 	"""
@@ -58,9 +61,9 @@ def detectSchema():
 	- Table names (plural vs singular: assets/asset, albums/album, etc.)
 	- Junction table column names (plural vs singular: albumsId/albumId, assetsId/assetId, etc.)
 	"""
-	global _schema
+	global schemaCache
 
-	if _schema is not None: return _schema
+	if schemaCache is not None: return schemaCache
 
 	schema = SchemaInfo()
 
@@ -108,7 +111,25 @@ def detectSchema():
 					AND table_name = '{schema.asset}'
 					AND column_name = 'encodedVideoPath'
 				"""))
-				schema.hasEncVidPath = c.fetchone() is not None
+				schema.hasEncVidPath=c.fetchone() is not None
+
+				# Detect asset.deviceId (removed in Immich v3.0+)
+				c.execute(Q(f"""
+					SELECT column_name FROM information_schema.columns
+					WHERE table_schema = 'public'
+					AND table_name = '{schema.asset}'
+					AND column_name = 'deviceId'
+				"""))
+				schema.hasAssetDeviceId=c.fetchone() is not None
+
+				# Detect album.ownerId (removed in Immich v3.0+, moved to album_user with role='owner')
+				c.execute(Q(f"""
+					SELECT column_name FROM information_schema.columns
+					WHERE table_schema = 'public'
+					AND table_name = '{schema.album}'
+					AND column_name = 'ownerId'
+				"""))
+				schema.hasAlbumOwnerId=c.fetchone() is not None
 
 				# Detect junction table names (new: album_asset, old: albums_assets_assets)
 				c.execute("""
@@ -164,15 +185,17 @@ def detectSchema():
 				lg.info(f"Schema detected - albumAsset cols: albumId={schema.albumAssetAlbumId}, assetId={schema.albumAssetAssetId}")
 				lg.info(f"Schema detected - tagAsset cols: tagId={schema.tagAssetTagId}, assetId={schema.tagAssetAssetId}")
 
-				_schema = schema
+				schemaCache = schema
 				return schema
 	except Exception as e: raise mkErr("Failed to detect database schema", e)
 
 
 def getSchema():
-	global _schema
-	if _schema is None: raise RuntimeError("Schema not detected yet. Call init() first.")
-	return _schema
+	global schemaCache
+	if schemaCache is None:
+		lg.warning("[psql] Schema not detected; returning defaults (assumes latest known columns present)")
+		return SchemaInfo()
+	return schemaCache
 
 
 def setup_safe_timestamp_loader():
@@ -751,13 +774,20 @@ def fetchExInfos(assetIds: List[str]) -> Dict[str, models.AssetExInfo]:
 						if assetId in rst and stkId in stkMembers: rst[assetId].stackAssets = stkMembers[stkId]
 
 				# albums
-				for i in range(0, len(assetIds), szChunk):
-					chunk = assetIds[i:i + szChunk]
-					albQ = Q(f"""
-					Select aaa."{sch.albumAssetAssetId}", a.id, a."ownerId", a."albumName", a.description,
+				if sch.hasAlbumOwnerId:
+					ownerSel='a."ownerId"'
+					ownerJoin=''
+				else:
+					ownerSel=f'au."{sch.albumUserUserId}" As "ownerId"'
+					ownerJoin=f'Left Join {sch.albumUser} au On a.id = au."{sch.albumUserAlbumId}" And au.role = \'owner\''
+				for i in range(0,len(assetIds),szChunk):
+					chunk=assetIds[i:i+szChunk]
+					albQ=Q(f"""
+					Select aaa."{sch.albumAssetAssetId}", a.id, {ownerSel}, a."albumName", a.description,
 							a."createdAt", a."updatedAt", a."albumThumbnailAssetId", a."isActivityEnabled", a."order"
 					From {sch.album} a
 					Join {sch.albumAsset} aaa On a.id = aaa."{sch.albumAssetAlbumId}"
+					{ownerJoin}
 					Where aaa."{sch.albumAssetAssetId}" = ANY(%s) And a."deletedAt" Is Null
 					Order By a."createdAt" Desc
 					""")

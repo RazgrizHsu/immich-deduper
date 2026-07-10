@@ -1,7 +1,8 @@
 [project]
 name = "immich-deduper"
-version = "0.2.21"
+version = "0.3.0"
 
 [tool.pyright]
 include = ["src"]
+extraPaths = ["src"]
 pythonVersion = "3.12"

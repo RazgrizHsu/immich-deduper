@@ -170,9 +170,9 @@ def mk(ass: models.Asset, modSim=True):
 			], className="viewer"),
 			dbc.CardBody([
 				dbc.Row([
-					htm.Span("immich id"), htm.Span(f"{ass.id}", className="tag"),
-					htm.Span("device"), htm.Span(f"{ass.deviceId}", className="tag second"),
-					htm.Span("Path"), htm.Span(f"{path.dirname(ass.originalPath)}", className="tag second multiline"),
+					htm.Span("immich id"),htm.Span(f"{ass.id}",className="tag"),
+					*([htm.Span("device"),htm.Span(f"{ass.deviceId}",className="tag second")] if ass.deviceId else []),
+					htm.Span("Path"),htm.Span(f"{path.dirname(ass.originalPath)}",className="tag second multiline"),
 					htm.Span("File"), htm.Span([
 						htm.Span(f"{ass.originalFileName}", className="tag second multiline"),
 						htm.Span(f"{path.basename(ass.originalPath)}", className="tag yellow multiline ms-1") if ass.originalPath and path.basename(ass.originalPath) != ass.originalFileName else None,

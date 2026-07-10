@@ -244,60 +244,88 @@ def search(vec, thMin: float=0.95, limit=100) -> list[qdrant_client.http.models.
 
 
 #------------------------------------------------------------------------
+# wait for HNSW index build complete (status=green)
+# return True if green, False if timeout/cancelled
+#------------------------------------------------------------------------
+def waitForGreen(timeout:int=600,isCancel=None,doReport=None)->bool:
+	if conn is None:raise RuntimeError("[vecs] Qdrant connection not initialized")
+	import time
+	start=time.time()
+	while True:
+		if isCancel and isCancel():
+			lg.info(f"[vecs:waitForGreen] cancelled")
+			return False
+		info=conn.get_collection(keyColl)
+		st=info.status
+		if str(st).endswith("green"):
+			lg.info(f"[vecs:waitForGreen] green after {int(time.time() - start)}s indexed={info.indexed_vectors_count}")
+			return True
+		if time.time()-start>timeout:
+			lg.warn(f"[vecs:waitForGreen] timeout after {timeout}s status={st}")
+			return False
+		if doReport:doReport(0,f"waiting Qdrant index build (status={st})")
+		time.sleep(2)
+
+
+#------------------------------------------------------------------------
 # scan all points, repair HNSW index desync
+# excludeAids: skip these aids (e.g. this-round newly-added)
 # return (scanned, repaired, broken_aids)
 #------------------------------------------------------------------------
-def scanRepairIdx(doReport=None, isCancel=None) -> tuple[int, int, list[int]]:
-	if conn is None: raise RuntimeError("[vecs] Qdrant connection not initialized")
+def scanRepairIdx(doReport=None,isCancel=None,excludeAids:Optional[set[int]]=None)->tuple[int,int,list[int]]:
+	if conn is None:raise RuntimeError("[vecs] Qdrant connection not initialized")
 
-	scanned = 0
-	repaired = 0
-	broken: list[int] = []
-	offset = None
-	page = 0
+	excludeAids=excludeAids or set()
+	scanned=0
+	repaired=0
+	broken:list[int]=[]
+	skipped=0
+	offset=None
+	page=0
 
-	total = count()
+	total=count()
 
 	while True:
 		if isCancel and isCancel():
 			lg.info(f"[vecs:scanRepairIdx] cancelled at scanned={scanned}")
 			break
 
-		points, nxt = conn.scroll(
-			collection_name=keyColl, limit=500,
-			with_payload=True, with_vectors=True, offset=offset,
+		points,nxt=conn.scroll(
+			collection_name=keyColl,limit=500,
+			with_payload=True,with_vectors=True,offset=offset,
 		)
-		if not points: break
+		if not points:break
 		page += 1
 
 		for p in points:
-			aid = int(p.id)
-			vec = p.vector
+			aid=int(p.id)
+			if aid in excludeAids:
+				skipped += 1
+				continue
+			vec=p.vector
 			scanned += 1
 
-			rep = conn.query_points(
-				collection_name=keyColl, query=vec,
-				limit=1, score_threshold=0.999, with_payload=False,
-			)
-			if any(int(h.id) == aid for h in rep.points): continue
+			selfFlt=qmod.Filter(must=[qmod.HasIdCondition(has_id=[aid])])
+			rep=conn.query_points(collection_name=keyColl,query=vec,query_filter=selfFlt,limit=1,with_payload=False)  # type: ignore
+			if rep.points:continue
 
-			if repairIdx(aid, vec):
+			if repairIdx(aid,vec): # type: ignore
 				repaired += 1
 			else:
 				broken.append(aid)
-				try: conn.delete(collection_name=keyColl, points_selector=qmod.PointIdsList(points=[aid]))
-				except Exception as e: lg.warn(f"[vecs:scanRepairIdx] delete broken aid[{aid}] failed: {e}")
+				try:conn.delete(collection_name=keyColl,points_selector=qmod.PointIdsList(points=[aid]))
+				except Exception as e:lg.warn(f"[vecs:scanRepairIdx] delete broken aid[{aid}] failed: {e}")
 
 		if doReport:
-			pct = int(scanned / total * 100) if total > 0 else 0
-			doReport(pct, f"scan idx page[{page}] scanned={scanned}/{total} repaired={repaired} broken={len(broken)}")
+			pct=int(scanned/total * 100) if total>0 else 0
+			doReport(pct,f"scan idx page[{page}] scanned={scanned}/{total} repaired={repaired} broken={len(broken)} skipped={skipped}")
 
-		lg.info(f"[vecs:scanRepairIdx] page[{page}] scanned={scanned}/{total} repaired={repaired} broken={len(broken)}")
+		lg.info(f"[vecs:scanRepairIdx] page[{page}] scanned={scanned}/{total} repaired={repaired} broken={len(broken)} skipped={skipped}")
 
-		if nxt is None: break
-		offset = nxt
+		if nxt is None:break
+		offset=nxt
 
-	return scanned, repaired, broken
+	return scanned,repaired,broken
 
 
 #------------------------------------------------------------------------
@@ -310,9 +338,10 @@ def repairIdx(aid: int, vec: list) -> bool:
 		if not ret: return False
 		payload = ret[0].payload
 		conn.delete(collection_name=keyColl, points_selector=qmod.PointIdsList(points=[aid]))
-		conn.upsert(collection_name=keyColl, points=[qmod.PointStruct(id=aid, vector=vec, payload=payload)], wait=True)
-		rep = conn.query_points(collection_name=keyColl, query=vec, limit=1, score_threshold=0.999, with_payload=False)
-		ok = any(int(h.id) == aid for h in rep.points)
+		conn.upsert(collection_name=keyColl,points=[qmod.PointStruct(id=aid,vector=vec,payload=payload)],wait=True)
+		selfFlt=qmod.Filter(must=[qmod.HasIdCondition(has_id=[aid])])
+		rep=conn.query_points(collection_name=keyColl,query=vec,query_filter=selfFlt,limit=1,with_payload=False)
+		ok=bool(rep.points)
 		if ok: lg.info(f"[vecs] repairIdx aid[{aid}] ok")
 		else: lg.error(f"[vecs] repairIdx aid[{aid}] failed")
 		return ok

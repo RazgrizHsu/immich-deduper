@@ -3,14 +3,20 @@
 import os
 import sys
 import re
+import json
+import base64
 import shutil
 import subprocess
 import tempfile
+import urllib.request
+import urllib.error
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 IMAGE_NAME = "razgrizhsu/immich-deduper"
 BUILDER_NAME = "budx"
+HUB_API = "https://hub.docker.com/v2"
+KEEP_TAGS = {"latest", "latest-cpu", "latest-cuda", "latest-cuda128"}
 
 def err(msg):
 	print(f"Error: {msg}", file=sys.stderr)
@@ -30,6 +36,7 @@ def run(cmd, quiet=True):
 
 def showHelp():
 	print("""Usage: ./bu [options]
+       ./bu del [options]
 
 Options:
   -h, --help    Show this help
@@ -39,6 +46,15 @@ Options:
   -pub          Publish release to GitHub
   -tag TAG      Use custom tag instead of version from pyproject.toml
 
+Del options (prune inactive tags from Docker Hub):
+  --days N      Threshold in days since last pull (default: 90)
+  --keep N      Keep latest N version groups with all variants (default: 3)
+  -y, --yes     Skip confirmation prompt
+
+Credentials (for del):
+  Auto-read from `docker login` keychain. CI can override with
+  DOCKERHUB_USERNAME and DOCKERHUB_TOKEN env vars.
+
 Examples:
   ./bu              Build locally
   ./bu -up          Build and push to Docker Hub
@@ -46,6 +62,8 @@ Examples:
   ./bu -up -gpu128  Build and push CUDA 12.8 only
   ./bu -pub         Publish GitHub release (no build)
   ./bu -up -pub     Build, push, and publish
+  ./bu del          List & confirm inactive tags (>90 days) to delete
+  ./bu del --days 180 --keep 5
 """)
 	sys.exit(0)
 
@@ -175,6 +193,199 @@ def buildAll(tag, upload, gpuOnly, gpu128Only):
 			buildImg(tag, "cuda128", "-cuda128", "linux/amd64")
 			print("Successfully built and loaded images for local testing.")
 
+def loadDockerCred():
+	usr = os.environ.get("DOCKERHUB_USERNAME")
+	pwd = os.environ.get("DOCKERHUB_TOKEN")
+	if usr and pwd: return usr, pwd, "env"
+
+	cfgPath = Path.home() / ".docker" / "config.json"
+	if not cfgPath.exists(): return None, None, None
+	cfg = json.loads(cfgPath.read_text())
+
+	store = cfg.get("credsStore")
+	urls = ("https://index.docker.io/v1/", "index.docker.io")
+
+	if store:
+		helper = f"docker-credential-{store}"
+		if not shutil.which(helper): return None, None, None
+		for url in urls:
+			r = subprocess.run([helper, "get"], input=url, capture_output=True, text=True, timeout=10)
+			if r.returncode != 0: continue
+			d = json.loads(r.stdout)
+			u, p = d.get("Username"), d.get("Secret")
+			if u and p: return u, p, f"keychain ({store})"
+		return None, None, None
+
+	for url, info in cfg.get("auths", {}).items():
+		if "docker.io" not in url: continue
+		auth = info.get("auth")
+		if not auth: continue
+		raw = base64.b64decode(auth).decode()
+		if ":" not in raw: continue
+		u, p = raw.split(":", 1)
+		if u and p: return u, p, "config.json"
+
+	return None, None, None
+
+def httpJson(url, data=None, headers=None, method=None):
+	hd = {"User-Agent": "bu/1.0"}
+	if headers: hd.update(headers)
+	req = urllib.request.Request(url, data=data, headers=hd, method=method)
+	with urllib.request.urlopen(req, timeout=30) as resp:
+		body = resp.read()
+		return json.loads(body) if body else {}
+
+def hubLogin(usr, pwd):
+	data = json.dumps({"username": usr, "password": pwd}).encode()
+	r = httpJson(f"{HUB_API}/users/login/", data=data, headers={"Content-Type": "application/json"}, method="POST")
+	tok = r.get("token")
+	if not tok: err("Docker Hub login failed: no token in response")
+	return tok
+
+def regToken(usr, pwd, repo):
+	auth = base64.b64encode(f"{usr}:{pwd}".encode()).decode()
+	url = f"https://auth.docker.io/token?service=registry.docker.io&scope=repository:{repo}:pull,push,delete"
+	req = urllib.request.Request(url, headers={"Authorization": f"Basic {auth}", "User-Agent": "bu/1.0"})
+	with urllib.request.urlopen(req, timeout=30) as resp:
+		r = json.loads(resp.read())
+		tok = r.get("token") or r.get("access_token")
+		if not tok: err(f"Registry token request returned no token: {r}")
+		return tok
+
+def delManifest(repo, digest, tok):
+	req = urllib.request.Request(
+		f"https://registry-1.docker.io/v2/{repo}/manifests/{digest}",
+		headers={"Authorization": f"Bearer {tok}", "User-Agent": "bu/1.0"},
+		method="DELETE"
+	)
+	try:
+		with urllib.request.urlopen(req, timeout=30) as resp: return resp.status, "ok"
+	except urllib.error.HTTPError as e: return e.code, e.reason
+
+def listTags(repo):
+	tags = []
+	url = f"{HUB_API}/repositories/{repo}/tags/?page_size=100"
+	while url:
+		r = httpJson(url)
+		tags.extend(r.get("results", []))
+		url = r.get("next")
+	return tags
+
+def delTag(repo, tag, tok):
+	req = urllib.request.Request(
+		f"{HUB_API}/repositories/{repo}/tags/{tag}/",
+		headers={"Authorization": f"JWT {tok}", "User-Agent": "bu/1.0"},
+		method="DELETE"
+	)
+	with urllib.request.urlopen(req, timeout=30) as resp: return resp.status
+
+def parseVer(name):
+	m = re.match(r'^(\d+)\.(\d+)\.(\d+)(.*)$', name)
+	if not m: return None
+	return (int(m.group(1)), int(m.group(2)), int(m.group(3)), m.group(4))
+
+def delImg(days, keep, autoYes):
+	usr, pwd, src = loadDockerCred()
+	if not usr or not pwd: err("No Docker Hub credentials found. Run 'docker login' first, or set DOCKERHUB_USERNAME/DOCKERHUB_TOKEN env vars.")
+
+	print(f"Logging in to Docker Hub as {usr} (from {src})...")
+	try: hubTok = hubLogin(usr, pwd)
+	except urllib.error.HTTPError as e:
+		if e.code == 401: err("Docker Hub login rejected. If your account has 2FA, the keychain secret might be a password; create a PAT at https://app.docker.com/settings/personal-access-tokens and run 'docker login' again.")
+		raise
+
+	print(f"Fetching tags for {IMAGE_NAME}...")
+	tags = listTags(IMAGE_NAME)
+	print(f"  Found {len(tags)} tags")
+
+	verGrps = {}
+	for t in tags:
+		v = parseVer(t["name"])
+		if v is None: continue
+		base = v[:3]
+		verGrps.setdefault(base, []).append(t["name"])
+
+	keepVers = sorted(verGrps.keys(), reverse=True)[:keep]
+	protected = set(KEEP_TAGS)
+	for v in keepVers:
+		for tn in verGrps[v]: protected.add(tn)
+
+	print(f"\nProtected ({len(protected)}):")
+	for tn in sorted(protected): print(f"  + {tn}")
+
+	tagByName = {t["name"]: t for t in tags}
+	now = datetime.now(timezone.utc)
+	cands = []
+	for t in tags:
+		if t["name"] in protected: continue
+		lastStr = t.get("tag_last_pulled") or t.get("tag_last_pushed")
+		if not lastStr: continue
+		last = datetime.fromisoformat(lastStr.replace("Z", "+00:00"))
+		age = (now - last).days
+		if age >= days:
+			digests = set()
+			if t.get("digest"): digests.add(t["digest"])
+			for im in t.get("images", []):
+				if im.get("digest"): digests.add(im["digest"])
+			cands.append((t["name"], age, t["full_size"], digests))
+
+	if not cands:
+		print(f"\nNo tags older than {days} days. Nothing to delete.")
+		return
+
+	cands.sort(key=lambda x: -x[1])
+	totSz = sum(c[2] for c in cands)
+	totMf = sum(len(c[3]) for c in cands)
+	print(f"\nInactive tags (>= {days} days since last pull):")
+	for n, age, sz, digs in cands: print(f"  - {n:25s} {age:4d}d ago  {sz/1024/1024:7.0f} MB  {len(digs)} manifest(s)")
+	print(f"\nTotal: {len(cands)} tags, {totMf} manifest digests, {totSz/1024/1024/1024:.2f} GB")
+
+	if not autoYes:
+		ans = input("\nProceed? Tags will be removed and their manifests deleted via registry API. [y/N]: ").strip().lower()
+		if ans != "y":
+			print("Cancelled.")
+			return
+
+	print("Requesting registry token (scope=delete)...")
+	try: regTok = regToken(usr, pwd, IMAGE_NAME)
+	except urllib.error.HTTPError as e:
+		if e.code in (401, 403): err(f"Registry token request rejected (HTTP {e.code}). The PAT needs delete scope; recreate the PAT with 'Read, Write, Delete' permissions, then 'docker login' again.")
+		raise
+
+	tagOk = 0
+	mfOk = 0
+	mfRef = 0
+	mfPend = 0
+	mfFail = 0
+	for n, _, _, digs in cands:
+		try:
+			delTag(IMAGE_NAME, n, hubTok)
+			print(f"  Tag deleted: {n}")
+			tagOk += 1
+		except urllib.error.HTTPError as e:
+			print(f"  Tag delete failed {n}: HTTP {e.code} {e.reason}", file=sys.stderr)
+			continue
+		for dg in digs:
+			code, reason = delManifest(IMAGE_NAME, dg, regTok)
+			short = dg[:19]
+			if code in (200, 202):
+				print(f"    Manifest deleted: {short}...")
+				mfOk += 1
+			elif code == 403:
+				print(f"    Manifest still referenced: {short}... (skipped)")
+				mfRef += 1
+			elif code == 404:
+				print(f"    Manifest already gone: {short}...")
+				mfOk += 1
+			elif code == 500:
+				print(f"    Manifest delete pending (server async): {short}...")
+				mfPend += 1
+			else:
+				print(f"    Manifest delete failed {short}...: HTTP {code} {reason}", file=sys.stderr)
+				mfFail += 1
+	print(f"\nDone. Tags deleted: {tagOk}/{len(cands)}.")
+	print(f"Manifests: ok={mfOk} still-referenced={mfRef} pending={mfPend} failed={mfFail} of {totMf}")
+
 def publish(tag, scriptDir):
 	print("Publishing release to GitHub...")
 	run("git fetch --prune --prune-tags")
@@ -294,6 +505,24 @@ def main():
 	args = sys.argv[1:]
 
 	if "-h" in args or "--help" in args: showHelp()
+
+	if args and args[0] == "del":
+		days = 90
+		keep = 3
+		autoYes = False
+		i = 1
+		while i < len(args):
+			a = args[i]
+			if a == "--days":
+				if i + 1 >= len(args): err("--days requires a value")
+				days = int(args[i + 1]); i += 2
+			elif a == "--keep":
+				if i + 1 >= len(args): err("--keep requires a value")
+				keep = int(args[i + 1]); i += 2
+			elif a in ("-y", "--yes"): autoYes = True; i += 1
+			else: err(f"Unknown del option: {a}\nRun with -h for help")
+		delImg(days, keep, autoYes)
+		return
 
 	upload = False
 	gpuOnly = False

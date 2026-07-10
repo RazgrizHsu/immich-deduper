@@ -619,18 +619,26 @@ Deduper automatically logs system operations and errors to help with troubleshoo
 
 ## Version Compatibility
 
-**Deduper v0.1.11+** supports all Immich versions through automatic schema detection.
+| Immich Version | Required Deduper Version |
+|----------------|--------------------------|
+| Immich v1.x - v2.x | Deduper v0.1.11+ (v0.3.0+ also compatible) |
+| Immich v3.0+ | **Deduper v0.3.0+ required** |
+
+> **Note on v0.3.0**: This release keeps backward compatibility with Immich v1.x/v2.x through the same schema detection mechanism. However, legacy-version support may be dropped in a future release; users on older Immich are encouraged to plan an upgrade path.
 
 **Automatic Schema Detection:**
 Deduper automatically detects and adapts to your Immich database schema:
 - Table names (plural vs singular: assets/asset, albums/album, tags/tag, users/user)
 - Junction table column names (plural vs singular: albumsId/albumId, assetsId/assetId, tagsId/tagId)
+- Album ownership location (v3.0+: `album.ownerId` moved to `album_user` with `role='owner'`)
+- Asset device tracking field (v3.0+: `asset.deviceId` removed; Auto-Selection device grouping unavailable on v3.0+)
 
-No manual configuration needed - Deduper works seamlessly across all Immich versions.
+No manual configuration needed within the supported version range.
 
 **Immich Schema Evolution:**
 - **Immich v1.136.0**: Changed main table names from plural to singular (assets → asset, albums → album, tags → tag, users → user)
 - **Immich v2.3.0**: Changed junction table column names from plural to singular (albumsId → albumId, assetsId → assetId, tagsId → tagId)
+- **Immich v3.0.0**: Dropped `album.ownerId` (moved to `album_user` with `role='owner'`) and `asset.deviceId` (no longer tracked). **Requires Deduper v0.3.0+.**
 - Deduper automatically handles all these variations
 
 ---

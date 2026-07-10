@@ -129,8 +129,9 @@ class cmds:
 		reset = co.tit('fetch_reset',desc='Clear all assets and vectors')
 
 	class vec(co.to):
-		toVec = co.tit('vec_toVec',desc='Generate vectors from assets')
-		clear = co.tit('vec_clear',desc='Clear all vectors')
+		toVec=co.tit('vec_toVec',desc='Generate vectors from assets')
+		clear=co.tit('vec_clear',desc='Clear all vectors')
+		repairIdx=co.tit('vec_repairIdx',desc='Repair Qdrant HNSW index desync')
 
 	class sim(co.to):
 		fnd = co.tit('sim_find', desc='Find Similar vectors')
@@ -244,7 +245,7 @@ def pathFromRoot(path):
 # envs
 #------------------------------------------------------------------------
 class envs:
-	version = '0.2.21'
+	version = '0.3.0'
 	isDev = False if isDock else bool(os.getenv('IsDev', False))
 	isDevUI = False if isDock else bool(os.getenv('IsDevUI', False))
 	isDock = False if not isDock else True
