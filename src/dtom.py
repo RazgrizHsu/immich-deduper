@@ -23,9 +23,11 @@ class Ausl:
 	skipLow:bool = True
 	allLive:bool = False
 	kpCands:bool = True
-	earlier:int = 2
-	later:int = 0
-	exRich:int = 1
+	earlier:int=2
+	later:int=0
+	mdEarly:int=0
+	mdLate:int=0
+	exRich:int=1
 	exPoor:int = 0
 	ofsBig:int = 2
 	ofsSml:int = 0

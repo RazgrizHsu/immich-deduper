@@ -204,15 +204,23 @@ def renderAutoSelect():
 				htm.Hr(),
 
 				htm.Div([
-					htm.Span(htm.Span("DateTime", className="tag txt-smx me-1")),
-					htm.Label("Earlier", className="me-2"),
-					dbc.Select(id=k.ausl("earlier"), options=toOpts(optWeights), value=a.earlier, disabled=dis, size="sm", className="me-1"),
-					htm.Label("Later", className="me-2"),
-					dbc.Select(id=k.ausl("later"), options=toOpts(optWeights), value=a.later, disabled=dis, size="sm"),
-				], className="icriteria"),
+					htm.Span(htm.Span("DateTime",className="tag txt-smx me-1")),
+					htm.Label("Earlier",className="me-2"),
+					dbc.Select(id=k.ausl("earlier"),options=toOpts(optWeights),value=a.earlier,disabled=dis,size="sm",className="me-1"),
+					htm.Label("Later",className="me-2"),
+					dbc.Select(id=k.ausl("later"),options=toOpts(optWeights),value=a.later,disabled=dis,size="sm"),
+				],className="icriteria"),
 
 				htm.Div([
-					htm.Span(htm.Span("Exif", className="tag txt-smx me-1")),
+					htm.Span(htm.Span("ModifiedAt",className="tag txt-smx me-1")),
+					htm.Label("Earlier",className="me-2"),
+					dbc.Select(id=k.ausl("mdEarly"),options=toOpts(optWeights),value=a.mdEarly,disabled=dis,size="sm",className="me-1"),
+					htm.Label("Later",className="me-2"),
+					dbc.Select(id=k.ausl("mdLate"),options=toOpts(optWeights),value=a.mdLate,disabled=dis,size="sm"),
+				],className="icriteria"),
+
+				htm.Div([
+					htm.Span(htm.Span("Exif",className="tag txt-smx me-1")),
 					htm.Label("Richer", className="me-2"),
 					dbc.Select(id=k.ausl("exRich"), options=toOpts(optWeights), value=a.exRich, disabled=dis, size="sm", className="me-1"),
 					htm.Label("Poorer", className="me-2"),
@@ -283,8 +291,8 @@ def renderAutoSelect():
 					dbc.Select(id=k.ausl("devPri"),options=toOpts(getDevOpts()),value=a.dev.k,disabled=disDev,size="sm",className="me-1",style={"minWidth":"60px"}),
 					htm.Label("Weight",className="me-2"),
 					dbc.Select(id=k.ausl("devWgt"),options=toOpts(optWeights),value=a.dev.v,disabled=disDev,size="sm"),
-					htm.Span(devTip,className="txt-smx text-muted ms-2") if devTip else None,
 				],className="icriteria",title=devTip),
+				htm.Div(devTip,className="txt-smx text-muted",style={"marginTop":"-2px","marginBottom":"4px"}) if devTip else None,
 
 			], className="mb-2 igrid txt-sm"),
 		])
