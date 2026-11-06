@@ -31,7 +31,7 @@ services:
 
   qdrant:
     container_name: immich-deduper-qdrant
-    image: qdrant/qdrant:v1.17.1
+    image: qdrant/qdrant:v1.20.0
     restart: unless-stopped
     ports:
       - ${QDRANT_PORT:-6333}:6333
