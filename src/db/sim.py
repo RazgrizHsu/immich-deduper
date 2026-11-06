@@ -212,19 +212,27 @@ def searchBy(src:models.Asset, doRep:IFnProg, isCancel:IFnCancel, fromUrl=False,
 	return SearchResult(groups=gis, corrupted=corrupted)
 
 
+def dropExcl(infos: List[models.SimInfo]) -> List[models.SimInfo]:
+	if not db.dto.excl.on or not db.dto.excl.filNam: return infos
+
+	kept = []
+	for info in infos:
+		if info.isSelf:
+			kept.append(info)
+			continue
+		simAsset = db.pics.getByAutoId(info.aid)
+		if simAsset and not db.dto.checkIsExclude(simAsset): kept.append(info)
+	return kept
+
+
 def findGroupBy(ast: models.Asset, sinfo: List[models.SimInfo], doReport: IFnProg, grpId:int,fromUrl:bool,corrupted:list[int])->SearchInfo:
+	sinfo = dropExcl(sinfo)
+
 	rst = SearchInfo()
 	rst.asset = ast
 	rst.bseInfos = sinfo
 
 	simAids = [i.aid for i in sinfo if not i.isSelf]
-
-	if db.dto.excl.on and db.dto.excl.filNam:
-		filteredAids = []
-		for aid in simAids:
-			simAsset = db.pics.getByAutoId(aid)
-			if simAsset and not db.dto.checkIsExclude(simAsset): filteredAids.append(aid)
-		simAids = filteredAids
 
 	rst.simAids = simAids
 
@@ -321,6 +329,8 @@ def processChildren(ast: models.Asset, infos: List[models.SimInfo], simAids: Lis
 				corrupted.append(aid)
 				lg.warn(f"[sim:children] aid[{aid}] idx corrupted, cleared")
 				continue
+
+			cInfos = dropExcl(cInfos)
 
 			db.pics.setSimGIDs(aid, rootGID)
 			db.pics.setSimInfos(aid, cInfos)
