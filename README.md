@@ -517,7 +517,7 @@ For custom environments and development needs.
 1. **Install Qdrant Server**
    ```bash
    # Install Qdrant using Docker
-   docker run -p 6333:6333 qdrant/qdrant:v1.17.1
+   docker run -p 6333:6333 qdrant/qdrant:v1.20.0
    ```
 
 2. **Clone Source Code**
